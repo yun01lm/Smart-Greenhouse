@@ -1,5 +1,6 @@
 package com.greenhouse.app.ui.dashboard;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -19,6 +20,7 @@ import com.greenhouse.app.adapter.SensorAdapter;
 import com.greenhouse.app.data.model.Greenhouse;
 import com.greenhouse.app.data.model.HealthScoreData;
 import com.greenhouse.app.databinding.FragmentDashboardBinding;
+import com.greenhouse.app.ui.alert.AlertFragment;
 import com.greenhouse.app.viewmodel.DashboardViewModel;
 
 import java.math.BigDecimal;
@@ -105,6 +107,15 @@ public class DashboardFragment extends Fragment {
 
         // 加载数据
         viewModel.loadGreenhouses();
+
+        // 预警中心入口卡片 → 跳转预警列表（内嵌在 Activity 中）
+        binding.cardAlertEntry.setOnClickListener(v -> {
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragment_container, new AlertFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
     }
 
     private void updateHealthScore(HealthScoreData score) {
