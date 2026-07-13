@@ -1,0 +1,94 @@
+package com.greenhouse.module.file.service;
+
+import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+
+/**
+ * 文件存储服务
+ * <p>
+ * 负责图片等文件的上传和本地存储管理。
+ * 文件按日期分目录：uploads/diagnosis/2026/07/13/uuid.jpg
+ * </p>
+ */
+@Slf4j
+@Service
+public class FileService {
+
+    private final Path uploadDir;
+
+    /** 允许的图片类型 */
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+    public FileService(@Value("${file.upload-dir:./uploads}") String uploadDir) {
+        this.uploadDir = Paths.get(uploadDir).toAbsolutePath();
+        try {
+            Files.createDirectories(this.uploadDir);
+        } catch (IOException e) {
+            log.error("创建上传目录失败: {}", this.uploadDir, e);
+        }
+    }
+
+    /**
+     * 保存诊断图片
+     *
+     * @param file 上传的文件
+     * @return 文件访问路径（相对路径）
+     */
+    public String saveDiagnosisImage(MultipartFile file) {
+        // 校验文件
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文件不能为空");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
+        }
+
+        // 校验文件类型
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_SUPPORTED);
+        }
+
+        // 生成文件名和路径
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String originalFilename = file.getOriginalFilename();
+        String extension = "";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String filename = UUID.randomUUID().toString() + extension;
+
+        Path targetDir = uploadDir.resolve("diagnosis").resolve(datePath);
+        try {
+            Files.createDirectories(targetDir);
+            Path targetFile = targetDir.resolve(filename);
+            file.transferTo(targetFile.toFile());
+
+            String relativePath = "diagnosis/" + datePath + "/" + filename;
+            log.info("诊断图片已保存: {}", relativePath);
+            return relativePath;
+        } catch (IOException e) {
+            log.error("文件保存失败: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
+     * 获取文件的绝对路径
+     */
+    public Path getAbsolutePath(String relativePath) {
+        return uploadDir.resolve(relativePath);
+    }
+}
