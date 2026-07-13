@@ -1,0 +1,45 @@
+package com.greenhouse.repository;
+
+import com.greenhouse.entity.ChatMessage;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+/**
+ * 聊天消息 Repository
+ */
+@Repository
+public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+
+    /**
+     * 按对话ID分页查询消息（时间正序）
+     */
+    Page<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId, Pageable pageable);
+
+    /**
+     * 统计未读消息数
+     */
+    @Query("SELECT COUNT(m) FROM ChatMessage m WHERE m.conversationId = :conversationId AND m.senderType = 'EXPERT' AND m.readStatus = 0")
+    long countUnreadByConversationId(@Param("conversationId") Long conversationId);
+
+    /**
+     * 统计用户所有对话的未读消息数
+     */
+    @Query("SELECT COUNT(m) FROM ChatMessage m JOIN ChatConversation c ON m.conversationId = c.id WHERE c.userId = :userId AND m.senderType = 'EXPERT' AND m.readStatus = 0")
+    long countUnreadByUserId(@Param("userId") Long userId);
+
+    /**
+     * 统计专家所有对话的未读消息数
+     */
+    @Query("SELECT COUNT(m) FROM ChatMessage m JOIN ChatConversation c ON m.conversationId = c.id WHERE c.expertId = :expertId AND m.senderType = 'USER' AND m.readStatus = 0")
+    long countUnreadByExpertId(@Param("expertId") Long expertId);
+
+    /**
+     * 将对话中的消息标记为已读
+     */
+    @Query("UPDATE ChatMessage m SET m.readStatus = 1 WHERE m.conversationId = :conversationId AND m.senderType = :senderType AND m.readStatus = 0")
+    void markAsRead(@Param("conversationId") Long conversationId, @Param("senderType") String senderType);
+}
