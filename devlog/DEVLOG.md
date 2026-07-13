@@ -68,4 +68,26 @@
   - `backend/.../security/annotations/RequireGreenhouseAccess.java`
   - `backend/.../security/annotations/RequireFunction.java`
 
+### 步骤4：C1 用户认证模块 | ✅ 完成
+
+- **时间**：03:30
+- **操作**：
+  - `User.java`：JPA实体，四种角色(ADMIN/OWNER/WORKER/EXPERT)，BCrypt密码，员工单归属(ownerId)，专家在线状态(expertStatus)
+  - `UserRepository.java`：JPA Repository，支持用户名/手机号唯一性校验，按角色/棚主/在线状态查询
+  - `AuthController.java`：3个API端点 — POST /api/v1/auth/register（注册）、POST /api/v1/auth/login（登录）、GET /api/v1/auth/profile（获取个人信息）
+  - `AuthService.java`：注册（校验角色/用户名/手机号唯一性、员工必须指定棚主、BCrypt加密、注册成功直接返回Token）、登录（Spring Security认证+生成JWT+检查账号状态）
+  - 4个DTO：RegisterRequest（含@Valid校验）、LoginRequest、LoginResponse（含Token+用户信息）、UserProfileResponse
+  - `UserDetailsServiceImpl.java`：**已从临时内存版本改为数据库版本**，通过UserRepository加载用户
+- **结果**：用户认证链路完整（注册→BCrypt加密→数据库存储→登录→JWT生成→过滤器验证→SecurityContext）
+- **文件清单**：
+  - `backend/.../entity/User.java`
+  - `backend/.../repository/UserRepository.java`
+  - `backend/.../module/auth/controller/AuthController.java`
+  - `backend/.../module/auth/service/AuthService.java`
+  - `backend/.../module/auth/dto/RegisterRequest.java`
+  - `backend/.../module/auth/dto/LoginRequest.java`
+  - `backend/.../module/auth/dto/LoginResponse.java`
+  - `backend/.../module/auth/dto/UserProfileResponse.java`
+  - `backend/.../security/UserDetailsServiceImpl.java`（修改）
+
 ---
