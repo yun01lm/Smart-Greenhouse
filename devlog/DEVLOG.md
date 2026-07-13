@@ -215,4 +215,32 @@
   - `backend/.../module/mqtt/MqttSubscriber.java`（修改）
   - `backend/.../module/sensor/service/SensorDataService.java`（修改）
 
+### 步骤10：C7 设备控制 + C12 场景联动 | ✅ 完成
+
+- **时间**：06:05
+- **操作**：
+  - `Scene.java`：JPA实体，对应 DB 第11号表 — 场景名称、描述、触发条件JSON（Phase 2用）、动作列表JSON、所属大棚、启用状态
+  - `ControlLog.java`：JPA实体，对应 DB 第14号表 — 操作人ID、设备ID、动作(ON/OFF)、来源(MANUAL/SCENE/ALERT)、场景ID、成功/失败原因
+  - `SceneRepository.java`：按大棚查询/按启用状态查询/名称唯一性校验/数量统计
+  - `ControlLogRepository.java`：按设备/用户/场景查询日志，支持分页
+  - `ControlService.java`：设备控制核心 — 校验设备类型(CONTROLLER)/在线状态/权限（OWNER/WORKER需canControlDevice）、MQTT下发指令到 `greenhouse/{ghId}/device/{deviceSn}/command`、自动记录控制日志、更新设备状态
+  - `SceneService.java`：场景联动核心 — CRUD + 手动执行（逐一调用ControlService控制每个设备，标记source=SCENE）、设备归属校验（禁止跨大棚）、控制器类型校验
+  - `ControlController.java`：2个端点 — POST /api/v1/control/actuator（控制设备）、GET /api/v1/control/logs（查询日志）
+  - `SceneController.java`：5个端点 — GET /api/v1/control/scenes（列表）、POST（创建）、PUT/{id}（更新）、DELETE/{id}（删除）、POST/{id}/execute（执行）
+  - 4个DTO：ControlRequest（@Valid校验）、ControlLogResponse（含username/deviceName）、SceneRequest（含SceneAction子类，@NotEmpty校验）、SceneResponse（含SceneActionInfo子类）
+- **结果**：设备控制链路完整 — 用户API → MQTT下发 → ESP32执行 → 日志记录。场景联动支持一键批量控制多个设备。Phase 1 全部 10 步业务代码完成！
+- **文件清单**：
+  - `backend/.../entity/Scene.java`
+  - `backend/.../entity/ControlLog.java`
+  - `backend/.../repository/SceneRepository.java`
+  - `backend/.../repository/ControlLogRepository.java`
+  - `backend/.../module/control/service/ControlService.java`
+  - `backend/.../module/control/service/SceneService.java`
+  - `backend/.../module/control/controller/ControlController.java`
+  - `backend/.../module/control/controller/SceneController.java`
+  - `backend/.../module/control/dto/ControlRequest.java`
+  - `backend/.../module/control/dto/ControlLogResponse.java`
+  - `backend/.../module/control/dto/SceneRequest.java`
+  - `backend/.../module/control/dto/SceneResponse.java`
+
 ---
