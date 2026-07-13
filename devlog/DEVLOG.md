@@ -168,4 +168,30 @@
   - `backend/.../module/device/service/DeviceService.java`（修改）
   - `backend/pom.xml`（修改）
 
+### 步骤8：C4 MQTT消费者 + C5 时序数据 | ✅ 完成
+
+- **时间**：05:10
+- **操作**：
+  - `MqttConfig.java`：MQTT 客户端配置，支持用户名/密码认证（可选）、自动重连、cleanSession，从 application.yml 读取 broker/clientId
+  - `InfluxDbConfig.java`：InfluxDB 2.x 客户端配置，创建 InfluxDBClient/WriteApiBlocking/QueryApi 三个 Bean，从 application.yml 读取 url/token/org/bucket
+  - `MqttSubscriber.java`：MQTT 消息订阅器 — @PostConstruct 启动时订阅 `greenhouse/+/device/+` 通配符主题，接收 ESP32 JSON 数据（greenhouseId/deviceId/sensorType/value/timestamp），调用 SensorDataService 写入 InfluxDB + 更新 Device 状态为 ONLINE
+  - `SensorDataService.java`：时序数据核心服务 — writeData（写入 InfluxDB point）、updateDeviceStatus（更新设备在线状态和最后读数）、getRealtimeData（Flux 查询最近5分钟 last()）、getHistoryData（时间范围 + aggregateWindow 均值聚合）、getCompareData（多设备同时段对比）、getAggregateData（mean/max/min/last/count 五维统计）、exportCsv（生成 CSV 字符串）
+  - `InfluxDbConfigHelper.java`：辅助组件，@Value 注入 influxdb.org/bucket，避免与 InfluxDbConfig 循环依赖
+  - `SensorController.java`：5个API端点 — GET /api/v1/sensors/realtime（实时数据）、POST /api/v1/sensors/history（历史数据+聚合）、POST /api/v1/sensors/compare（多组对比）、GET /api/v1/sensors/aggregate（聚合统计）、GET /api/v1/sensors/export（CSV导出）
+  - 6个DTO：SensorDataPoint（通用数据点）、SensorRealtimeResponse（按类型分组）、SensorHistoryRequest（@Valid校验）、SensorCompareResponse（含DeviceSeries子类）、SensorAggregateResponse（五维统计）、CompareRequest
+- **结果**：感知→存储→查询整条链路打通 — ESP32 通过 MQTT 上报数据 → InfluxDB 存储 → API 查询（实时/历史/对比/统计/导出），设备在线状态自动更新
+- **文件清单**：
+  - `backend/.../config/MqttConfig.java`
+  - `backend/.../config/InfluxDbConfig.java`
+  - `backend/.../module/mqtt/MqttSubscriber.java`
+  - `backend/.../module/sensor/service/SensorDataService.java`
+  - `backend/.../module/sensor/service/InfluxDbConfigHelper.java`
+  - `backend/.../module/sensor/controller/SensorController.java`
+  - `backend/.../module/sensor/dto/SensorDataPoint.java`
+  - `backend/.../module/sensor/dto/SensorRealtimeResponse.java`
+  - `backend/.../module/sensor/dto/SensorHistoryRequest.java`
+  - `backend/.../module/sensor/dto/SensorCompareResponse.java`
+  - `backend/.../module/sensor/dto/SensorAggregateResponse.java`
+  - `backend/.../module/sensor/dto/CompareRequest.java`
+
 ---
