@@ -337,4 +337,41 @@
   - `backend/.../module/diagnosis/controller/DiagnosisController.java`
   - `backend/.../resources/application-dev.yml`（修改）
 
+### 步骤14：C9 RAG 问答 + C10 语音识别 | ✅ 完成
+
+- **时间**：09:45
+- **操作**：
+  - `SpeechRecognitionProvider.java`：语音识别策略接口 — `recognize(byte[])` 方法和 `SpeechRecognitionResult` record（text/rawDialectText/confidence/dialect/engineName/durationMs），通过 `ai.voice.provider` 配置切换实现
+  - `XunfeiSpeechProvider.java`：讯飞 ASR 实现 — HMAC-SHA256 签名鉴权（host+date+request-line 签名）、支持河北话方言（accent=hebei）、Base64 音频上传、拼接所有识别片段并计算平均置信度
+  - `WhisperSpeechProvider.java`：本地 Whisper 占位 — Phase 3 替换为 DJL + ONNX 模型推理
+  - `QaRecord.java`：JPA实体，对应 DB 第13号表 — 用户ID/问题/回答/输入类型(TEXT/VOICE)/ASR引擎/引用来源JSON/创建时间
+  - `QaRecordRepository.java`：按用户ID分页查询历史（时间倒序）
+  - `EmbeddingService.java`：SiliconFlow bge-m3 向量化服务 — 调用 `/v1/embeddings` API，返回 1024 维向量，支持单条和批量向量化
+  - `ChromaRetrievalService.java`：Chroma 向量检索服务 — 调用 `/api/v1/collections/{name}/query` REST API，返回 Top-K 结果（含文档内容、元数据、距离→相似度转换），Chroma 不可用时返回空列表不阻塞
+  - `RagQaService.java`：RAG 核心服务 — ① 向量化问题 ② Chroma top-5 检索 ③ 组装 system prompt（知识库上下文） ④ DeepSeek chat/completions 生成 ⑤ 保存 qa_records。提供 `generateAnswerOnly()` 供 VoiceQaService 复用（不重复保存记录）。知识库无内容时自动降级为通用知识并标注
+  - `VoiceQaService.java`：语音问答服务 — 保存音频 → ASR 识别 → RAG 生成 → 保存 VOICE 类型记录。ASR 失败抛 AI_SPEECH_FAILED，LLM 失败仍保存识别结果
+  - `QaController.java`：3个API端点 — POST /api/v1/qa/ask（文字问答）、POST /api/v1/qa/ask/voice（语音问答，multipart/form-data）、GET /api/v1/qa/records（问答历史分页）
+  - 3个DTO：QaAskRequest（@Valid校验）、QaResponse（含 SourceInfo 子类和 fromEntity/fromVoiceEntity）、QaHistoryItem（问题截取前50字）
+  - `FileService.java`：新增 `saveAudioFile()` 方法 — 校验音频类型（wav/mp3/amr/webm）、30MB上限、按日期分目录
+  - `PageResult.java`：新增 `of(Page<T>)` 工厂方法，自动处理 Spring Data 分页偏移
+  - `application-dev.yml`：新增 chroma.collection 配置、deepseek 独立配置（api-key/base-url/model）
+- **结果**：AI 问答能力完整 — 文字问答走 RAG 全链路（向量化→检索→LLM→保存），语音问答先经讯飞 ASR 转写再走 RAG。降级策略完备：Chroma 不可用时用 DeepSeek 通用知识、LLM 不可用时保存错误信息。策略模式支持后期切换 Whisper 本地模型
+- **文件清单**：
+  - `backend/.../ai/SpeechRecognitionProvider.java`
+  - `backend/.../ai/xunfei/XunfeiSpeechProvider.java`
+  - `backend/.../ai/whisper/WhisperSpeechProvider.java`
+  - `backend/.../entity/QaRecord.java`
+  - `backend/.../repository/QaRecordRepository.java`
+  - `backend/.../module/qa/service/EmbeddingService.java`
+  - `backend/.../module/qa/service/ChromaRetrievalService.java`
+  - `backend/.../module/qa/service/RagQaService.java`
+  - `backend/.../module/qa/service/VoiceQaService.java`
+  - `backend/.../module/qa/controller/QaController.java`
+  - `backend/.../module/qa/dto/QaAskRequest.java`
+  - `backend/.../module/qa/dto/QaResponse.java`
+  - `backend/.../module/qa/dto/QaHistoryItem.java`
+  - `backend/.../module/file/service/FileService.java`（修改）
+  - `common/.../common/PageResult.java`（修改）
+  - `backend/.../resources/application-dev.yml`（修改）
+
 ---
