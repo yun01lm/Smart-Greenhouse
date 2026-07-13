@@ -42,3 +42,4 @@ docker/volumes/
 # === 临时文件 ===
 *.tmp
 *.bak
+tools/__pycache__/
