@@ -46,7 +46,14 @@ influxdb:
 
 # Chroma 向量数据库
 chroma:
-  url: http://localhost:8000
+  base-url: http://localhost:8000
+  collection: greenhouse_knowledge
+
+# DeepSeek Chat（独立HTTP调用）
+deepseek:
+  api-key: ${DEEPSEEK_API_KEY:dev-deepseek-key}
+  base-url: https://api.deepseek.com/v1
+  model: deepseek-chat
 
 # MQTT Broker
 mqtt:

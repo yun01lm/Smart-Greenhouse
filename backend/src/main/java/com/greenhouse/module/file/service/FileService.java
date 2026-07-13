@@ -28,8 +28,12 @@ public class FileService {
 
     private final Path uploadDir;
 
-    /** 允许的图片类型 */
+    /** 允许的最大文件大小 */
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    /** 音频文件最大大小 */
+    private static final long MAX_AUDIO_SIZE = 30 * 1024 * 1024; // 30MB
+    /** 允许的音频类型 */
+    private static final String[] ALLOWED_AUDIO_TYPES = {"audio/wav", "audio/mpeg", "audio/mp3", "audio/amr", "audio/webm"};
 
     public FileService(@Value("${file.upload-dir:./uploads}") String uploadDir) {
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath();
@@ -90,5 +94,69 @@ public class FileService {
      */
     public Path getAbsolutePath(String relativePath) {
         return uploadDir.resolve(relativePath);
+    }
+
+    /**
+     * 保存语音问答音频文件
+     *
+     * @param file 上传的音频文件
+     * @return 文件访问路径（相对路径）
+     */
+    public String saveAudioFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "音频文件不能为空");
+        }
+        if (file.getSize() > MAX_AUDIO_SIZE) {
+            throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
+        }
+
+        // 校验音频类型
+        String contentType = file.getContentType();
+        boolean validType = false;
+        if (contentType != null) {
+            for (String allowed : ALLOWED_AUDIO_TYPES) {
+                if (contentType.equalsIgnoreCase(allowed)) {
+                    validType = true;
+                    break;
+                }
+            }
+        }
+        // 也允许通过扩展名判断
+        if (!validType) {
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename != null) {
+                String lower = originalFilename.toLowerCase();
+                if (lower.endsWith(".wav") || lower.endsWith(".mp3")
+                        || lower.endsWith(".amr") || lower.endsWith(".webm")) {
+                    validType = true;
+                }
+            }
+        }
+        if (!validType) {
+            throw new BusinessException(ErrorCode.FILE_TYPE_NOT_SUPPORTED);
+        }
+
+        // 生成文件名和路径
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String originalFilename = file.getOriginalFilename();
+        String extension = ".wav";
+        if (originalFilename != null && originalFilename.contains(".")) {
+            extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        }
+        String filename = UUID.randomUUID().toString() + extension;
+
+        Path targetDir = uploadDir.resolve("audio").resolve(datePath);
+        try {
+            Files.createDirectories(targetDir);
+            Path targetFile = targetDir.resolve(filename);
+            file.transferTo(targetFile.toFile());
+
+            String relativePath = "audio/" + datePath + "/" + filename;
+            log.info("音频文件已保存: {}", relativePath);
+            return relativePath;
+        } catch (IOException e) {
+            log.error("音频文件保存失败: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED);
+        }
     }
 }

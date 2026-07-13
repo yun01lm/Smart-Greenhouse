@@ -31,4 +31,16 @@ public class PageResult<T> {
     public static <T> PageResult<T> of(List<T> list, long total, int page, int size) {
         return new PageResult<>(list, total, page, size);
     }
+
+    /**
+     * 从 Spring Data Page 对象构建
+     */
+    public static <T> PageResult<T> of(org.springframework.data.domain.Page<T> page) {
+        return new PageResult<>(
+                page.getContent(),
+                page.getTotalElements(),
+                page.getNumber() + 1,  // Spring Data page 从 0 开始
+                page.getSize()
+        );
+    }
 }
