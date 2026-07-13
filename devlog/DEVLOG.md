@@ -374,4 +374,34 @@
   - `common/.../common/PageResult.java`（修改）
   - `backend/.../resources/application-dev.yml`（修改）
 
+### 步骤15：C14 天气API + C22 作物生长周期 | ✅ 完成
+
+- **时间**：10:30
+- **操作**：
+  - `WeatherCache.java`：JPA实体，对应 DB 第19号表 — 位置标识/温度/湿度/天气代码/风速/预报JSON/更新时间，3小时缓存策略
+  - `WeatherCacheRepository.java`：按位置查询最新缓存记录
+  - `QWeatherService.java`：和风天气 API 服务 — 缓存优先模式（3小时内直接返回缓存，过期调用API刷新）、getCurrentWeather()（当前天气：温度/体感温度/湿度/风速/风向/气压/能见度）、getForecast()（3天/7天预报：逐日最高最低温/天气/湿度/风速/降水量）、缓存保存到 weather_cache 表、API失败时抛出 INTERNAL_ERROR
+  - `WeatherController.java`：2个端点 — GET /api/v1/weather/current（当前天气）、GET /api/v1/weather/forecast（天气预报，days参数控制3天/7天）
+  - 2个DTO：WeatherCurrentResponse（含体感温度/风向/气压/能见度）、WeatherForecastResponse（含 DayForecast 子类）
+  - `CropCycle.java`：JPA实体，对应 DB 第20号表 — 大棚ID/作物名称/品种/种植日期/预计收获日期/实际收获日期/当前阶段(5阶段)/阶段来源(AUTO/MANUAL)/状态(ACTIVE/COMPLETED/CANCELLED)。内置 estimateStage() 静态方法（育苗期0-20天→生长期21-40天→开花期41-55天→结果期56-80天→收获期81天+）、autoUpdateStage() 自动更新阶段、getDaysSincePlanting() 计算种植天数
+  - `CropCycleRepository.java`：按大棚+状态分页查询、按大棚全量查询、检查进行中周期（防重复创建）
+  - `CropCycleService.java`：核心业务 — create（校验无重复进行中周期→创建→自动估算阶段）、list（自动更新阶段后返回）、getById、update（仅ACTIVE状态可更新）、complete（设置实际收获日期+标记COMPLETED）、setStage（手动覆盖阶段→MANUAL模式）、getTimeline（生成种植→阶段变更→收获事件时间线）
+  - `CropCycleController.java`：7个端点 — GET /api/v1/crop-cycles（列表，可选status筛选）、POST（创建）、GET /{id}（详情）、PUT /{id}（更新）、PATCH /{id}/stage（手动设阶段）、PATCH /{id}/complete（标记完成）、GET /{id}/timeline（时间线）
+  - 3个DTO：CropCycleRequest（@Valid校验）、CropCycleResponse（含 daysSincePlanting 计算字段）、CropTimelineResponse（含 TimelineEvent 列表）
+- **结果**：天气模块提供当前天气+预报查询，缓存策略减少API调用。作物生长周期模块支持完整的种植→生长→收获生命周期管理，阶段自动估算+手动修正双模式，时间线可视化追溯
+- **文件清单**：
+  - `backend/.../entity/WeatherCache.java`
+  - `backend/.../entity/CropCycle.java`
+  - `backend/.../repository/WeatherCacheRepository.java`
+  - `backend/.../repository/CropCycleRepository.java`
+  - `backend/.../module/weather/service/QWeatherService.java`
+  - `backend/.../module/weather/controller/WeatherController.java`
+  - `backend/.../module/weather/dto/WeatherCurrentResponse.java`
+  - `backend/.../module/weather/dto/WeatherForecastResponse.java`
+  - `backend/.../module/crop/service/CropCycleService.java`
+  - `backend/.../module/crop/controller/CropCycleController.java`
+  - `backend/.../module/crop/dto/CropCycleRequest.java`
+  - `backend/.../module/crop/dto/CropCycleResponse.java`
+  - `backend/.../module/crop/dto/CropTimelineResponse.java`
+
 ---
