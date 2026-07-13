@@ -468,4 +468,53 @@
   - `backend/.../module/health/dto/HealthScoreResponse.java`
   - `backend/.../module/health/dto/HealthHistoryResponse.java`
 
+### 步骤18：数据模拟脚本 + F01实时数据看板 + F09个人中心 | ✅ 完成
+
+- **时间**：03:00
+- **操作**：
+  - `tools/sensor_simulator.py`：Python ESP32 数据模拟器 — 实时模式：通过 MQTT 协议（paho-mqtt）连接 Mosquitto Broker，模拟 3 组设备 × 11 种传感器参数定时上报，数据完全走真实链路 MQTT→Spring Boot→InfluxDB+WebSocket+预警。历史模式：直接写入 InfluxDB，含昼夜温度曲线模拟。用法：`python3 sensor_simulator.py --mode both --days 7`
+  - Android 项目骨架：Gradle 8.5 + AGP 8.2，target SDK 34，min SDK 26
+  - `TokenManager.java`：SharedPreferences 存储 JWT Token + 用户信息（userId/username/role/realName）
+  - `ApiClient.java`：Retrofit 单例封装，OkHttp 拦截器自动注入 Bearer Token，ExecutorService 线程池（4线程）
+  - `GreenhouseApiService.java`：Retrofit 接口定义，覆盖 C1 认证/C3 大棚/C5 时序/C6 预警/C15 健康评分/C22 生长周期
+  - `StompClient.java`：STOMP over OkHttp WebSocket 实现 — 手动构建 STOMP 1.2 帧（CONNECT/SUBSCRIBE/MESSAGE/DISCONNECT），10 秒心跳，符合规范要求
+  - 数据模型 10 个：ApiResponse/PageResult/LoginRequest/LoginResponse/UserInfo/Greenhouse/SensorRealtimeData/SensorDataPoint/AlertItem/HealthScoreData/CropCycleData
+  - `GreenhouseRepository.java`：数据仓库层 — ExecutorService 后台执行 Retrofit 同步请求，Handler 回调主线程更新 UI
+  - `LoginViewModel.java`：登录业务逻辑 — 输入校验 + API 调用 + Token 保存，Activity 只负责 UI
+  - `DashboardViewModel.java`：看板业务逻辑 — 大棚列表加载、传感器数据获取、WebSocket 订阅、健康评分
+  - `LoginActivity.java`：登录页面（MVVM：观察 ViewModel 的 LiveData，不写业务逻辑）
+  - `MainActivity.java`：底部 Tab 导航（看板/预警/诊断/问答/我的），Fragment 切换
+  - `DashboardFragment.java`：实时数据看板 — 大棚 Spinner 选择 + RecyclerView 展示 11 种传感器卡片 + 健康评分圆形指示器
+  - `SensorAdapter.java`：传感器数据 RecyclerView 适配器 — 中文名映射、单位显示、异常值红色标记
+  - `ProfileFragment.java`：个人中心 — 显示用户名/角色，退出登录（清除 Token 跳转登录页）
+  - 资源文件：6 个 Vector 图标、5 个布局 XML、3 个样式文件、底部菜单、自适应启动图标
+- **结果**：**BUILD SUCCESSFUL** — APK 编译通过（app-debug.apk, 7.2MB）。APP 端具备登录认证、大棚选择、11 种传感器实时数据展示、健康评分展示、个人中心等核心功能。数据模拟脚本可独立运行，为后续 APP 开发和测试提供真实数据流。MVVM 架构完整：View(Activity/Fragment)→ViewModel→Repository→ApiService。
+- **文件清单**：
+  - `tools/sensor_simulator.py`
+  - `tools/README.md`
+  - `build.gradle`（项目级）
+  - `settings.gradle`
+  - `gradle.properties`
+  - `gradle/wrapper/gradle-wrapper.properties`
+  - `gradle/wrapper/gradle-wrapper.jar`
+  - `gradlew`
+  - `app/build.gradle`
+  - `app/proguard-rules.pro`
+  - `app/src/main/AndroidManifest.xml`
+  - `app/.../GreenhouseApplication.java`
+  - `app/.../data/local/TokenManager.java`
+  - `app/.../data/api/ApiClient.java`
+  - `app/.../data/api/GreenhouseApiService.java`
+  - `app/.../data/model/` (10 个模型文件)
+  - `app/.../data/repository/GreenhouseRepository.java`
+  - `app/.../websocket/StompClient.java`
+  - `app/.../viewmodel/LoginViewModel.java`
+  - `app/.../viewmodel/DashboardViewModel.java`
+  - `app/.../ui/login/LoginActivity.java`
+  - `app/.../ui/common/MainActivity.java`
+  - `app/.../ui/dashboard/DashboardFragment.java`
+  - `app/.../ui/profile/ProfileFragment.java`
+  - `app/.../adapter/SensorAdapter.java`
+  - `app/src/main/res/` (20 个资源文件)
+
 ---
