@@ -30,4 +30,20 @@
   - `backend/src/main/resources/application.yml`
   - `.gitignore`
 
+### 步骤2：Docker 开发环境 | ✅ 完成
+
+- **时间**：03:10
+- **操作**：
+  - 创建 `docker-compose.yml`：4个服务（MySQL 8.0 / InfluxDB 2.7 / Mosquitto 2.x / Chroma），含健康检查和数据卷持久化
+  - 创建 `mosquitto.conf`：开发阶段允许匿名连接，含 WebSocket MQTT（端口9001）
+  - 创建 `.env.example`：环境变量模板，含所有第三方API占位符
+  - 创建 `application-dev.yml`：Spring Boot 完整开发环境配置（MySQL/InfluxDB/Chroma/MQTT/JWT/所有第三方API）
+- **结果**：一条 `docker-compose up -d` 命令即可启动全部基础设施
+- **用户确认**：MQTT 匿名连接后期改认证只需改配置+重启，不影响代码
+- **文件清单**：
+  - `docker-compose.yml`
+  - `mosquitto.conf`
+  - `.env.example`
+  - `backend/src/main/resources/application-dev.yml`
+
 ---
