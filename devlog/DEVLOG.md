@@ -404,4 +404,44 @@
   - `backend/.../module/crop/dto/CropCycleResponse.java`
   - `backend/.../module/crop/dto/CropTimelineResponse.java`
 
+### 步骤16：C16 实时聊天 + C17 专家授权 | ✅ 完成
+
+- **时间**：11:45
+- **操作**：
+  - `ChatConversation.java`：JPA实体，对应 DB 第21号表 — 用户ID/专家ID/大棚ID/咨询主题/状态(WAITING/ACTIVE/CLOSED)/关联诊断ID，专家首次回复自动从WAITING变为ACTIVE
+  - `ChatMessage.java`：JPA实体，对应 DB 第22号表 — 发送者ID/发送者身份(USER/EXPERT)/消息类型(TEXT/IMAGE/VIDEO/ENV_SNAPSHOT)/文字内容/文件路径/快照JSON/已读状态
+  - `ChatConversationRepository.java`：按用户/专家/状态多维度查询
+  - `ChatMessageRepository.java`：按对话分页查询（时间正序）、未读统计（按用户/专家/对话三维度）、markAsRead批量标记已读
+  - `DataAuthorization.java`：JPA实体，对应 DB 第23号表 — 5种状态(PENDING/APPROVED/REJECTED/EXPIRED/REVOKED)、7天有效期（approved_at+7天）、撤销人/撤销时间
+  - `ExpertAvailability.java`：JPA实体，对应 DB 第24号表 — 在线状态(0/1)、最后活跃时间、最大并发数
+  - `DataAuthorizationRepository.java`：多维度查询（专家+用户+大棚+状态、按状态+过期时间）
+  - `ExpertAvailabilityRepository.java`：按专家ID查询
+  - `ChatService.java`：核心业务 — createConversation（校验专家角色+创建对话+首条消息）、getConversations（按角色区分用户端/专家端，含未读数和最后消息预览）、getMessages（参与者校验+分页）、sendMessage（对话状态校验+WAITING→ACTIVE自动转换）、sendSnapshot（调用SensorDataService获取实时数据生成快照JSON）、closeConversation、getUnreadCount
+  - `ChatController.java`：7个端点 — POST /api/v1/chat/conversations（创建）、GET /conversations（列表）、GET /conversations/{id}/messages（历史）、POST /messages（发送）、POST /snapshot（快照）、PUT /conversations/{id}/close（关闭）、GET /unread（未读数）
+  - 4个DTO：ConversationRequest（@Valid）、ConversationResponse（含unreadCount/lastMessage）、MessageResponse（fromEntity转换）、SendMessageRequest
+  - `ExpertService.java`：核心业务 — getExpertList（专家列表含在线状态）、requestAuthorization（防重复有效授权）、getPendingAuthorizations、approveAuthorization（设置7天过期）、rejectAuthorization、revokeAuthorization、getActiveAuthorizations、updateOnlineStatus
+  - `AuthorizationController.java`：8个端点 — POST /api/v1/expert/authorize/request、GET /pending、PUT /{id}/approve、PUT /{id}/reject、PUT /{id}/revoke、GET /active、GET /history、PUT /status
+  - `ExpertController.java`：1个端点 — GET /api/v1/experts（含specialty/onlineOnly筛选）
+  - 1个DTO：AuthorizationResponse（含remainingDays计算字段）
+- **结果**：专家咨询体系完整 — 用户发起求助→创建对话→实时消息收发→环境快照共享。双轨制授权：快照一次性使用+授权7天持续查看，用户可随时撤销。专家在线状态管理+并发控制
+- **文件清单**：
+  - `backend/.../entity/ChatConversation.java`
+  - `backend/.../entity/ChatMessage.java`
+  - `backend/.../entity/DataAuthorization.java`
+  - `backend/.../entity/ExpertAvailability.java`
+  - `backend/.../repository/ChatConversationRepository.java`
+  - `backend/.../repository/ChatMessageRepository.java`
+  - `backend/.../repository/DataAuthorizationRepository.java`
+  - `backend/.../repository/ExpertAvailabilityRepository.java`
+  - `backend/.../module/chat/service/ChatService.java`
+  - `backend/.../module/chat/controller/ChatController.java`
+  - `backend/.../module/chat/dto/ConversationRequest.java`
+  - `backend/.../module/chat/dto/ConversationResponse.java`
+  - `backend/.../module/chat/dto/MessageResponse.java`
+  - `backend/.../module/chat/dto/SendMessageRequest.java`
+  - `backend/.../module/expert/service/ExpertService.java`
+  - `backend/.../module/expert/controller/AuthorizationController.java`
+  - `backend/.../module/expert/controller/ExpertController.java`
+  - `backend/.../module/expert/dto/AuthorizationResponse.java`
+
 ---
