@@ -33,4 +33,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** 查找在线专家 */
     List<User> findByRoleAndExpertStatus(User.Role role, User.ExpertStatus expertStatus);
+
+    /** 查找某角色下某棚主的所有用户 */
+    List<User> findByRoleAndOwnerId(User.Role role, Long ownerId);
+
+    /** 统计某角色下某棚主的用户数量 */
+    long countByRoleAndOwnerId(User.Role role, Long ownerId);
 }

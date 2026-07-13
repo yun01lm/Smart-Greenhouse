@@ -7,6 +7,7 @@ import com.greenhouse.entity.User;
 import com.greenhouse.module.greenhouse.dto.GreenhouseRequest;
 import com.greenhouse.module.greenhouse.dto.GreenhouseResponse;
 import com.greenhouse.module.greenhouse.dto.RegionStatsResponse;
+import com.greenhouse.repository.EmployeePermissionRepository;
 import com.greenhouse.repository.GreenhouseRepository;
 import com.greenhouse.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class GreenhouseService {
 
     private final GreenhouseRepository greenhouseRepository;
     private final UserRepository userRepository;
+    private final EmployeePermissionRepository permissionRepository;
 
     /** 每个棚主最多创建的大棚数量 */
     private static final long MAX_GREENHOUSES_PER_OWNER = 10;
@@ -92,8 +94,17 @@ public class GreenhouseService {
                 greenhouses = greenhouseRepository.findByOwnerId(userId);
                 break;
             case WORKER:
-                // TODO: 步骤7（C18权限模块）实现后，从employee_permissions表查询被授权的大棚
-                greenhouses = List.of();
+                // 从 employee_permissions 表查询被授权的大棚ID列表
+                List<Long> authorizedIds = permissionRepository.findByEmployeeId(userId)
+                        .stream()
+                        .map(p -> p.getGreenhouseId())
+                        .distinct()
+                        .toList();
+                if (authorizedIds.isEmpty()) {
+                    greenhouses = List.of();
+                } else {
+                    greenhouses = greenhouseRepository.findAllById(authorizedIds);
+                }
                 break;
             default:
                 greenhouses = List.of();

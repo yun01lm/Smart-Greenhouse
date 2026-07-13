@@ -8,6 +8,7 @@ import com.greenhouse.entity.User;
 import com.greenhouse.module.device.dto.DeviceRequest;
 import com.greenhouse.module.device.dto.DeviceResponse;
 import com.greenhouse.repository.DeviceRepository;
+import com.greenhouse.repository.EmployeePermissionRepository;
 import com.greenhouse.repository.GreenhouseRepository;
 import com.greenhouse.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final GreenhouseRepository greenhouseRepository;
     private final UserRepository userRepository;
+    private final EmployeePermissionRepository permissionRepository;
 
     /** 每个大棚最多设备数量 */
     private static final long MAX_DEVICES_PER_GREENHOUSE = 50;
@@ -219,8 +221,11 @@ public class DeviceService {
                 }
                 return;
             case WORKER:
-                // TODO: 步骤7（C18权限模块）实现后，检查员工是否被授权访问该大棚
-                throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                // 从 employee_permissions 表检查员工是否被授权访问该大棚
+                if (permissionRepository.findByEmployeeIdAndGreenhouseId(userId, greenhouse.getId()).isEmpty()) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
+                return;
             default:
                 throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
