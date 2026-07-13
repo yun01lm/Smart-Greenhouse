@@ -303,6 +303,74 @@ public class GreenhouseRepository {
         });
     }
 
+    // ===== C7 设备控制 =====
+
+    public void getActuators(long greenhouseId, Callback<List<ActuatorInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<ActuatorInfo>>> response =
+                        apiService.getActuators(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void controlActuator(long actuatorId, String action, long greenhouseId,
+                                Callback<ControlResponse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<ControlResponse>> response =
+                        apiService.controlActuator(new ControlRequest(actuatorId, action, greenhouseId)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getScenes(long greenhouseId, Callback<List<SceneInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<SceneInfo>>> response =
+                        apiService.getScenes(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void executeScene(long sceneId, long greenhouseId,
+                             Callback<ControlResponse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<ControlResponse>> response =
+                        apiService.executeScene(sceneId, new SceneExecuteRequest(greenhouseId)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 辅助方法 =====
 
     private void execute(Runnable task) {

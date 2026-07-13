@@ -8,13 +8,14 @@ import androidx.fragment.app.Fragment;
 import com.greenhouse.app.R;
 import com.greenhouse.app.databinding.ActivityMainBinding;
 import com.greenhouse.app.ui.assistant.AiAssistantFragment;
+import com.greenhouse.app.ui.control.ControlFragment;
 import com.greenhouse.app.ui.dashboard.DashboardFragment;
 import com.greenhouse.app.ui.profile.ProfileFragment;
 
 /**
  * 主界面
  * <p>
- * 底部 Tab 导航：看板(含预警) / AI助手(诊断+问答) / 我的
+ * 底部 Tab 导航：看板(含预警) / AI助手(诊断+问答) / 设备控制 / 我的
  * 符合规范：Activity 只负责导航，不写业务逻辑。
  * </p>
  */
@@ -42,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
                 fragment = new DashboardFragment();
             } else if (id == R.id.nav_assistant) {
                 fragment = new AiAssistantFragment();
+            } else if (id == R.id.nav_control) {
+                fragment = new ControlFragment();
             } else if (id == R.id.nav_profile) {
                 fragment = new ProfileFragment();
             }

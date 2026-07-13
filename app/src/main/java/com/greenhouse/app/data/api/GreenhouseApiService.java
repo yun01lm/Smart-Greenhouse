@@ -134,4 +134,25 @@ public interface GreenhouseApiService {
             @Query("page") int page,
             @Query("size") int size
     );
+
+    // ===== C7 设备控制 =====
+
+    @POST("control/actuator")
+    Call<ApiResponse<ControlResponse>> controlActuator(@Body ControlRequest request);
+
+    @GET("control/scenes")
+    Call<ApiResponse<List<SceneInfo>>> getScenes(
+            @Query("greenhouseId") long greenhouseId
+    );
+
+    @POST("control/scenes/{id}/execute")
+    Call<ApiResponse<ControlResponse>> executeScene(
+            @Path("id") long sceneId,
+            @Body SceneExecuteRequest request
+    );
+
+    @GET("devices/actuators")
+    Call<ApiResponse<List<ActuatorInfo>>> getActuators(
+            @Query("greenhouseId") long greenhouseId
+    );
 }

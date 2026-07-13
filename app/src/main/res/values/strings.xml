@@ -11,9 +11,8 @@
 
     <!-- 主界面Tab -->
     <string name="tab_dashboard">看板</string>
-    <string name="tab_alert">预警</string>
-    <string name="tab_diagnosis">诊断</string>
-    <string name="tab_qa">问答</string>
+    <string name="tab_assistant">AI助手</string>
+    <string name="tab_control">设备控制</string>
     <string name="tab_profile">我的</string>
 
     <!-- 看板 -->
