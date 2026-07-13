@@ -1,0 +1,310 @@
+package com.greenhouse.module.weather.service;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.ErrorCode;
+import com.greenhouse.entity.WeatherCache;
+import com.greenhouse.module.weather.dto.WeatherCurrentResponse;
+import com.greenhouse.module.weather.dto.WeatherForecastResponse;
+import com.greenhouse.repository.WeatherCacheRepository;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 和风天气 API 服务
+ * <p>
+ * 提供当前天气和天气预报查询，数据缓存到 weather_cache 表。
+ * 缓存策略：3 小时内直接返回缓存，过期则调用 API 刷新。
+ * </p>
+ *
+ * <h3>API 端点</h3>
+ * <ul>
+ *   <li>当前天气：GET https://devapi.qweather.com/v7/weather/now?location=xxx&key=xxx</li>
+ *   <li>3天预报：GET https://devapi.qweather.com/v7/weather/3d?location=xxx&key=xxx</li>
+ * </ul>
+ */
+@Slf4j
+@Service
+public class QWeatherService {
+
+    private final String apiKey;
+    private final String baseUrl;
+    private final ObjectMapper objectMapper;
+    private final OkHttpClient httpClient;
+    private final WeatherCacheRepository cacheRepository;
+
+    /** 缓存有效期：3 小时 */
+    private static final long CACHE_DURATION_HOURS = 3;
+
+    public QWeatherService(
+            @Value("${qweather.api-key}") String apiKey,
+            @Value("${qweather.base-url}") String baseUrl,
+            ObjectMapper objectMapper,
+            WeatherCacheRepository cacheRepository) {
+        this.apiKey = apiKey;
+        this.baseUrl = baseUrl;
+        this.objectMapper = objectMapper;
+        this.cacheRepository = cacheRepository;
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build();
+    }
+
+    /**
+     * 获取当前天气
+     *
+     * @param location 位置标识（城市名或 LocationID）
+     */
+    public WeatherCurrentResponse getCurrentWeather(String location) {
+        // 检查缓存
+        Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
+        if (cached.isPresent()) {
+            WeatherCache cache = cached.get();
+            if (isCacheValid(cache)) {
+                log.debug("天气缓存命中: location={}", location);
+                return buildCurrentFromCache(cache);
+            }
+        }
+
+        // 缓存过期或不存在，调用 API
+        return fetchCurrentWeather(location);
+    }
+
+    /**
+     * 获取天气预报
+     *
+     * @param location 位置标识
+     * @param days     预报天数（3 或 7）
+     */
+    public WeatherForecastResponse getForecast(String location, int days) {
+        // 检查缓存
+        Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
+        if (cached.isPresent()) {
+            WeatherCache cache = cached.get();
+            if (isCacheValid(cache) && cache.getForecastJson() != null) {
+                log.debug("预报缓存命中: location={}", location);
+                return parseForecastFromJson(cache.getForecastJson(), location);
+            }
+        }
+
+        return fetchForecast(location, days);
+    }
+
+    // ===== 私有方法 =====
+
+    /**
+     * 判断缓存是否有效（3 小时内）
+     */
+    private boolean isCacheValid(WeatherCache cache) {
+        long hoursSinceUpdate = Duration.between(cache.getUpdatedAt(), LocalDateTime.now()).toHours();
+        return hoursSinceUpdate < CACHE_DURATION_HOURS;
+    }
+
+    /**
+     * 从缓存构建当前天气响应
+     */
+    private WeatherCurrentResponse buildCurrentFromCache(WeatherCache cache) {
+        return WeatherCurrentResponse.builder()
+                .location(cache.getLocation())
+                .temperature(cache.getTemperature())
+                .humidity(cache.getHumidity())
+                .weatherCode(cache.getWeatherCode())
+                .windSpeed(cache.getWindSpeed())
+                .updatedAt(cache.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * 调用和风天气 API 获取当前天气
+     */
+    private WeatherCurrentResponse fetchCurrentWeather(String location) {
+        try {
+            String url = baseUrl + "/v7/weather/now?location=" + location + "&key=" + apiKey;
+
+            Request request = new Request.Builder().url(url).get().build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    log.error("和风天气 API 请求失败: HTTP {} location={}", response.code(), location);
+                    throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+                }
+
+                String body = response.body() != null ? response.body().string() : "";
+                JsonNode root = objectMapper.readTree(body);
+
+                // 检查 API 返回码
+                String code = root.get("code").asText();
+                if (!"200".equals(code)) {
+                    log.error("和风天气 API 错误: code={} location={}", code, location);
+                    throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+                }
+
+                JsonNode now = root.get("now");
+                BigDecimal temp = new BigDecimal(now.get("temp").asText());
+                BigDecimal feelsLike = new BigDecimal(now.get("feelsLike").asText());
+                BigDecimal humidity = new BigDecimal(now.get("humidity").asText());
+                String weatherCode = now.get("icon").asText();
+                String weatherText = now.get("text").asText();
+                BigDecimal windSpeed = new BigDecimal(now.get("windSpeed").asText());
+                String windDir = now.get("windDir").asText();
+                BigDecimal pressure = new BigDecimal(now.get("pressure").asText());
+                BigDecimal visibility = new BigDecimal(now.get("vis").asText());
+
+                // 保存缓存
+                saveWeatherCache(location, temp, humidity, weatherCode, windSpeed, null);
+
+                return WeatherCurrentResponse.builder()
+                        .location(location)
+                        .temperature(temp)
+                        .feelsLike(feelsLike)
+                        .humidity(humidity)
+                        .weatherCode(weatherCode)
+                        .weatherText(weatherText)
+                        .windSpeed(windSpeed)
+                        .windDirection(windDir)
+                        .pressure(pressure)
+                        .visibility(visibility)
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("获取当前天气异常: location={} error={}", location, e.getMessage());
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
+    /**
+     * 调用和风天气 API 获取天气预报
+     */
+    private WeatherForecastResponse fetchForecast(String location, int days) {
+        try {
+            String apiPath = days <= 3 ? "/v7/weather/3d" : "/v7/weather/7d";
+            String url = baseUrl + apiPath + "?location=" + location + "&key=" + apiKey;
+
+            Request request = new Request.Builder().url(url).get().build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+                }
+
+                String body = response.body() != null ? response.body().string() : "";
+                JsonNode root = objectMapper.readTree(body);
+
+                String code = root.get("code").asText();
+                if (!"200".equals(code)) {
+                    throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+                }
+
+                // 解析逐日预报
+                JsonNode dailyArray = root.get("daily");
+                List<WeatherForecastResponse.DayForecast> forecasts = new ArrayList<>();
+
+                for (JsonNode day : dailyArray) {
+                    forecasts.add(WeatherForecastResponse.DayForecast.builder()
+                            .date(LocalDate.parse(day.get("fxDate").asText()))
+                            .tempMax(new BigDecimal(day.get("tempMax").asText()))
+                            .tempMin(new BigDecimal(day.get("tempMin").asText()))
+                            .weatherCode(day.get("iconDay").asText())
+                            .weatherText(day.get("textDay").asText())
+                            .humidity(new BigDecimal(day.get("humidity").asText()))
+                            .windSpeed(new BigDecimal(day.get("windSpeedDay").asText()))
+                            .precipitation(new BigDecimal(day.get("precip").asText()))
+                            .build());
+                }
+
+                // 保存缓存（完整 JSON + 当前天气摘要）
+                String forecastJson = objectMapper.writeValueAsString(root);
+                JsonNode firstDay = dailyArray.get(0);
+                saveWeatherCache(location,
+                        new BigDecimal(firstDay.get("tempMax").asText()),  // 用最高温近似
+                        new BigDecimal(firstDay.get("humidity").asText()),
+                        firstDay.get("iconDay").asText(),
+                        new BigDecimal(firstDay.get("windSpeedDay").asText()),
+                        forecastJson);
+
+                return WeatherForecastResponse.builder()
+                        .location(location)
+                        .forecasts(forecasts)
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("获取天气预报异常: location={} error={}", location, e.getMessage());
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
+    /**
+     * 从缓存 JSON 解析预报数据
+     */
+    private WeatherForecastResponse parseForecastFromJson(String forecastJson, String location) {
+        try {
+            JsonNode root = objectMapper.readTree(forecastJson);
+            JsonNode dailyArray = root.get("daily");
+            List<WeatherForecastResponse.DayForecast> forecasts = new ArrayList<>();
+
+            if (dailyArray != null) {
+                for (JsonNode day : dailyArray) {
+                    forecasts.add(WeatherForecastResponse.DayForecast.builder()
+                            .date(LocalDate.parse(day.get("fxDate").asText()))
+                            .tempMax(new BigDecimal(day.get("tempMax").asText()))
+                            .tempMin(new BigDecimal(day.get("tempMin").asText()))
+                            .weatherCode(day.get("iconDay").asText())
+                            .weatherText(day.get("textDay").asText())
+                            .humidity(new BigDecimal(day.get("humidity").asText()))
+                            .windSpeed(new BigDecimal(day.get("windSpeedDay").asText()))
+                            .precipitation(new BigDecimal(day.get("precip").asText()))
+                            .build());
+                }
+            }
+
+            return WeatherForecastResponse.builder()
+                    .location(location)
+                    .forecasts(forecasts)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+        } catch (Exception e) {
+            log.error("解析预报缓存失败: {}", e.getMessage());
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
+    /**
+     * 保存天气数据到缓存
+     */
+    @Transactional
+    private void saveWeatherCache(String location, BigDecimal temperature, BigDecimal humidity,
+                                   String weatherCode, BigDecimal windSpeed, String forecastJson) {
+        WeatherCache cache = WeatherCache.builder()
+                .location(location)
+                .temperature(temperature)
+                .humidity(humidity)
+                .weatherCode(weatherCode)
+                .windSpeed(windSpeed)
+                .forecastJson(forecastJson)
+                .forecastTime(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+        cacheRepository.save(cache);
+        log.debug("天气缓存已更新: location={} temp={}", location, temperature);
+    }
+}
