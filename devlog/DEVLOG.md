@@ -194,4 +194,25 @@
   - `backend/.../module/sensor/dto/SensorAggregateResponse.java`
   - `backend/.../module/sensor/dto/CompareRequest.java`
 
+### 步骤9：C11 WebSocket 实时推送 | ✅ 完成
+
+- **时间**：05:35
+- **操作**：
+  - `StompAuthInterceptor.java`：STOMP CONNECT 阶段拦截器 — 从 Header 提取 `Authorization: Bearer <token>`，调用 JwtTokenProvider 校验，解析 userId/username/role 存入 StompPrincipal，校验失败抛出异常拒绝连接
+  - `WebSocketConfig.java`：重写 — 注入 StompAuthInterceptor，注册到 `configureClientInboundChannel`；连接端点 `/ws/connect` 允许跨域；消息代理 `/topic` + `/queue`；应用前缀 `/app`；用户前缀 `/user`
+  - `RealtimePushService.java`：统一推送服务 — `pushSensorData()`（传感器数据 → `/topic/greenhouse/{id}/realtime`）、`pushDeviceStatus()`（设备状态变更 → `/topic/device/{id}/status`）、`pushAlert()`（预警 → `/topic/greenhouse/{id}/alerts`），全部通过 SimpMessagingTemplate.convertAndSend()
+  - `MqttSubscriber.java`：修改 — MQTT 收到数据后，在写入 InfluxDB + 更新设备状态之后，调用 `pushService.pushSensorData()` 实时推送到前端
+  - `SensorDataService.java`：修改 — `updateDeviceStatus()` 改为返回设备名称（String），供推送消息使用
+  - 3个消息 DTO：RealtimeMessage（SENSOR_DATA）、DeviceStatusMessage（DEVICE_STATUS）、AlertPushMessage（ALERT，为步骤10准备）
+- **结果**：WebSocket 实时推送链路完整 — 前端 STOMP 连接 `/ws/connect` → JWT 认证 → 订阅主题 → MQTT 数据到达后自动推送到前端，无需轮询
+- **文件清单**：
+  - `backend/.../module/websocket/handler/StompAuthInterceptor.java`
+  - `backend/.../module/websocket/service/RealtimePushService.java`
+  - `backend/.../module/websocket/dto/RealtimeMessage.java`
+  - `backend/.../module/websocket/dto/DeviceStatusMessage.java`
+  - `backend/.../module/websocket/dto/AlertPushMessage.java`
+  - `backend/.../config/WebSocketConfig.java`（修改）
+  - `backend/.../module/mqtt/MqttSubscriber.java`（修改）
+  - `backend/.../module/sensor/service/SensorDataService.java`（修改）
+
 ---
