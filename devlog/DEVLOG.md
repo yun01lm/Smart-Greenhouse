@@ -300,4 +300,14 @@
   - `backend/.../module/alert/dto/ThresholdResponse.java`
   - `backend/.../module/mqtt/MqttSubscriber.java`（修改）
 
+### 补充：更新任务日志索引 | ✅ 完成
+
+- **时间**：07:45
+- **操作**：
+  - 更新 `/workspace/Smart_Greenhouse/document/devlog/INDEX.md`：将全部 14 个已完成任务状态从 `planned` 更新为 `✅ completed`，添加完成时间和 DEVLOG 关联
+  - 新增"已完成任务详情"表格：列出每个任务的完成日期、Java 文件数、API 端点数和 DEVLOG 步骤
+  - 更新 Phase 1/2/3 状态标识：Phase 1 ✅、Phase 2 ✅、Phase 3 🔄
+  - 更新统计概览：已完成 14、已计划 32
+- **结果**：任务日志索引与实际开发进度同步
+
 ---
