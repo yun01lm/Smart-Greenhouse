@@ -265,7 +265,40 @@
 
 ---
 
-## 2026-07-13
+### 步骤19：F02 环境预警中心 | ✅ 完成
+
+- **时间**：04:30
+- **操作**：
+  - `AlertViewModel.java`：预警业务逻辑 — 分页加载预警列表、三级筛选（INFO/WARNING/CRITICAL）、标记已读、自定义阈值 CRUD
+  - `AlertAdapter.java`：预警列表适配器 — 级别颜色编码（红=CRITICAL/橙=WARNING/蓝=INFO）、未读圆点标记、相对时间格式化
+  - `AlertFragment.java`：预警列表页面 — ChipGroup 三级筛选（全部/警告/严重）、点击跳转详情、阈值设置按钮入口
+  - `AlertDetailActivity.java`：预警详情页 — 接收 Intent 传递数据，显示级别标签/传感器信息/内容详情
+  - `ThresholdSettingsActivity.java`：阈值编辑页 — 合并默认传感器类型与已保存阈值、逐项编辑 min/max、批量保存
+  - `ThresholdAdapter.java`：阈值编辑适配器 — EditText 焦点监听自动更新模型、8 种传感器类型中文名映射
+  - 布局文件：fragment_alert.xml（ChipGroup 筛选栏+RecyclerView+空状态/加载）、item_alert_card.xml（级别标签+标题+内容+传感器信息+时间+未读点）、activity_alert_detail.xml（详情布局）、activity_threshold_settings.xml（阈值编辑）、item_threshold_edit.xml（阈值编辑卡片）
+  - 修改文件：GreenhouseApiService.java（新增阈值 CRUD+级别筛选接口）、GreenhouseRepository.java（新增预警标记已读+阈值方法）、MainActivity.java（AlertFragment 替换占位）、AndroidManifest.xml（注册 AlertDetailActivity + ThresholdSettingsActivity）
+- **结果**：**BUILD SUCCESSFUL** — APK 编译通过。F02 预警中心功能完整：三级筛选、分页加载、详情查看、标记已读、自定义阈值编辑保存。修复了 `android:chipBackgroundColor` → `app:chipBackgroundColor` 的 Material Chip 属性前缀错误。
+- **文件清单**：
+  - `app/.../viewmodel/AlertViewModel.java`
+  - `app/.../adapter/AlertAdapter.java`
+  - `app/.../adapter/ThresholdAdapter.java`
+  - `app/.../ui/alert/AlertFragment.java`
+  - `app/.../ui/alert/AlertDetailActivity.java`
+  - `app/.../ui/alert/ThresholdSettingsActivity.java`
+  - `app/src/main/res/layout/fragment_alert.xml`
+  - `app/src/main/res/layout/item_alert_card.xml`
+  - `app/src/main/res/layout/activity_alert_detail.xml`
+  - `app/src/main/res/layout/activity_threshold_settings.xml`
+  - `app/src/main/res/layout/item_threshold_edit.xml`
+  - `app/src/main/res/drawable/ic_alert_level_info.xml`
+  - `app/src/main/res/drawable/ic_alert_level_critical.xml`
+  - `app/.../data/api/GreenhouseApiService.java`（修改）
+  - `app/.../data/repository/GreenhouseRepository.java`（修改）
+  - `app/.../ui/common/MainActivity.java`（修改）
+  - `app/src/main/AndroidManifest.xml`（修改）
+
+---
+
 
 ### 步骤12：C6 预警引擎 + C21 自定义阈值 | ✅ 完成
 

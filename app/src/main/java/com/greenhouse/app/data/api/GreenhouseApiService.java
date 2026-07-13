@@ -55,11 +55,32 @@ public interface GreenhouseApiService {
             @Query("size") int size
     );
 
+    @GET("alerts")
+    Call<ApiResponse<PageResult<AlertItem>>> getAlertsByLevel(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("page") int page,
+            @Query("size") int size,
+            @Query("level") String level
+    );
+
     @PUT("alerts/{id}/read")
     Call<ApiResponse<Void>> markAlertRead(@Path("id") long id);
 
     @GET("alerts/unread-count")
     Call<ApiResponse<Integer>> getUnreadAlertCount(@Query("greenhouseId") long greenhouseId);
+
+    // ===== C21 自定义阈值 =====
+
+    @GET("alerts/thresholds")
+    Call<ApiResponse<List<ThresholdItem>>> getThresholds(
+            @Query("greenhouseId") long greenhouseId
+    );
+
+    @POST("alerts/thresholds")
+    Call<ApiResponse<ThresholdItem>> setThreshold(@Body ThresholdItem request);
+
+    @DELETE("alerts/thresholds/{id}")
+    Call<ApiResponse<Void>> deleteThreshold(@Path("id") long id);
 
     // ===== C15 健康评分 =====
 

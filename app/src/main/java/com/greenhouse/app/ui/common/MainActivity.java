@@ -7,6 +7,7 @@ import androidx.fragment.app.Fragment;
 
 import com.greenhouse.app.R;
 import com.greenhouse.app.databinding.ActivityMainBinding;
+import com.greenhouse.app.ui.alert.AlertFragment;
 import com.greenhouse.app.ui.dashboard.DashboardFragment;
 import com.greenhouse.app.ui.profile.ProfileFragment;
 
@@ -40,8 +41,7 @@ public class MainActivity extends AppCompatActivity {
             if (id == R.id.nav_dashboard) {
                 fragment = new DashboardFragment();
             } else if (id == R.id.nav_alert) {
-                // TODO: F02 预警中心
-                fragment = new DashboardFragment(); // 占位
+                fragment = new AlertFragment();
             } else if (id == R.id.nav_diagnosis) {
                 // TODO: F03 病虫害诊断
                 fragment = new DashboardFragment(); // 占位

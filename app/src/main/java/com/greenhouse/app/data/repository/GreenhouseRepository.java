@@ -98,10 +98,19 @@ public class GreenhouseRepository {
     // ===== 预警 =====
 
     public void getAlerts(long greenhouseId, int page, int size, Callback<PageResult<AlertItem>> callback) {
+        getAlerts(greenhouseId, page, size, null, callback);
+    }
+
+    public void getAlerts(long greenhouseId, int page, int size, String level,
+                          Callback<PageResult<AlertItem>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<PageResult<AlertItem>>> response =
-                        apiService.getAlerts(greenhouseId, page, size).execute();
+                retrofit2.Response<ApiResponse<PageResult<AlertItem>>> response;
+                if (level != null && !level.isEmpty()) {
+                    response = apiService.getAlertsByLevel(greenhouseId, page, size, level).execute();
+                } else {
+                    response = apiService.getAlerts(greenhouseId, page, size).execute();
+                }
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {
@@ -113,7 +122,57 @@ public class GreenhouseRepository {
         });
     }
 
-    // ===== 健康评分 =====
+    public void markAlertRead(long alertId, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                retrofit2.Response<ApiResponse<Void>> response =
+                        apiService.markAlertRead(alertId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // ===== 自定义阈值 =====
+
+    public void getThresholds(long greenhouseId, Callback<List<ThresholdItem>> callback) {
+        execute(() -> {
+            try {
+                retrofit2.Response<ApiResponse<List<ThresholdItem>>> response =
+                        apiService.getThresholds(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void setThreshold(ThresholdItem threshold, Callback<ThresholdItem> callback) {
+        execute(() -> {
+            try {
+                retrofit2.Response<ApiResponse<ThresholdItem>> response =
+                        apiService.setThreshold(threshold).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // ===== 辅助方法 =====
 
     public void getHealthScore(long greenhouseId, Callback<HealthScoreData> callback) {
         execute(() -> {

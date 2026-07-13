@@ -45,5 +45,19 @@
             android:exported="false"
             android:theme="@style/Theme.SmartGreenhouse" />
 
+        <!-- 预警详情 -->
+        <activity
+            android:name=".ui.alert.AlertDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
+        <!-- 阈值设置 -->
+        <activity
+            android:name=".ui.alert.ThresholdSettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
     </application>
 </manifest>
