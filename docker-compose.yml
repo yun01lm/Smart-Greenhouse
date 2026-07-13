@@ -1,0 +1,85 @@
+version: '3.8'
+
+# ===========================================
+# 智慧大棚AIoT系统 — Docker 开发环境
+# ===========================================
+
+services:
+
+  # ===== MySQL 8.0 — 业务数据库 =====
+  mysql:
+    image: mysql:8.0
+    container_name: greenhouse-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: smart_greenhouse
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== InfluxDB 2.7 — 时序数据库（传感器数据） =====
+  influxdb:
+    image: influxdb:2.7
+    container_name: greenhouse-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: ${INFLUX_USER:-greenhouse_admin}
+      DOCKER_INFLUXDB_INIT_PASSWORD: ${INFLUX_PASSWORD:-greenhouse123}
+      DOCKER_INFLUXDB_INIT_ORG: greenhouse
+      DOCKER_INFLUXDB_INIT_BUCKET: sensor_data
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_TOKEN:-dev-token-greenhouse-2026}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Eclipse Mosquitto 2.x — MQTT Broker =====
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: greenhouse-mosquitto
+    ports:
+      - "1883:1883"    # MQTT
+      - "9001:9001"    # WebSocket MQTT（可选，APP直接连）
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  # ===== Chroma — 向量数据库（RAG知识库） =====
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: greenhouse-chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  influxdb_data:
+  influxdb_config:
+  mosquitto_data:
+  mosquitto_log:
+  chroma_data:

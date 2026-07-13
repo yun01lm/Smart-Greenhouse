@@ -1,0 +1,94 @@
+# ===========================================
+# 智慧大棚AIoT系统 — 开发环境配置
+# ===========================================
+
+spring:
+  # 数据源 — MySQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/smart_greenhouse?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4
+    username: root
+    password: ${MYSQL_ROOT_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: update          # 开发阶段自动建表，生产改为 validate
+    show-sql: true              # 开发阶段打印SQL
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  # AI — DeepSeek Chat（通过Spring AI OpenAI兼容接口）
+  ai:
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:dev-deepseek-key}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+      embedding:
+        enabled: false           # DeepSeek不提供Embedding
+
+# InfluxDB
+influxdb:
+  url: http://localhost:8086
+  token: ${INFLUX_TOKEN:dev-token-greenhouse-2026}
+  org: greenhouse
+  bucket: sensor_data
+
+# Chroma 向量数据库
+chroma:
+  url: http://localhost:8000
+
+# MQTT Broker
+mqtt:
+  broker: tcp://localhost:1883
+  username: ${MQTT_USER:}
+  password: ${MQTT_PASSWORD:}
+  client-id: greenhouse-backend-${random.uuid}
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET:dev-secret-key-greenhouse-2026-must-be-at-least-256-bits-long}
+  expiration: 7200000             # Token有效期：2小时（毫秒）
+
+# 文件存储
+file:
+  upload-dir: ./uploads
+  max-file-size: 10MB
+
+# 第三方API
+baidu:
+  ai:
+    api-key: ${BAIDU_API_KEY:dev-baidu-key}
+    secret-key: ${BAIDU_SECRET_KEY:dev-baidu-secret}
+
+xunfei:
+  app-id: ${XUNFEI_APP_ID:dev-xunfei-id}
+  api-key: ${XUNFEI_API_KEY:dev-xunfei-key}
+  api-secret: ${XUNFEI_API_SECRET:dev-xunfei-secret}
+
+siliconflow:
+  api-key: ${SILICONFLOW_API_KEY:dev-siliconflow-key}
+  base-url: https://api.siliconflow.cn/v1
+  embedding-model: BAAI/bge-m3
+
+qweather:
+  api-key: ${QWEATHER_API_KEY:dev-qweather-key}
+  base-url: https://devapi.qweather.com
+
+# AI引擎切换
+ai:
+  image:
+    provider: baidu              # baidu | resnet
+  voice:
+    provider: xunfei             # xunfei | whisper
+
+# 日志
+logging:
+  level:
+    com.greenhouse: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.security: DEBUG
