@@ -264,3 +264,40 @@
 - **仓库地址**：https://github.com/yun01lm/Smart-Greenhouse
 
 ---
+
+## 2026-07-13
+
+### 步骤12：C6 预警引擎 + C21 自定义阈值 | ✅ 完成
+
+- **时间**：07:30
+- **操作**：
+  - `AlertRule.java`：JPA实体，对应 DB 第9号表 — 4种规则类型(THRESHOLD/TREND/COMPOSITE/WEATHER)、3级告警(INFO/WARNING/CRITICAL)、条件JSON、关联场景
+  - `Alert.java`：JPA实体，对应 DB 第10号表 — 告警级别/标题/内容/传感器数值/已读状态
+  - `UserAlertThreshold.java`：JPA实体，对应 DB 第25号表 — 用户自定义min/max阈值、传感器类型
+  - 3个Repository：AlertRuleRepository（按大棚+传感器类型查询启用规则）、AlertRepository（分页+未读统计）、UserAlertThresholdRepository（按用户+大棚+传感器查询）
+  - `AlertEngine.java`：预警引擎核心 — MQTT 数据到达后调用 `check()`，比对系统规则（THRESHOLD 类型解析 JSON 中的 min/max）和用户自定义阈值，超限则生成 Alert 记录并通过 `pushService.pushAlert()` 推送 WebSocket
+  - `AlertRuleService.java`：规则管理 — 创建/列表/更新/删除，权限校验（OWNER 只能操作自己大棚的规则），数量上限 50 条
+  - `AlertThresholdService.java`：自定义阈值管理 — 设置（创建或更新同传感器类型的阈值）/列表/删除
+  - `AlertController.java`：9个端点 — GET /api/v1/alerts（告警列表分页，可选 level 筛选）、PUT /api/v1/alerts/{id}/read（标记已读）、GET/POST/PUT/DELETE /api/v1/alerts/rules（规则 CRUD）、GET/POST/PUT/DELETE /api/v1/alerts/thresholds（阈值 CRUD）
+  - 5个DTO：AlertRuleRequest（@Valid校验）、AlertRuleResponse（fromEntity转换）、AlertResponse（含greenhouseName）、ThresholdRequest、ThresholdResponse
+  - `MqttSubscriber.java`：修改 — 在 WebSocket 推送之后新增 `alertEngine.check()` 调用
+- **结果**：预警检测闭环完成 — MQTT 数据 → AlertEngine 比对规则/阈值 → 超限生成 Alert → WebSocket 实时推送告警。系统从"被动查看数据"升级为"主动告警通知"
+- **文件清单**：
+  - `backend/.../entity/AlertRule.java`
+  - `backend/.../entity/Alert.java`
+  - `backend/.../entity/UserAlertThreshold.java`
+  - `backend/.../repository/AlertRuleRepository.java`
+  - `backend/.../repository/AlertRepository.java`
+  - `backend/.../repository/UserAlertThresholdRepository.java`
+  - `backend/.../module/alert/service/AlertEngine.java`
+  - `backend/.../module/alert/service/AlertRuleService.java`
+  - `backend/.../module/alert/service/AlertThresholdService.java`
+  - `backend/.../module/alert/controller/AlertController.java`
+  - `backend/.../module/alert/dto/AlertRuleRequest.java`
+  - `backend/.../module/alert/dto/AlertRuleResponse.java`
+  - `backend/.../module/alert/dto/AlertResponse.java`
+  - `backend/.../module/alert/dto/ThresholdRequest.java`
+  - `backend/.../module/alert/dto/ThresholdResponse.java`
+  - `backend/.../module/mqtt/MqttSubscriber.java`（修改）
+
+---
