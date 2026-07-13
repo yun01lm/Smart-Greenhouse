@@ -109,4 +109,32 @@
   - `backend/.../module/greenhouse/dto/GreenhouseResponse.java`
   - `backend/.../module/greenhouse/dto/RegionStatsResponse.java`
 
+### 步骤6：C2 设备管理 + C19 设备分组 | ✅ 完成
+
+- **时间**：04:10
+- **操作**：
+  - `Device.java`：JPA实体，字段包含名称、设备编号(deviceSn)、设备类型(SENSOR/CONTROLLER)、传感器子类型(8种枚举)、状态(ONLINE/OFFLINE/ALARM)、大棚归属、MQTT topic自动生成、安装位置、上次数据时间/值
+  - `DeviceGroup.java`：JPA实体，使用 @ElementCollection 存储组内设备ID列表（device_group_members关联表），支持设备多分组归属
+  - `DeviceRepository.java`：支持按大棚/设备类型/状态筛选查询、设备统计（总数/按类型分组统计/按状态统计）、批量查询
+  - `DeviceGroupRepository.java`：按大棚查询分组、名称唯一性校验
+  - `DeviceController.java`：5个API端点 — GET（列表，可选type/status参数筛选）、GET/{id}（详情）、POST（创建）、PUT/{id}（更新）、DELETE/{id}（删除）
+  - `DeviceGroupController.java`：7个API端点 — GET（列表）、GET/{id}（详情）、POST（创建）、PUT/{id}（更新）、POST/{groupId}/devices/{deviceId}（添加设备）、DELETE/{groupId}/devices/{deviceId}（移除设备）、DELETE/{groupId}（删除分组）
+  - `DeviceService.java`：核心业务 — 设备创建（大棚归属校验、数量上限50、编号/名称唯一性、传感器类型必填校验）、列表查询（按角色过滤+按类型/状态筛选）、更新（deviceSn和deviceType创建后不可修改）、删除
+  - `DeviceGroupService.java`：核心业务 — 分组创建（上限20、名称唯一性、设备合法性校验防跨大棚）、更新、设备添加/移除、删除
+  - 4个DTO：DeviceRequest（@Valid校验）、DeviceResponse（含MQTT topic和状态信息）、DeviceGroupRequest（@Size(max=50)）、DeviceGroupResponse（含deviceCount计算字段）
+- **结果**：设备管理和分组功能完整，API路径遵循 RESTful 风格（`/api/v1/greenhouses/{greenhouseId}/devices` 和 `/api/v1/greenhouses/{greenhouseId}/device-groups`），设备归属严格校验，防跨大棚操作
+- **文件清单**：
+  - `backend/.../entity/Device.java`
+  - `backend/.../entity/DeviceGroup.java`
+  - `backend/.../repository/DeviceRepository.java`
+  - `backend/.../repository/DeviceGroupRepository.java`
+  - `backend/.../module/device/controller/DeviceController.java`
+  - `backend/.../module/device/controller/DeviceGroupController.java`
+  - `backend/.../module/device/service/DeviceService.java`
+  - `backend/.../module/device/service/DeviceGroupService.java`
+  - `backend/.../module/device/dto/DeviceRequest.java`
+  - `backend/.../module/device/dto/DeviceResponse.java`
+  - `backend/.../module/device/dto/DeviceGroupRequest.java`
+  - `backend/.../module/device/dto/DeviceGroupResponse.java`
+
 ---
