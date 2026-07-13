@@ -9,6 +9,7 @@ import com.greenhouse.app.R;
 import com.greenhouse.app.databinding.ActivityMainBinding;
 import com.greenhouse.app.ui.alert.AlertFragment;
 import com.greenhouse.app.ui.dashboard.DashboardFragment;
+import com.greenhouse.app.ui.diagnosis.DiagnosisFragment;
 import com.greenhouse.app.ui.profile.ProfileFragment;
 
 /**
@@ -43,8 +44,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_alert) {
                 fragment = new AlertFragment();
             } else if (id == R.id.nav_diagnosis) {
-                // TODO: F03 病虫害诊断
-                fragment = new DashboardFragment(); // 占位
+                fragment = new DiagnosisFragment();
             } else if (id == R.id.nav_qa) {
                 // TODO: F04 AI问答
                 fragment = new DashboardFragment(); // 占位

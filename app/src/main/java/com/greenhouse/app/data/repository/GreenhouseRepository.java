@@ -7,10 +7,14 @@ import com.greenhouse.app.data.api.ApiClient;
 import com.greenhouse.app.data.api.GreenhouseApiService;
 import com.greenhouse.app.data.model.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Response;
 
 /**
@@ -179,6 +183,59 @@ public class GreenhouseRepository {
             try {
                 Response<ApiResponse<HealthScoreData>> response =
                         apiService.getHealthScore(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // ===== C8 病虫害诊断 =====
+
+    /**
+     * 上传图片进行病虫害诊断
+     * @param imageFile     图片文件
+     * @param greenhouseId  大棚ID
+     */
+    public void diagnose(File imageFile, long greenhouseId, Callback<DiagnosisResponse> callback) {
+        execute(() -> {
+            try {
+                RequestBody requestFile = RequestBody.create(
+                        MediaType.parse("image/jpeg"), imageFile);
+                MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                        "image", imageFile.getName(), requestFile);
+                RequestBody greenhouseIdBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(greenhouseId));
+
+                Response<ApiResponse<DiagnosisResponse>> response =
+                        apiService.diagnose(imagePart, greenhouseIdBody).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 获取诊断历史记录
+     * @param greenhouseId  大棚ID
+     * @param page          页码（从1开始）
+     * @param size          每页条数
+     */
+    public void getDiagnosisHistory(long greenhouseId, int page, int size,
+                                     Callback<PageResult<DiagnosisHistoryItem>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<DiagnosisHistoryItem>>> response =
+                        apiService.getDiagnosisHistory(greenhouseId, page, size).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

@@ -4,6 +4,8 @@ import com.greenhouse.app.data.model.*;
 
 import java.util.List;
 
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.http.*;
 
@@ -98,4 +100,20 @@ public interface GreenhouseApiService {
 
     @GET("crop-cycles")
     Call<ApiResponse<List<CropCycleData>>> getCropCycles(@Query("greenhouseId") long greenhouseId);
+
+    // ===== C8 病虫害诊断 =====
+
+    @Multipart
+    @POST("diagnosis/recognize")
+    Call<ApiResponse<DiagnosisResponse>> diagnose(
+            @Part MultipartBody.Part image,
+            @Part("greenhouseId") RequestBody greenhouseId
+    );
+
+    @GET("diagnosis/records")
+    Call<ApiResponse<PageResult<DiagnosisHistoryItem>>> getDiagnosisHistory(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("page") int page,
+            @Query("size") int size
+    );
 }

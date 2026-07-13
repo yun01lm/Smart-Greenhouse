@@ -548,3 +548,41 @@
   - `app/src/main/AndroidManifest.xml`（修改）
 
 ---
+
+### 步骤20：F03 病虫害拍照诊断 | ✅ 完成
+
+- **时间**：05:30
+- **操作**：
+  - `DiagnosisResponse.java`：诊断结果模型 — 含 getConfidenceText()（百分比格式化）、getConfidenceLevel()（绿≥80%/黄70-80%/红<70% 三级颜色）
+  - `DiagnosisHistoryItem.java`：历史列表项模型 — 含 fromResponse() 转换方法、置信度颜色等级
+  - `DiagnosisViewModel.java`：诊断业务逻辑 — 图片上传诊断、历史记录分页加载、低置信度判断。符合规范：不持有 Context/ContentResolver 等 Android 组件
+  - `DiagnosisHistoryAdapter.java`：历史列表适配器 — Glide 缩略图加载、置信度颜色圆点、点击跳转详情
+  - `DiagnosisFragment.java`：诊断主页 — 拍照按钮 + 相册按钮（AndroidX Activity Result API）、RecyclerView 历史列表、图片 Uri→File 压缩（子线程 IO）→ ViewModel 上传。符合规范：Fragment 只负责 UI 和导航
+  - `DiagnosisResultActivity.java`：诊断结果页 — 图片展示（Glide）、病害名称 + 置信度（进度条+颜色）、防治方案、低置信度求助专家按钮（预埋跳转，F10 对接）
+  - 布局文件：fragment_diagnosis.xml（操作区+历史列表+空状态）、activity_diagnosis_result.xml（图片+结果卡片+防治方案卡片+求助按钮）、item_diagnosis_history.xml（缩略图+病害名+置信度+时间）
+  - 资源文件：ic_camera.xml、ic_gallery.xml、ic_alert_level_critical.xml、bg_thumbnail_placeholder.xml、bg_confidence_dot.xml、file_paths.xml（FileProvider）、colors.xml（新增 confidence_high/medium/low）
+  - 修改文件：GreenhouseApiService.java（新增 @Multipart diagnose + getDiagnosisHistory）、GreenhouseRepository.java（新增 diagnose() + getDiagnosisHistory()）、MainActivity.java（诊断 Tab 切换到 DiagnosisFragment）、AndroidManifest.xml（注册 DiagnosisResultActivity + FileProvider）
+- **结果**：**BUILD SUCCESSFUL** — APK 编译通过。F03 诊断功能完整：拍照/相册选取→图片压缩（1024px/JPEG 80%）→上传 API→置信度展示（三级颜色）+ 防治方案。低置信度（<70%）显示求助专家按钮（预埋跳转）。历史记录分页列表 + 空状态。分享导出功能标记不开发。
+- **文件清单**：
+  - `app/.../data/model/DiagnosisResponse.java`
+  - `app/.../data/model/DiagnosisHistoryItem.java`
+  - `app/.../viewmodel/DiagnosisViewModel.java`
+  - `app/.../adapter/DiagnosisHistoryAdapter.java`
+  - `app/.../ui/diagnosis/DiagnosisFragment.java`
+  - `app/.../ui/diagnosis/DiagnosisResultActivity.java`
+  - `app/src/main/res/layout/fragment_diagnosis.xml`
+  - `app/src/main/res/layout/activity_diagnosis_result.xml`
+  - `app/src/main/res/layout/item_diagnosis_history.xml`
+  - `app/src/main/res/drawable/ic_camera.xml`
+  - `app/src/main/res/drawable/ic_gallery.xml`
+  - `app/src/main/res/drawable/ic_alert_level_critical.xml`
+  - `app/src/main/res/drawable/bg_thumbnail_placeholder.xml`
+  - `app/src/main/res/drawable/bg_confidence_dot.xml`
+  - `app/src/main/res/xml/file_paths.xml`
+  - `app/src/main/res/values/colors.xml`（修改）
+  - `app/.../data/api/GreenhouseApiService.java`（修改）
+  - `app/.../data/repository/GreenhouseRepository.java`（修改）
+  - `app/.../ui/common/MainActivity.java`（修改）
+  - `app/src/main/AndroidManifest.xml`（修改）
+
+---
