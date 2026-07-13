@@ -444,4 +444,28 @@
   - `backend/.../module/expert/controller/ExpertController.java`
   - `backend/.../module/expert/dto/AuthorizationResponse.java`
 
+### 步骤17：C15 多模态融合分析 | ✅ 完成
+
+- **时间**：02:20
+- **操作**：
+  - `HealthAssessment.java`：JPA实体，对应 DB 第18号表 — 环境健康分/视觉健康分/天气风险/修正因子/综合评分(0-100)/分析JSON/建议措施，内嵌 ScoreLevel 枚举（5级：健康/良好/关注/警告/危险）
+  - `HealthAssessmentRepository.java`：大棚最新评估查询、时间范围分页查询、24小时计数
+  - `EnvironmentHealthCalculator.java`：环境健康分计算器（权重60%）— 合规率(50%)：11种传感器参数×各组比对用户自定义阈值或系统默认阈值，偏离度公式 max(0, value/min) 或 max(0, max/value)；趋势稳定性(30%)：InfluxDB 查询30分钟数据 stddev → 方差归一化 stability=1/(1+variance/range²)；组间一致性(20%)：多组同参数标准差 → consistency=1/(1+stdDev/range×0.3)
+  - `VisualHealthCalculator.java`：视觉健康分计算器（权重40%）— 病害评分(60%)：查询最近诊断记录，NORMAL→1.0，有病害→1.0-(1-confidence)×(1-severityFactor)，6种病害类别(FUNGAL/BACTERIAL/VIRAL/PEST/NUTRIENT/NORMAL)各有严重性因子；长势评分(40%)：预留 Phase 4 GrowthAssessment 接口，当前默认0.8
+  - `WeatherRiskCalculator.java`：天气风险修正因子 — 极端天气(暴雨/暴雪/大风/冰雹/极端温度)→0.7，连续3天高温(>35°C)→0.75，轻微不利(多云/小雨/阴)→0.9，适宜→1.0，无数据→1.0。解析 forecastJson 检测连续高温天数
+  - `HealthAssessmentService.java`：核心融合引擎 — calculateAndSave() 执行6步流程：计算环境分→视觉分→天气修正→加权融合 overall=(env×0.6+visual×0.4)×weatherFactor→存储→WebSocket推送→低分预警(score<40→CRITICAL, <60→WARNING)。getCurrentScore() 30分钟缓存优先。建议生成：按环境/视觉/天气维度分别生成中文建议。天气位置解析：city > province > location > "北京"
+  - `HealthController.java`：3个端点 — GET /api/v1/health/score?greenhouseId=（30分钟缓存优先+实时计算回退）、GET /api/v1/health/history（分页+默认7天）、GET /api/v1/health/detail/{id}
+  - 2个DTO：HealthScoreResponse（含level/levelColor/analysis JSON）、HealthHistoryResponse
+- **结果**：后端全部22个模块完成！多模态融合引擎将环境时序数据(60%)+视觉诊断数据(40%)+天气修正因子进行跨模态加权融合，生成0-100分综合健康评分。5级评分体系（绿/蓝/黄/橙/红）直观展示大棚健康状态。低分自动触发CRITICAL/WARNING预警。WebSocket实时推送评分变更。VisualHealthCalculator 预留 Phase 4 长势评估接口。
+- **文件清单**：
+  - `backend/.../entity/HealthAssessment.java`
+  - `backend/.../repository/HealthAssessmentRepository.java`
+  - `backend/.../module/health/service/EnvironmentHealthCalculator.java`
+  - `backend/.../module/health/service/VisualHealthCalculator.java`
+  - `backend/.../module/health/service/WeatherRiskCalculator.java`
+  - `backend/.../module/health/service/HealthAssessmentService.java`
+  - `backend/.../module/health/controller/HealthController.java`
+  - `backend/.../module/health/dto/HealthScoreResponse.java`
+  - `backend/.../module/health/dto/HealthHistoryResponse.java`
+
 ---
