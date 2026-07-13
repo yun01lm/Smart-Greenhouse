@@ -90,4 +90,23 @@
   - `backend/.../module/auth/dto/UserProfileResponse.java`
   - `backend/.../security/UserDetailsServiceImpl.java`（修改）
 
+### 步骤5：C3 大棚管理 + C20 地区管理 | ✅ 完成
+
+- **时间**：03:45
+- **操作**：
+  - `Greenhouse.java`：JPA实体，字段包含名称、位置、作物类型、棚主ID(ownerId)、五级地址（省/市/区/镇/村）、创建时间
+  - `GreenhouseRepository.java`：JPA Repository，支持按棚主查询、按棚主计数、地区统计查询（按省/市/区/镇/村分组统计大棚数量）
+  - `GreenhouseController.java`：6个API端点 — GET /api/v1/greenhouses（列表，按角色过滤）、GET /api/v1/greenhouses/{id}（详情）、POST /api/v1/greenhouses（创建）、PUT /api/v1/greenhouses/{id}（更新）、DELETE /api/v1/greenhouses/{id}（删除）、GET /api/v1/greenhouses/regions（地区统计）
+  - `GreenhouseService.java`：核心业务 — 按角色过滤大棚列表（ADMIN看全部、OWNER看自己的、WORKER看所属OWNER的）、棚主大棚数量限制校验、所有权校验、五级地区统计
+  - 3个DTO：GreenhouseRequest（@Valid校验，名称/位置必填）、GreenhouseResponse（含作物类型和地区信息）、RegionStatsResponse（地区统计数据结构）
+- **结果**：大棚管理完整闭环，支持五级地区钻取统计，权限分级过滤
+- **文件清单**：
+  - `backend/.../entity/Greenhouse.java`
+  - `backend/.../repository/GreenhouseRepository.java`
+  - `backend/.../module/greenhouse/controller/GreenhouseController.java`
+  - `backend/.../module/greenhouse/service/GreenhouseService.java`
+  - `backend/.../module/greenhouse/dto/GreenhouseRequest.java`
+  - `backend/.../module/greenhouse/dto/GreenhouseResponse.java`
+  - `backend/.../module/greenhouse/dto/RegionStatsResponse.java`
+
 ---
