@@ -43,3 +43,10 @@ docker/volumes/
 *.tmp
 *.bak
 tools/__pycache__/
+
+# Android
+.gradle/
+app/build/
+*.apk
+*.aab
+local.properties

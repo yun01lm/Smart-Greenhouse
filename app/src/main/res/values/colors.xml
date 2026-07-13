@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色调：智慧农业绿 -->
+    <color name="primary">#FF4CAF50</color>
+    <color name="primary_dark">#FF388E3C</color>
+    <color name="primary_light">#FFC8E6C9</color>
+    <color name="accent">#FF00BCD4</color>
+
+    <!-- 背景 -->
+    <color name="background">#FFF5F5F5</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="on_surface">#FF212121</color>
+    <color name="text_secondary">#FF757575</color>
+
+    <!-- 健康评分等级色 -->
+    <color name="level_healthy">#FF4CAF50</color>
+    <color name="level_good">#FF2196F3</color>
+    <color name="level_attention">#FFFFC107</color>
+    <color name="level_warning">#FFFF9800</color>
+    <color name="level_danger">#FFF44336</color>
+
+    <!-- 传感器值状态 -->
+    <color name="sensor_normal">#FF4CAF50</color>
+    <color name="sensor_abnormal">#FFF44336</color>
+
+    <!-- 预警级别 -->
+    <color name="alert_info">#FF2196F3</color>
+    <color name="alert_warning">#FFFF9800</color>
+    <color name="alert_critical">#FFF44336</color>
+</resources>

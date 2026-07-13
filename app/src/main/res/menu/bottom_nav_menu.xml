@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_dashboard"
+        android:title="@string/tab_dashboard" />
+    <item
+        android:id="@+id/nav_alert"
+        android:icon="@drawable/ic_alert"
+        android:title="@string/tab_alert" />
+    <item
+        android:id="@+id/nav_diagnosis"
+        android:icon="@drawable/ic_diagnosis"
+        android:title="@string/tab_diagnosis" />
+    <item
+        android:id="@+id/nav_qa"
+        android:icon="@drawable/ic_qa"
+        android:title="@string/tab_qa" />
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="@string/tab_profile" />
+</menu>
