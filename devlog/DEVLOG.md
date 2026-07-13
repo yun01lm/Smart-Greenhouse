@@ -46,4 +46,26 @@
   - `.env.example`
   - `backend/src/main/resources/application-dev.yml`
 
+### 步骤3：Spring Boot 骨架（安全+JWT+异常处理） | ✅ 完成
+
+- **时间**：03:20
+- **操作**：
+  - `SecurityConfig.java`：无状态JWT认证，关闭CSRF/Session，白名单路径（注册/登录/WebSocket/健康检查/Swagger/OPTIONS），其余全部需认证
+  - `JwtTokenProvider.java`：JWT 生成（含userId/username/role）、解析、验证，密钥从配置读取
+  - `JwtAuthenticationFilter.java`：从 Authorization: Bearer <token> 提取Token，验证后设置SecurityContext
+  - `UserDetailsServiceImpl.java`：临时内存用户实现，预置admin账号，步骤4将改为数据库查询
+  - `GlobalExceptionHandler.java`：统一拦截 BusinessException / @Valid校验失败 / BadCredentialsException / AccessDeniedException / 未知异常，全部返回ApiResponse格式
+  - `WebSocketConfig.java`：STOMP基础配置，端点 /ws/connect，后续步骤9完善
+  - `@RequireGreenhouseAccess` / `@RequireFunction`：自定义权限注解（空壳），步骤7实现AOP切面
+- **结果**：Spring Boot 安全骨架就绪，JWT认证链路完整
+- **文件清单**：
+  - `backend/.../config/SecurityConfig.java`
+  - `backend/.../config/WebSocketConfig.java`
+  - `backend/.../security/JwtTokenProvider.java`
+  - `backend/.../security/JwtAuthenticationFilter.java`
+  - `backend/.../security/UserDetailsServiceImpl.java`
+  - `backend/.../exception/GlobalExceptionHandler.java`
+  - `backend/.../security/annotations/RequireGreenhouseAccess.java`
+  - `backend/.../security/annotations/RequireFunction.java`
+
 ---
