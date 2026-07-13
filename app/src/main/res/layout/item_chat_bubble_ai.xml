@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dp"
+    android:gravity="start">
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="start">
+
+        <TextView
+            android:id="@+id/tv_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="280dp"
+            android:padding="12dp"
+            android:textSize="15sp"
+            android:textColor="@color/on_surface"
+            android:background="@drawable/bg_chat_bubble_ai" />
+
+        <!-- 引用来源区域 -->
+        <LinearLayout
+            android:id="@+id/ll_sources"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_sources"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary" />
+
+            <ImageButton
+                android:id="@+id/btn_tts"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_volume_up"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="语音播报" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

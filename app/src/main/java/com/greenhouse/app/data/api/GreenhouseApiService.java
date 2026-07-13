@@ -116,4 +116,22 @@ public interface GreenhouseApiService {
             @Query("page") int page,
             @Query("size") int size
     );
+
+    // ===== C9 AI问答 =====
+
+    @POST("qa/ask")
+    Call<ApiResponse<QaResponse>> ask(@Body QaRequest request);
+
+    @Multipart
+    @POST("qa/ask/voice")
+    Call<ApiResponse<QaResponse>> askVoice(
+            @Part MultipartBody.Part audio,
+            @Part("greenhouseId") RequestBody greenhouseId
+    );
+
+    @GET("qa/records")
+    Call<ApiResponse<PageResult<QaHistoryItem>>> getQaHistory(
+            @Query("page") int page,
+            @Query("size") int size
+    );
 }

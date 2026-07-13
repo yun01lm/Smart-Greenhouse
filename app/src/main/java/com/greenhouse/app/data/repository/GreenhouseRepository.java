@@ -247,6 +247,62 @@ public class GreenhouseRepository {
         });
     }
 
+    // ===== C9 AI问答 =====
+
+    public void ask(String question, long greenhouseId, Callback<QaResponse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<QaResponse>> response =
+                        apiService.ask(new QaRequest(question, greenhouseId)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void askVoice(File audioFile, long greenhouseId, Callback<QaResponse> callback) {
+        execute(() -> {
+            try {
+                RequestBody requestFile = RequestBody.create(
+                        MediaType.parse("audio/aac"), audioFile);
+                MultipartBody.Part audioPart = MultipartBody.Part.createFormData(
+                        "audio", audioFile.getName(), requestFile);
+                RequestBody greenhouseIdBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(greenhouseId));
+                Response<ApiResponse<QaResponse>> response =
+                        apiService.askVoice(audioPart, greenhouseIdBody).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getQaHistory(int page, int size, Callback<PageResult<QaHistoryItem>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<QaHistoryItem>>> response =
+                        apiService.getQaHistory(page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 辅助方法 =====
 
     private void execute(Runnable task) {

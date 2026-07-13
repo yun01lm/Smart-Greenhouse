@@ -11,6 +11,7 @@ import com.greenhouse.app.ui.alert.AlertFragment;
 import com.greenhouse.app.ui.dashboard.DashboardFragment;
 import com.greenhouse.app.ui.diagnosis.DiagnosisFragment;
 import com.greenhouse.app.ui.profile.ProfileFragment;
+import com.greenhouse.app.ui.qa.QaFragment;
 
 /**
  * 主界面
@@ -46,8 +47,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (id == R.id.nav_diagnosis) {
                 fragment = new DiagnosisFragment();
             } else if (id == R.id.nav_qa) {
-                // TODO: F04 AI问答
-                fragment = new DashboardFragment(); // 占位
+                fragment = new QaFragment();
             } else if (id == R.id.nav_profile) {
                 fragment = new ProfileFragment();
             }
