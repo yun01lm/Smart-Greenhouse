@@ -3,6 +3,7 @@ package com.greenhouse.module.mqtt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greenhouse.module.sensor.service.SensorDataService;
+import com.greenhouse.module.websocket.service.RealtimePushService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class MqttSubscriber {
 
     private final MqttClient mqttClient;
     private final SensorDataService sensorDataService;
+    private final RealtimePushService pushService;
     private final ObjectMapper objectMapper;
 
     /** 订阅主题 */
@@ -92,9 +94,12 @@ public class MqttSubscriber {
                 sensorDataService.writeData(greenhouseId, deviceId, sensorType, value, timestamp);
 
                 // 更新设备状态（标记在线 + 更新最后数据时间和数值）
-                sensorDataService.updateDeviceStatus(deviceId, value);
+                String deviceName = sensorDataService.updateDeviceStatus(deviceId, value);
 
-                log.debug("传感器数据已存储: greenhouseId={}, deviceId={}, type={}, value={}",
+                // WebSocket 实时推送
+                pushService.pushSensorData(greenhouseId, deviceId, deviceName, sensorType, value);
+
+                log.debug("传感器数据已存储并推送: greenhouseId={}, deviceId={}, type={}, value={}",
                         greenhouseId, deviceId, sensorType, value);
 
             } catch (Exception e) {

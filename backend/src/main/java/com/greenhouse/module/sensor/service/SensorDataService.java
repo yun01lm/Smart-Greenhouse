@@ -58,14 +58,18 @@ public class SensorDataService {
 
     /**
      * 更新设备状态（收到 MQTT 数据时调用）
+     * @return 设备名称
      */
-    public void updateDeviceStatus(Long deviceId, Double value) {
-        deviceRepository.findById(deviceId).ifPresent(device -> {
-            device.setStatus(Device.DeviceStatus.ONLINE);
-            device.setLastValue(String.format("%.2f", value));
-            device.setLastDataTime(java.time.LocalDateTime.now());
-            deviceRepository.save(device);
-        });
+    public String updateDeviceStatus(Long deviceId, Double value) {
+        return deviceRepository.findById(deviceId)
+                .map(device -> {
+                    device.setStatus(Device.DeviceStatus.ONLINE);
+                    device.setLastValue(String.format("%.2f", value));
+                    device.setLastDataTime(java.time.LocalDateTime.now());
+                    deviceRepository.save(device);
+                    return device.getName();
+                })
+                .orElse("未知设备");
     }
 
     /**
