@@ -1,0 +1,44 @@
+# ===========================================
+# 智慧大棚AIoT系统 — .gitignore
+# ===========================================
+
+# === 环境变量（含真实密钥，绝对不能提交） ===
+.env
+
+# === 上传文件目录 ===
+uploads/
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# === 构建产物 ===
+target/
+dist/
+build/
+*.class
+*.jar
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+
+# === 依赖 ===
+node_modules/
+
+# === 日志 ===
+logs/
+*.log
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Docker volumes ===
+docker/volumes/
+
+# === 临时文件 ===
+*.tmp
+*.bak

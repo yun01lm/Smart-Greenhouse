@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: smart-greenhouse
+  profiles:
+    active: dev
+
+server:
+  port: 8080
