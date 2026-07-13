@@ -137,4 +137,35 @@
   - `backend/.../module/device/dto/DeviceGroupRequest.java`
   - `backend/.../module/device/dto/DeviceGroupResponse.java`
 
+### 步骤7：C18 多角色权限模块 + AOP切面 | ✅ 完成
+
+- **时间**：04:40
+- **操作**：
+  - `EmployeePermission.java`：JPA实体，对应 DB 第8号表，6个功能权限布尔字段（canViewData/canControlDevice/canDiagnose/canAskExpert/canViewAlerts/canViewHistory）
+  - `EmployeePermissionRepository.java`：支持按员工ID/棚主ID/大棚ID查询权限，按员工+大棚组合删除
+  - `PermissionController.java`：棚主端 5个API端点 — POST /api/v1/owner/employees（添加/邀请员工）、GET（员工列表）、GET/{id}/permissions（查看权限）、PUT/{id}/permissions（更新权限）、DELETE/{id}（删除员工）
+  - `WorkerPermissionController.java`：员工端 2个API端点 — GET /api/v1/worker/permissions（查看自己权限）、GET /api/v1/worker/greenhouses（可访问大棚列表）
+  - `PermissionService.java`：核心业务 — 添加员工（用户名/手机号查找、角色校验、单归属校验、首次绑定ownerId、权限记录创建）、权限更新（6个字段按非空更新）、删除员工（删除权限+解除归属）、员工端查询
+  - `PermissionAspect.java`：AOP切面实现 — `@RequireGreenhouseAccess` 校验大棚访问权限（ADMIN放行/OWNER检查归属/WORKER查employee_permissions/EXPERT暂拒绝）、`@RequireFunction` 校验功能权限（ADMIN+OWNER放行/WORKER按6个功能标识逐一检查）、greenhouseId自动提取（支持@PathVariable/@RequestParam）
+  - `UserRepository.java`：新增 `findByRoleAndOwnerId` 和 `countByRoleAndOwnerId` 方法
+  - `GreenhouseService.java`：WORKER角色从返回空列表改为从 employee_permissions 查询被授权的大棚
+  - `DeviceService.java`：WORKER角色从拒绝改为检查 employee_permissions 表
+  - `pom.xml`：显式添加 `spring-boot-starter-aop` 依赖确保切面正常工作
+- **结果**：多角色权限体系完整闭环 — 棚主可邀请员工并精细分配6项功能权限，员工端可查看自己被授权的大棚和权限，AOP切面自动拦截校验，之前步骤中 WORKER 返回空列表/拒绝的问题全部修复
+- **文件清单**：
+  - `backend/.../entity/EmployeePermission.java`
+  - `backend/.../repository/EmployeePermissionRepository.java`
+  - `backend/.../module/permission/controller/PermissionController.java`
+  - `backend/.../module/permission/controller/WorkerPermissionController.java`
+  - `backend/.../module/permission/service/PermissionService.java`
+  - `backend/.../module/permission/dto/AddEmployeeRequest.java`
+  - `backend/.../module/permission/dto/EmployeeResponse.java`
+  - `backend/.../module/permission/dto/UpdatePermissionRequest.java`
+  - `backend/.../module/permission/dto/PermissionResponse.java`
+  - `backend/.../security/aop/PermissionAspect.java`
+  - `backend/.../repository/UserRepository.java`（修改）
+  - `backend/.../module/greenhouse/service/GreenhouseService.java`（修改）
+  - `backend/.../module/device/service/DeviceService.java`（修改）
+  - `backend/pom.xml`（修改）
+
 ---
