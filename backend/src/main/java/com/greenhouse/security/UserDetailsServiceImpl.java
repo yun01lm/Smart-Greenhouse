@@ -1,55 +1,53 @@
 package com.greenhouse.security;
 
-import org.springframework.security.core.userdetails.User;
+import com.greenhouse.entity.User;
+import com.greenhouse.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 
 /**
- * 用户认证服务（临时实现）
+ * 用户认证服务（数据库版本）
  * <p>
- * 步骤3使用内存用户，步骤4（C1用户认证模块）会改为数据库查询。
+ * 从数据库加载用户信息，供 Spring Security 认证使用。
  * </p>
  */
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    /**
-     * 临时内存用户存储
-     * TODO: 步骤4改为从数据库查询
-     */
-    private final Map<String, UserDetails> tempUsers = new ConcurrentHashMap<>();
-
-    public UserDetailsServiceImpl() {
-        // 预置一个管理员账号用于开发测试
-        tempUsers.put("admin", User.builder()
-                .username("admin")
-                .password("$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh") // 实际是 admin123 的BCrypt
-                .roles("ADMIN")
-                .build());
-    }
+    private final UserRepository userRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserDetails user = tempUsers.get(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("用户不存在: " + username);
-        }
-        return user;
-    }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> {
+                    log.warn("用户不存在: {}", username);
+                    return new UsernameNotFoundException("用户不存在: " + username);
+                });
 
-    /**
-     * 临时添加用户（步骤4会删除此方法，改用数据库）
-     */
-    public void addTempUser(String username, String password, String role) {
-        tempUsers.put(username, User.builder()
-                .username(username)
-                .password(password)
-                .roles(role)
-                .build());
+        if (!user.getStatus()) {
+            log.warn("用户已被禁用: {}", username);
+            throw new UsernameNotFoundException("用户已被禁用: " + username);
+        }
+
+        List<SimpleGrantedAuthority> authorities = List.of(
+                new SimpleGrantedAuthority("ROLE_" + user.getRole().name())
+        );
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(authorities)
+                .accountLocked(false)
+                .disabled(!user.getStatus())
+                .build();
     }
 }
