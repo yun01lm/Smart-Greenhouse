@@ -310,4 +310,31 @@
   - 更新统计概览：已完成 14、已计划 32
 - **结果**：任务日志索引与实际开发进度同步
 
+### 步骤13：AI 抽象层 + C8 病虫害图片诊断 | ✅ 完成
+
+- **时间**：08:30
+- **操作**：
+  - `DiseaseRecognitionProvider.java`：AI 策略接口 — 定义 `recognize(byte[])` 方法和 `RecognitionResult` record（diseaseName/confidence/treatment/engineName/needExpertConsultation），Spring Boot 自动注入唯一实现类
+  - `BaiduRecognitionProvider.java`：百度 AI 植物识别实现 — 通过 API Key + Secret Key 获取 OAuth Access Token（缓存+过期前60秒自动刷新），图片 Base64 编码后调用植物识别 API（baike_num=1），解析返回最高置信度结果和百科描述
+  - `ResNetRecognitionProvider.java`：ResNet 本地模型占位实现，Phase 3 阶段将替换为真正的 PyTorch 模型推理
+  - `DiagnosticRecord.java`：JPA实体，对应 DB 第12号表 — 用户ID/大棚ID/图片路径/病害名称/置信度/防治方案/识别引擎/是否已咨询专家
+  - `DiagnosticRecordRepository.java`：按用户ID分页查询诊断历史，按时间倒序
+  - `FileService.java`：文件上传服务 — 校验图片类型（jpg/jpeg/png/gif/webp）、大小限制（10MB）、保存到 `uploads/diagnosis/yyyy/MM/dd/uuid.ext` 日期分目录
+  - `DiagnosisService.java`：诊断核心流程 — ①接收图片→保存文件 ②调用 AI 识别 ③保存诊断记录 ④返回结果。AI 识别失败时保存失败记录并抛出 BusinessException
+  - `DiagnosisController.java`：2个API端点 — POST /api/v1/diagnosis/recognize（上传图片+可选greenhouseId，返回诊断结果含needExpert标识）、GET /api/v1/diagnosis/records（分页查询诊断历史）
+  - `DiagnosisResponse.java`：响应 DTO — 含 `needExpert` 字段（confidence < 0.70 为 true），fromEntity 方法自动计算
+  - `application-dev.yml`：新增 `spring.servlet.multipart` 配置（max-file-size: 10MB）
+- **结果**：AI 病虫害诊断链路完整 — 用户拍照上传 → 百度 AI 植物识别 → 诊断记录持久化 → 低置信度引导专家咨询。策略模式设计支持未来切换 ResNet 本地模型（改配置即可）
+- **文件清单**：
+  - `backend/.../ai/DiseaseRecognitionProvider.java`
+  - `backend/.../ai/baidu/BaiduRecognitionProvider.java`
+  - `backend/.../ai/resnet/ResNetRecognitionProvider.java`
+  - `backend/.../entity/DiagnosticRecord.java`
+  - `backend/.../repository/DiagnosticRecordRepository.java`
+  - `backend/.../module/file/service/FileService.java`
+  - `backend/.../module/diagnosis/dto/DiagnosisResponse.java`
+  - `backend/.../module/diagnosis/service/DiagnosisService.java`
+  - `backend/.../module/diagnosis/controller/DiagnosisController.java`
+  - `backend/.../resources/application-dev.yml`（修改）
+
 ---
