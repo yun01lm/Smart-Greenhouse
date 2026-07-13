@@ -2,6 +2,7 @@ package com.greenhouse.module.mqtt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.greenhouse.module.alert.service.AlertEngine;
 import com.greenhouse.module.sensor.service.SensorDataService;
 import com.greenhouse.module.websocket.service.RealtimePushService;
 import jakarta.annotation.PostConstruct;
@@ -39,6 +40,7 @@ public class MqttSubscriber {
     private final MqttClient mqttClient;
     private final SensorDataService sensorDataService;
     private final RealtimePushService pushService;
+    private final AlertEngine alertEngine;
     private final ObjectMapper objectMapper;
 
     /** 订阅主题 */
@@ -98,6 +100,9 @@ public class MqttSubscriber {
 
                 // WebSocket 实时推送
                 pushService.pushSensorData(greenhouseId, deviceId, deviceName, sensorType, value);
+
+                // 预警引擎检测
+                alertEngine.check(greenhouseId, deviceId, sensorType, value);
 
                 log.debug("传感器数据已存储并推送: greenhouseId={}, deviceId={}, type={}, value={}",
                         greenhouseId, deviceId, sensorType, value);
