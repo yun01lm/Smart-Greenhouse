@@ -243,4 +243,24 @@
   - `backend/.../module/control/dto/SceneRequest.java`
   - `backend/.../module/control/dto/SceneResponse.java`
 
+### 步骤11：集成验证 + 推送 GitHub | ✅ 完成
+
+- **时间**：06:30
+- **操作**：
+  - 整体文件清单审查：73 个 Java 文件，包结构符合 AI 开发规则文档第 3.1 节规范
+  - API 路径一致性检查：所有 35+ 端点均使用 `/api/v1/` 前缀 + kebab-case + RESTful 风格，与 API 端点清单一致
+  - ErrorCode 完整性检查：所有引用的错误码均在 ErrorCode 枚举中定义，无遗漏
+  - Git log 审查：18 次提交，每步 feat + docs 配对，历史清晰可追溯
+  - 推送到 GitHub：`yun01lm/Smart-Greenhouse`，main 分支，18 次提交全部推送成功
+- **结果**：Phase 1（后端骨架 + 核心业务模块）全部完成并推送 GitHub
+- **Phase 1 总结**：
+  - Java 文件：73 个（含 4 个 common 模块）
+  - API 端点：35+
+  - 实体类：7 个（User/Greenhouse/Device/DeviceGroup/EmployeePermission/Scene/ControlLog）
+  - 配置类：4 个（Security/WebSocket/MQTT/InfluxDB）
+  - 安全模块：JWT + AOP 切面 + STOMP 认证
+  - 数据链路：MQTT → InfluxDB 存储 + WebSocket 推送
+  - 控制链路：API → MQTT 下发 → ESP32 执行 → 日志记录
+- **仓库地址**：https://github.com/yun01lm/Smart-Greenhouse
+
 ---
