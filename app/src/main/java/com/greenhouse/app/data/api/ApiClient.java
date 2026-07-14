@@ -90,4 +90,14 @@ public class ApiClient {
     public static Retrofit getRetrofit() {
         return retrofit;
     }
+
+    /** 获取基础 URL（用于 WebSocket 连接等） */
+    public static String getBaseUrl() {
+        return BuildConfig.API_BASE_URL;
+    }
+
+    /** 获取认证 Token */
+    public static String getAuthToken() {
+        return TokenManager.getToken();
+    }
 }

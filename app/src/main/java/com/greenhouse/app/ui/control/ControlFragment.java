@@ -17,6 +17,7 @@ import com.greenhouse.app.adapter.SceneAdapter;
 import com.greenhouse.app.data.model.ActuatorInfo;
 import com.greenhouse.app.data.model.SceneInfo;
 import com.greenhouse.app.databinding.FragmentControlBinding;
+import com.greenhouse.app.util.RoleAdapter;
 import com.greenhouse.app.viewmodel.ControlViewModel;
 
 /**
@@ -110,6 +111,15 @@ public class ControlFragment extends Fragment {
         // 加载数据
         viewModel.loadDevices(currentGreenhouseId);
         viewModel.loadScenes(currentGreenhouseId);
+
+        // ===== F11 角色适配：员工无控制权限时禁用设备控制 =====
+        if (!RoleAdapter.canControlDevice()) {
+            binding.rvDevices.setVisibility(View.GONE);
+            binding.rvScenes.setVisibility(View.GONE);
+            binding.tvDevicesEmpty.setVisibility(View.VISIBLE);
+            binding.tvDevicesEmpty.setText("您没有设备控制权限，请联系棚主授权");
+            binding.tvScenesEmpty.setVisibility(View.GONE);
+        }
     }
 
     public void setGreenhouseId(long greenhouseId) {

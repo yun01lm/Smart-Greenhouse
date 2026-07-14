@@ -87,6 +87,25 @@
             android:theme="@style/Theme.SmartGreenhouse"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 专家列表 (F10) -->
+        <activity
+            android:name=".ui.expert.ExpertListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse" />
+
+        <!-- 专家聊天 (F10) -->
+        <activity
+            android:name=".ui.expert.ChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 授权管理 (F10) -->
+        <activity
+            android:name=".ui.expert.AuthorizationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse" />
+
         <!-- FileProvider（拍照） -->
         <provider
             android:name="androidx.core.content.FileProvider"

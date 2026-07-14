@@ -24,6 +24,7 @@ import com.greenhouse.app.ui.alert.AlertFragment;
 import com.greenhouse.app.ui.growth.GrowthActivity;
 import com.greenhouse.app.ui.health.HealthActivity;
 import com.greenhouse.app.ui.history.HistoryActivity;
+import com.greenhouse.app.util.RoleAdapter;
 import com.greenhouse.app.viewmodel.DashboardViewModel;
 
 import java.math.BigDecimal;
@@ -146,6 +147,36 @@ public class DashboardFragment extends Fragment {
                     .addToBackStack(null)
                     .commit();
         });
+
+        // ===== F11 角色适配：员工按权限隐藏无权限卡片 =====
+        applyRoleAdapter();
+    }
+
+    /**
+     * F11 角色适配：根据当前用户角色和权限，隐藏无权限的功能入口。
+     * <p>
+     * 棚主：全部可见，不做任何隐藏。
+     * 员工：根据 can_view_data / can_control_device / can_diagnose / can_view_alerts / can_view_history 控制。
+     * </p>
+     */
+    private void applyRoleAdapter() {
+        // 棚主全权限，无需限制
+        if (RoleAdapter.isOwner()) return;
+
+        // 员工：按权限隐藏
+        if (!RoleAdapter.canViewAlerts()) {
+            binding.cardAlertEntry.setVisibility(View.GONE);
+        }
+        if (!RoleAdapter.canDiagnose()) {
+            binding.cardGrowthEntry.setVisibility(View.GONE);
+        }
+        if (!RoleAdapter.canViewHistory()) {
+            binding.cardHistoryEntry.setVisibility(View.GONE);
+        }
+        // 健康评分卡片：can_view_data 权限控制
+        if (!RoleAdapter.canViewData()) {
+            binding.cardHealthScore.setVisibility(View.GONE);
+        }
     }
 
     private void updateHealthScore(HealthScoreData score) {

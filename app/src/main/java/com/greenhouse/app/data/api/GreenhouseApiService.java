@@ -191,4 +191,74 @@ public interface GreenhouseApiService {
             @Query("page") int page,
             @Query("size") int size
     );
+
+    // ===== F10 专家咨询 — 专家列表 =====
+
+    @GET("experts")
+    Call<ApiResponse<List<ExpertInfo>>> getExperts(
+            @Query("specialty") String specialty,
+            @Query("onlineOnly") boolean onlineOnly
+    );
+
+    // ===== F10 专家咨询 — 对话管理 =====
+
+    @POST("chat/conversations")
+    Call<ApiResponse<ConversationInfo>> createConversation(@Body CreateConversationRequest request);
+
+    @GET("chat/conversations")
+    Call<ApiResponse<PageResult<ConversationInfo>>> getConversations(
+            @Query("status") String status,
+            @Query("page") int page,
+            @Query("size") int size
+    );
+
+    @GET("chat/conversations/{id}/messages")
+    Call<ApiResponse<PageResult<ChatMessage>>> getMessages(
+            @Path("id") long conversationId,
+            @Query("page") int page,
+            @Query("size") int size
+    );
+
+    @POST("chat/messages")
+    Call<ApiResponse<ChatMessage>> sendMessage(@Body SendMessageRequest request);
+
+    @Multipart
+    @POST("chat/messages")
+    Call<ApiResponse<ChatMessage>> sendImageMessage(
+            @Part("conversationId") RequestBody conversationId,
+            @Part MultipartBody.Part image
+    );
+
+    @Multipart
+    @POST("chat/messages")
+    Call<ApiResponse<ChatMessage>> sendVideoMessage(
+            @Part("conversationId") RequestBody conversationId,
+            @Part MultipartBody.Part video
+    );
+
+    @POST("chat/snapshot")
+    Call<ApiResponse<ChatMessage>> sendSnapshot(@Body SnapshotRequest request);
+
+    @PUT("chat/conversations/{id}/close")
+    Call<ApiResponse<Void>> closeConversation(@Path("id") long conversationId);
+
+    @GET("chat/unread")
+    Call<ApiResponse<UnreadResponse>> getUnreadCount();
+
+    // ===== F10 专家咨询 — 授权管理 =====
+
+    @GET("expert/authorize/pending")
+    Call<ApiResponse<List<AuthorizationInfo>>> getPendingAuthorizations();
+
+    @PUT("expert/authorize/{id}/approve")
+    Call<ApiResponse<AuthorizationInfo>> approveAuthorization(@Path("id") long authId);
+
+    @PUT("expert/authorize/{id}/reject")
+    Call<ApiResponse<Void>> rejectAuthorization(@Path("id") long authId);
+
+    @PUT("expert/authorize/{id}/revoke")
+    Call<ApiResponse<Void>> revokeAuthorization(@Path("id") long authId);
+
+    @GET("expert/authorize/active")
+    Call<ApiResponse<List<AuthorizationInfo>>> getActiveAuthorizations();
 }

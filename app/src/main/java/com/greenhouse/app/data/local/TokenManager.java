@@ -66,6 +66,42 @@ public class TokenManager {
         return prefs.getString(KEY_REAL_NAME, "");
     }
 
+    // ===== 员工权限位缓存（F11 角色适配） =====
+
+    /**
+     * 缓存员工权限位。
+     * <p>
+     * 员工登录后通过 GET /worker/permissions 接口获取权限数据，
+     * 调用此方法缓存到 SharedPreferences，供 RoleAdapter 使用。
+     * </p>
+     *
+     * @param canViewData      是否可查看数据
+     * @param canControlDevice 是否可控制设备
+     * @param canDiagnose      是否可诊断
+     * @param canAskExpert     是否可咨询专家
+     * @param canViewAlerts    是否可查看预警
+     * @param canViewHistory   是否可查看历史
+     */
+    public static void savePermissions(boolean canViewData, boolean canControlDevice,
+                                       boolean canDiagnose, boolean canAskExpert,
+                                       boolean canViewAlerts, boolean canViewHistory) {
+        prefs.edit()
+                .putBoolean("can_view_data", canViewData)
+                .putBoolean("can_control_device", canControlDevice)
+                .putBoolean("can_diagnose", canDiagnose)
+                .putBoolean("can_ask_expert", canAskExpert)
+                .putBoolean("can_view_alerts", canViewAlerts)
+                .putBoolean("can_view_history", canViewHistory)
+                .apply();
+    }
+
+    /**
+     * 读取缓存的布尔值
+     */
+    public static boolean getBoolean(String key, boolean defaultValue) {
+        return prefs.getBoolean(key, defaultValue);
+    }
+
     // ===== 清除 =====
 
     public static void clear() {

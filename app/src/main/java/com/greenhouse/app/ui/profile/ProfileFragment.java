@@ -12,7 +12,10 @@ import androidx.fragment.app.Fragment;
 
 import com.greenhouse.app.data.local.TokenManager;
 import com.greenhouse.app.databinding.FragmentProfileBinding;
+import com.greenhouse.app.ui.expert.AuthorizationActivity;
+import com.greenhouse.app.ui.expert.ExpertListActivity;
 import com.greenhouse.app.ui.login.LoginActivity;
+import com.greenhouse.app.util.RoleAdapter;
 
 /**
  * 个人中心 Fragment (F09)
@@ -57,6 +60,18 @@ public class ProfileFragment extends Fragment {
         }
         binding.tvRole.setText(roleText);
 
+        // 专家咨询入口 (F10)
+        binding.btnExpertConsult.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), ExpertListActivity.class);
+            startActivity(intent);
+        });
+
+        // 授权管理入口 (F10)
+        binding.btnAuthorization.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), AuthorizationActivity.class);
+            startActivity(intent);
+        });
+
         // 退出登录
         binding.btnLogout.setOnClickListener(v -> {
             TokenManager.clear();
@@ -65,6 +80,30 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
             requireActivity().finish();
         });
+
+        // ===== F11 角色适配 =====
+        applyRoleAdapter();
+    }
+
+    /**
+     * F11 角色适配：根据角色显示/隐藏功能入口。
+     * <p>
+     * 棚主：显示员工管理入口（如有），隐藏授权管理入口（棚主不需要授权）。
+     * 员工：隐藏员工管理入口，显示授权管理入口。专家咨询入口由 canAskExpert 权限控制。
+     * </p>
+     */
+    private void applyRoleAdapter() {
+        if (RoleAdapter.isOwner()) {
+            // 棚主：隐藏授权管理（棚主是授权的审批方，在 Web 端管理）
+            binding.btnAuthorization.setVisibility(View.GONE);
+            // 专家咨询：棚主默认可用
+            binding.btnExpertConsult.setVisibility(View.VISIBLE);
+        } else if (RoleAdapter.isWorker()) {
+            // 员工：专家咨询入口由权限控制
+            if (!RoleAdapter.canAskExpert()) {
+                binding.btnExpertConsult.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Override

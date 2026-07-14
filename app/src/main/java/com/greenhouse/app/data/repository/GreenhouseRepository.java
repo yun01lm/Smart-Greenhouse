@@ -63,6 +63,25 @@ public class GreenhouseRepository {
         });
     }
 
+    /**
+     * 获取当前登录用户信息
+     */
+    public void getCurrentUser(Callback<UserInfo> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<UserInfo>> response =
+                        apiService.getCurrentUser().execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 大棚 =====
 
     public void getGreenhouses(Callback<List<Greenhouse>> callback) {
@@ -70,6 +89,25 @@ public class GreenhouseRepository {
             try {
                 Response<ApiResponse<List<Greenhouse>>> response =
                         apiService.getGreenhouses().execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 获取单个大棚详情
+     */
+    public void getGreenhouse(long id, Callback<Greenhouse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Greenhouse>> response =
+                        apiService.getGreenhouse(id).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {
@@ -142,6 +180,25 @@ public class GreenhouseRepository {
         });
     }
 
+    /**
+     * 获取未读预警数量
+     */
+    public void getUnreadAlertCount(long greenhouseId, Callback<Integer> callback) {
+        execute(() -> {
+            try {
+                retrofit2.Response<ApiResponse<Integer>> response =
+                        apiService.getUnreadAlertCount(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 自定义阈值 =====
 
     public void getThresholds(long greenhouseId, Callback<List<ThresholdItem>> callback) {
@@ -167,6 +224,25 @@ public class GreenhouseRepository {
                         apiService.setThreshold(threshold).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 删除自定义阈值
+     */
+    public void deleteThreshold(long id, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                retrofit2.Response<ApiResponse<Void>> response =
+                        apiService.deleteThreshold(id).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
                 } else {
                     postError(callback, parseError(response));
                 }
@@ -430,6 +506,30 @@ public class GreenhouseRepository {
         });
     }
 
+    /**
+     * 获取传感器时序历史数据（sensor/history 端点）
+     * <p>
+     * 与 getHistory() (sensors/history) 不同，此接口返回 List&lt;SensorDataPoint&gt;。
+     * </p>
+     */
+    public void getHistoryData(long greenhouseId, String sensorType,
+                                long startTime, long endTime, String aggregation,
+                                Callback<List<SensorDataPoint>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<SensorDataPoint>>> response =
+                        apiService.getHistoryData(greenhouseId, sensorType, startTime, endTime, aggregation).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== F7 长势评估 =====
 
     /**
@@ -501,6 +601,268 @@ public class GreenhouseRepository {
             try {
                 Response<ApiResponse<List<CropCycleData>>> response =
                         apiService.getCropCycles(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // ===== F10 专家咨询 =====
+
+    // --- 专家列表 ---
+
+    public void getExperts(String specialty, boolean onlineOnly, Callback<List<ExpertInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<ExpertInfo>>> response =
+                        apiService.getExperts(specialty, onlineOnly).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // --- 对话管理 ---
+
+    public void createConversation(CreateConversationRequest request, Callback<ConversationInfo> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<ConversationInfo>> response =
+                        apiService.createConversation(request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getConversations(String status, int page, int size,
+                                  Callback<PageResult<ConversationInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<ConversationInfo>>> response =
+                        apiService.getConversations(status, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getMessages(long conversationId, int page, int size,
+                             Callback<PageResult<ChatMessage>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<ChatMessage>>> response =
+                        apiService.getMessages(conversationId, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void sendMessage(SendMessageRequest request, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendMessage(request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void sendImageMessage(long conversationId, File imageFile, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                RequestBody conversationIdBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(conversationId));
+                RequestBody requestFile = RequestBody.create(
+                        MediaType.parse("image/jpeg"), imageFile);
+                MultipartBody.Part imagePart = MultipartBody.Part.createFormData(
+                        "image", imageFile.getName(), requestFile);
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendImageMessage(conversationIdBody, imagePart).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void sendVideoMessage(long conversationId, File videoFile, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                RequestBody conversationIdBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(conversationId));
+                RequestBody requestFile = RequestBody.create(
+                        MediaType.parse("video/mp4"), videoFile);
+                MultipartBody.Part videoPart = MultipartBody.Part.createFormData(
+                        "video", videoFile.getName(), requestFile);
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendVideoMessage(conversationIdBody, videoPart).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void sendSnapshot(SnapshotRequest request, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendSnapshot(request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void closeConversation(long conversationId, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response =
+                        apiService.closeConversation(conversationId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getUnreadCount(Callback<UnreadResponse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<UnreadResponse>> response =
+                        apiService.getUnreadCount().execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // --- 授权管理 ---
+
+    public void getPendingAuthorizations(Callback<List<AuthorizationInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<AuthorizationInfo>>> response =
+                        apiService.getPendingAuthorizations().execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void approveAuthorization(long authId, Callback<AuthorizationInfo> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<AuthorizationInfo>> response =
+                        apiService.approveAuthorization(authId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void rejectAuthorization(long authId, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response =
+                        apiService.rejectAuthorization(authId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void revokeAuthorization(long authId, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response =
+                        apiService.revokeAuthorization(authId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void getActiveAuthorizations(Callback<List<AuthorizationInfo>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<AuthorizationInfo>>> response =
+                        apiService.getActiveAuthorizations().execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

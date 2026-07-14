@@ -57,12 +57,39 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- 专家咨询入口 (F10) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_expert_consult"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:text="专家咨询"
+        android:textColor="@color/on_surface"
+        app:icon="@drawable/ic_expert"
+        app:iconGravity="start"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+    <!-- 授权管理入口 (F10) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_authorization"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="8dp"
+        android:text="授权管理"
+        android:textColor="@color/on_surface"
+        app:icon="@drawable/ic_snapshot"
+        app:iconGravity="start"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
     <!-- 退出登录按钮 -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_logout"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
         android:text="@string/profile_logout"
         android:textColor="@color/level_danger"
         app:strokeColor="@color/level_danger"
