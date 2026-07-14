@@ -247,6 +247,9 @@ public interface GreenhouseApiService {
 
     // ===== F10 专家咨询 — 授权管理 =====
 
+    @POST("expert/authorize/request")
+    Call<ApiResponse<AuthorizationInfo>> requestAuthorization(@Body RequestAuthorizationRequest request);
+
     @GET("expert/authorize/pending")
     Call<ApiResponse<List<AuthorizationInfo>>> getPendingAuthorizations();
 

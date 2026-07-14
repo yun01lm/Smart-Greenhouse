@@ -794,6 +794,27 @@ public class GreenhouseRepository {
 
     // --- 授权管理 ---
 
+    /**
+     * 请求专家授权
+     */
+    public void requestAuthorization(long userId, long greenhouseId, String reason,
+                                      Callback<AuthorizationInfo> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<AuthorizationInfo>> response =
+                        apiService.requestAuthorization(
+                                new RequestAuthorizationRequest(userId, greenhouseId, reason)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     public void getPendingAuthorizations(Callback<List<AuthorizationInfo>> callback) {
         execute(() -> {
             try {
