@@ -166,4 +166,26 @@ public interface GreenhouseApiService {
             @Query("endTime") String endTime,
             @Query("aggregation") String aggregation
     );
+
+    // ===== F7 长势评估 =====
+
+    @GET("growth/latest")
+    Call<ApiResponse<GrowthAssessment>> getLatestGrowthAssessment(
+            @Query("greenhouseId") long greenhouseId
+    );
+
+    @GET("growth/history")
+    Call<ApiResponse<PageResult<GrowthAssessment>>> getGrowthHistory(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("page") int page,
+            @Query("size") int size
+    );
+
+    @GET("growth/images")
+    Call<ApiResponse<PageResult<GrowthImage>>> getGrowthImages(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("date") String date,
+            @Query("page") int page,
+            @Query("size") int size
+    );
 }

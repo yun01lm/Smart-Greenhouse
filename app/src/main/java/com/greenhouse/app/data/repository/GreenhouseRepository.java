@@ -391,6 +391,88 @@ public class GreenhouseRepository {
         });
     }
 
+    // ===== F7 长势评估 =====
+
+    /**
+     * 获取最新长势评估
+     */
+    public void getLatestGrowthAssessment(long greenhouseId, Callback<GrowthAssessment> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<GrowthAssessment>> response =
+                        apiService.getLatestGrowthAssessment(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 获取长势评估历史记录
+     */
+    public void getGrowthHistory(long greenhouseId, int page, int size,
+                                  Callback<PageResult<GrowthAssessment>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<GrowthAssessment>>> response =
+                        apiService.getGrowthHistory(greenhouseId, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 获取截帧图片列表
+     */
+    public void getGrowthImages(long greenhouseId, String date, int page, int size,
+                                 Callback<PageResult<GrowthImage>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<GrowthImage>>> response =
+                        apiService.getGrowthImages(greenhouseId, date, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    // ===== C22 作物生长周期 =====
+
+    /**
+     * 获取种植周期列表
+     */
+    public void getCropCycles(long greenhouseId, Callback<List<CropCycleData>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<CropCycleData>>> response =
+                        apiService.getCropCycles(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 辅助方法 =====
 
     private void execute(Runnable task) {

@@ -73,6 +73,13 @@
             android:theme="@style/Theme.SmartGreenhouse"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 长势评估 -->
+        <activity
+            android:name=".ui.growth.GrowthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
         <!-- FileProvider（拍照） -->
         <provider
             android:name="androidx.core.content.FileProvider"
