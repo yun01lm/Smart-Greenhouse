@@ -34,6 +34,7 @@ public class ChatService {
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final GreenhouseRepository greenhouseRepository;
     private final SensorDataService sensorDataService;
     private final ObjectMapper objectMapper;
 
@@ -189,7 +190,9 @@ public class ChatService {
     public MessageResponse sendSnapshot(Long userId, Long greenhouseId) {
         try {
             // 获取大棚实时传感器数据
-            var realtimeData = sensorDataService.getRealtimeData(greenhouseId);
+            String greenhouseName = greenhouseRepository.findById(greenhouseId)
+                    .map(Greenhouse::getName).orElse("未知大棚");
+            var realtimeData = sensorDataService.getRealtimeData(greenhouseId, greenhouseName);
 
             // 构建快照 JSON
             String snapshotJson = objectMapper.writeValueAsString(realtimeData);

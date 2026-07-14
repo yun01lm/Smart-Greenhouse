@@ -100,7 +100,9 @@ public class ChromaRetrievalService {
             }
         } catch (IOException e) {
             log.error("Chroma 连接失败: {}", e.getMessage());
-            // Chroma 不可用时返回空结果，让 DeepSeek 使用通用知识回答
+            return Collections.emptyList();
+        } catch (Exception e) {
+            log.error("Chroma 解析失败: {}", e.getMessage());
             return Collections.emptyList();
         }
     }

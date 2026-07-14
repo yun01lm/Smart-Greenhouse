@@ -7,8 +7,6 @@ import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
-import com.influxdb.query.dsl.Flux;
-import com.influxdb.query.dsl.functions.restriction.Restrictions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

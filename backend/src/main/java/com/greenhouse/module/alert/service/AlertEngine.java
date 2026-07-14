@@ -119,7 +119,7 @@ public class AlertEngine {
     private void checkUserThreshold(UserAlertThreshold threshold, Long greenhouseId, Double value) {
         String alertTitle = null;
         String alertContent = null;
-        Alert.AlertLevel level = Alert.AlertLevel.WARNING;
+        AlertRule.AlertLevel level = AlertRule.AlertLevel.WARNING;
 
         if (threshold.getMinThreshold() != null && value < threshold.getMinThreshold()) {
             alertTitle = String.format("「%s」低于自定义阈值", threshold.getSensorType());
