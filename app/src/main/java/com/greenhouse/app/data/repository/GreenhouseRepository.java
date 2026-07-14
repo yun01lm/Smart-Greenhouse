@@ -194,6 +194,45 @@ public class GreenhouseRepository {
         });
     }
 
+    /**
+     * 获取健康评分详情/报告
+     */
+    public void getHealthDetail(long id, Callback<HealthScoreData> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<HealthScoreData>> response =
+                        apiService.getHealthDetail(id).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * 获取健康评分历史
+     */
+    public void getHealthHistory(long greenhouseId, int page, int size,
+                                  Callback<PageResult<HealthScoreData>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<HealthScoreData>>> response =
+                        apiService.getHealthHistory(greenhouseId, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== C8 病虫害诊断 =====
 
     /**

@@ -96,6 +96,9 @@ public interface GreenhouseApiService {
             @Query("size") int size
     );
 
+    @GET("health/detail/{id}")
+    Call<ApiResponse<HealthScoreData>> getHealthDetail(@Path("id") long id);
+
     // ===== C22 作物生长周期 =====
 
     @GET("crop-cycles")

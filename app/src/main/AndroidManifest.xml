@@ -80,6 +80,13 @@
             android:theme="@style/Theme.SmartGreenhouse"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 健康评分详情 -->
+        <activity
+            android:name=".ui.health.HealthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
         <!-- FileProvider（拍照） -->
         <provider
             android:name="androidx.core.content.FileProvider"
