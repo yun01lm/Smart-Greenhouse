@@ -62,12 +62,12 @@ public class AdminService {
      * </p>
      */
     @Transactional
-    public UserSummaryResponse updateUser(Long userId, UpdateUserRequest request) {
+    public UserSummaryResponse updateUser(Long currentUserId, Long userId, UpdateUserRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
 
         // 不能把自己降级
-        if (user.getId().equals(userId) && request.getRole() != null && request.getRole() != User.Role.ADMIN) {
+        if (userId.equals(currentUserId) && request.getRole() != null && request.getRole() != User.Role.ADMIN) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不能修改自己的管理员角色");
         }
 
@@ -99,12 +99,12 @@ public class AdminService {
      * 删除用户
      */
     @Transactional
-    public void deleteUser(Long userId) {
+    public void deleteUser(Long currentUserId, Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
 
-        // 不能删除自己
-        if (user.getId().equals(userId)) {
+        // ��能删除自己
+        if (userId.equals(currentUserId)) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不能删除自己");
         }
 

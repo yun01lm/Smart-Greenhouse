@@ -8,6 +8,8 @@ import com.greenhouse.module.admin.dto.UserSummaryResponse;
 import com.greenhouse.module.admin.service.AdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,7 +57,8 @@ public class AdminController {
     public ApiResponse<UserSummaryResponse> updateUser(
             @PathVariable Long userId,
             @Valid @RequestBody UpdateUserRequest request) {
-        return ApiResponse.success("用户更新成功", adminService.updateUser(userId, request));
+        Long currentUserId = getCurrentUserId();
+        return ApiResponse.success("用户更新成功", adminService.updateUser(currentUserId, userId, request));
     }
 
     /**
@@ -64,7 +67,8 @@ public class AdminController {
      */
     @DeleteMapping("/users/{userId}")
     public ApiResponse<Void> deleteUser(@PathVariable Long userId) {
-        adminService.deleteUser(userId);
+        Long currentUserId = getCurrentUserId();
+        adminService.deleteUser(currentUserId, userId);
         return ApiResponse.success("用户已删除", null);
     }
 
@@ -75,5 +79,12 @@ public class AdminController {
     @GetMapping("/roles")
     public ApiResponse<List<RoleCountResponse>> getRoleStats() {
         return ApiResponse.success(adminService.getRoleStats());
+    }
+
+    // ===== 辅助方法 =====
+
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (Long) auth.getPrincipal();
     }
 }
