@@ -1,0 +1,42 @@
+import { createRouter, createWebHashHistory } from 'vue-router'
+
+const routes = [
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue'),
+    meta: { title: '登录' }
+  },
+  {
+    path: '/',
+    component: () => import('@/layouts/MainLayout.vue'),
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'Dashboard',
+        component: () => import('@/views/dashboard/DashboardPage.vue'),
+        meta: { title: '数据总览' }
+      }
+    ]
+  }
+]
+
+const router = createRouter({
+  history: createWebHashHistory(),
+  routes
+})
+
+// 路由守卫：未登录跳转登录页
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  if (to.path !== '/login' && !token) {
+    next('/login')
+  } else if (to.path === '/login' && token) {
+    next('/')
+  } else {
+    next()
+  }
+})
+
+export default router
