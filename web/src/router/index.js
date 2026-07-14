@@ -17,6 +17,12 @@ const routes = [
         name: 'Dashboard',
         component: () => import('@/views/dashboard/DashboardPage.vue'),
         meta: { title: '数据总览' }
+      },
+      {
+        path: 'devices',
+        name: 'Devices',
+        component: () => import('@/views/devices/DevicePage.vue'),
+        meta: { title: '设备管理' }
       }
     ]
   }

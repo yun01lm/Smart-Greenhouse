@@ -39,7 +39,7 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>数据总览</span>
           </el-menu-item>
-          <el-menu-item index="/devices" disabled>
+          <el-menu-item index="/devices">
             <el-icon><Cpu /></el-icon>
             <span>设备管理</span>
           </el-menu-item>
