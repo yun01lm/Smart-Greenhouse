@@ -66,6 +66,13 @@
             android:theme="@style/Theme.SmartGreenhouse"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 历史数据 -->
+        <activity
+            android:name=".ui.history.HistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
         <!-- FileProvider（拍照） -->
         <provider
             android:name="androidx.core.content.FileProvider"

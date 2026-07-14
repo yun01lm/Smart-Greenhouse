@@ -371,6 +371,26 @@ public class GreenhouseRepository {
         });
     }
 
+    // ===== C5 历史数据 =====
+
+    public void getHistory(long greenhouseId, String sensorType,
+                           String startTime, String endTime, String aggregation,
+                           Callback<HistoryResponse> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<HistoryResponse>> response =
+                        apiService.getHistory(greenhouseId, sensorType, startTime, endTime, aggregation).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     // ===== 辅助方法 =====
 
     private void execute(Runnable task) {

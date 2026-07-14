@@ -21,6 +21,7 @@ import com.greenhouse.app.data.model.Greenhouse;
 import com.greenhouse.app.data.model.HealthScoreData;
 import com.greenhouse.app.databinding.FragmentDashboardBinding;
 import com.greenhouse.app.ui.alert.AlertFragment;
+import com.greenhouse.app.ui.history.HistoryActivity;
 import com.greenhouse.app.viewmodel.DashboardViewModel;
 
 import java.math.BigDecimal;
@@ -107,6 +108,15 @@ public class DashboardFragment extends Fragment {
 
         // 加载数据
         viewModel.loadGreenhouses();
+
+        // 历史数据入口 → 跳转 HistoryActivity
+        binding.cardHistoryEntry.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), HistoryActivity.class);
+            intent.putExtra("greenhouse_id",
+                    viewModel.getSelectedGreenhouseId().getValue() != null
+                            ? viewModel.getSelectedGreenhouseId().getValue() : 1);
+            startActivity(intent);
+        });
 
         // 预警中心入口卡片 → 跳转预警列表（内嵌在 Activity 中）
         binding.cardAlertEntry.setOnClickListener(v -> {

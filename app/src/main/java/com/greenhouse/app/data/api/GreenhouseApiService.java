@@ -155,4 +155,15 @@ public interface GreenhouseApiService {
     Call<ApiResponse<List<ActuatorInfo>>> getActuators(
             @Query("greenhouseId") long greenhouseId
     );
+
+    // ===== C5 历史数据 =====
+
+    @GET("sensors/history")
+    Call<ApiResponse<HistoryResponse>> getHistory(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("sensorType") String sensorType,
+            @Query("startTime") String startTime,
+            @Query("endTime") String endTime,
+            @Query("aggregation") String aggregation
+    );
 }
