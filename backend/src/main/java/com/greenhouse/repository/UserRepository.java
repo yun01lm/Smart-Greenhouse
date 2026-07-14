@@ -39,4 +39,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** 统计某角色下某棚主的用户数量 */
     long countByRoleAndOwnerId(User.Role role, Long ownerId);
+
+    /** 统计某角色的用户总数 */
+    long countByRole(User.Role role);
 }

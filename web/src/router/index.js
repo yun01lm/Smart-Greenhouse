@@ -23,6 +23,12 @@ const routes = [
         name: 'Devices',
         component: () => import('@/views/devices/DevicePage.vue'),
         meta: { title: '设备管理' }
+      },
+      {
+        path: 'users',
+        name: 'Users',
+        component: () => import('@/views/users/UserPage.vue'),
+        meta: { title: '用户管理' }
       }
     ]
   }

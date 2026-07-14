@@ -54,6 +54,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         // Swagger / API文档（如果启用）
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Admin 管理接口（仅 ADMIN 角色）
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // OPTIONS 预检请求
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // === 其余全部需要认证 ===

@@ -43,7 +43,7 @@
             <el-icon><Cpu /></el-icon>
             <span>设备管理</span>
           </el-menu-item>
-          <el-menu-item index="/users" disabled>
+          <el-menu-item index="/users">
             <el-icon><UserFilled /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
