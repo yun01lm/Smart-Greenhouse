@@ -1,6 +1,8 @@
 package com.greenhouse.repository;
 
 import com.greenhouse.entity.DataAuthorization;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -38,4 +40,7 @@ public interface DataAuthorizationRepository extends JpaRepository<DataAuthoriza
      * 查询用户的授权历史
      */
     List<DataAuthorization> findByUserIdOrderByRequestedAtDesc(Long userId);
+
+    /** ADMIN 全量按状态分页查询 */
+    Page<DataAuthorization> findByStatus(DataAuthorization.AuthorizationStatus status, Pageable pageable);
 }

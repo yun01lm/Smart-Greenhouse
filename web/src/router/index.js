@@ -59,6 +59,12 @@ const routes = [
         name: 'Corpus',
         component: () => import('@/views/corpus/CorpusPage.vue'),
         meta: { title: '语料管理' }
+      },
+      {
+        path: 'expert',
+        name: 'Expert',
+        component: () => import('@/views/expert/ExpertPage.vue'),
+        meta: { title: '专家工作台' }
       }
     ]
   }

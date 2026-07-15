@@ -33,4 +33,7 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
      * 按用户ID和状态查询
      */
     List<ChatConversation> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, ChatConversation.ConversationStatus status);
+
+    /** ADMIN 统计某专家的咨询会话数 */
+    long countByExpertId(Long expertId);
 }

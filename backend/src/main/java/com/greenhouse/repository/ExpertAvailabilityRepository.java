@@ -16,4 +16,7 @@ public interface ExpertAvailabilityRepository extends JpaRepository<ExpertAvaila
      * 按专家ID查询
      */
     Optional<ExpertAvailability> findByExpertId(Long expertId);
+
+    /** ADMIN 统计在线专家数 */
+    long countByIsOnline(int isOnline);
 }

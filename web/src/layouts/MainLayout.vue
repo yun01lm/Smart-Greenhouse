@@ -67,7 +67,7 @@
             <el-icon><Microphone /></el-icon>
             <span>语料管理</span>
           </el-menu-item>
-          <el-menu-item index="/expert" disabled>
+          <el-menu-item index="/expert">
             <el-icon><Avatar /></el-icon>
             <span>专家工作台</span>
           </el-menu-item>
