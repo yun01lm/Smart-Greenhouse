@@ -63,7 +63,7 @@
             <el-icon><Monitor /></el-icon>
             <span>系统监控</span>
           </el-menu-item>
-          <el-menu-item index="/corpus" disabled>
+          <el-menu-item index="/corpus">
             <el-icon><Microphone /></el-icon>
             <span>语料管理</span>
           </el-menu-item>

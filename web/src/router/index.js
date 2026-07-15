@@ -53,6 +53,12 @@ const routes = [
         name: 'Monitor',
         component: () => import('@/views/monitor/MonitorPage.vue'),
         meta: { title: '系统监控' }
+      },
+      {
+        path: 'corpus',
+        name: 'Corpus',
+        component: () => import('@/views/corpus/CorpusPage.vue'),
+        meta: { title: '语料管理' }
       }
     ]
   }
