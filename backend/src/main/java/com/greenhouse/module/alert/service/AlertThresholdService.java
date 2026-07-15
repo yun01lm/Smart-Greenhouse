@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * 用户自定义预警阈值服务
  */
@@ -97,5 +99,35 @@ public class AlertThresholdService {
 
         thresholdRepository.delete(threshold);
         log.info("自定义阈值已删除: id={}", thresholdId);
+    }
+
+    // ===== ADMIN 专用方法（绕过所有权校验） =====
+
+    /**
+     * 查询所有自定义阈值（ADMIN 专用）
+     */
+    public List<ThresholdResponse> listAllThresholds() {
+        List<UserAlertThreshold> thresholds = thresholdRepository.findAll();
+        return thresholds.stream().map(ThresholdResponse::fromEntity).collect(toList());
+    }
+
+    /**
+     * 按大棚查询阈值（ADMIN 专用，不限制用户）
+     */
+    public List<ThresholdResponse> listThresholdsByGreenhouse(Long greenhouseId) {
+        List<UserAlertThreshold> thresholds = thresholdRepository.findByGreenhouseId(greenhouseId);
+        return thresholds.stream().map(ThresholdResponse::fromEntity).collect(toList());
+    }
+
+    /**
+     * 删除阈值（ADMIN 专用，绕过用户校验）
+     */
+    @Transactional
+    public void deleteThresholdAdmin(Long thresholdId) {
+        UserAlertThreshold threshold = thresholdRepository.findById(thresholdId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR, "阈值记录不存在"));
+
+        thresholdRepository.delete(threshold);
+        log.info("[ADMIN] 自定义阈值已删除: id={}", thresholdId);
     }
 }

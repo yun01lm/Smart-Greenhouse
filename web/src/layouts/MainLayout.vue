@@ -51,7 +51,7 @@
             <el-icon><Document /></el-icon>
             <span>知识库</span>
           </el-menu-item>
-          <el-menu-item index="/alerts" disabled>
+          <el-menu-item index="/alerts">
             <el-icon><WarningFilled /></el-icon>
             <span>预警配置</span>
           </el-menu-item>

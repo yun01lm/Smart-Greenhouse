@@ -35,6 +35,12 @@ const routes = [
         name: 'Knowledge',
         component: () => import('@/views/knowledge/KnowledgePage.vue'),
         meta: { title: '知识库管理' }
+      },
+      {
+        path: 'alerts',
+        name: 'Alerts',
+        component: () => import('@/views/alerts/AlertRulePage.vue'),
+        meta: { title: '预警配置' }
       }
     ]
   }
