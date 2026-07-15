@@ -92,12 +92,20 @@ qweather:
   api-key: ${QWEATHER_API_KEY:dev-qweather-key}
   base-url: https://devapi.qweather.com
 
-# AI引擎切换
+# AI引擎切换（RC验收默认使用 Mock 模式）
 ai:
   image:
-    provider: baidu              # baidu | resnet
+    provider: mock              # mock | baidu | resnet
   voice:
-    provider: xunfei             # xunfei | whisper
+    provider: mock              # mock | xunfei | whisper
+  llm:
+    provider: mock              # mock | deepseek
+  embedding:
+    provider: mock              # mock | siliconflow
+
+# 天气服务
+weather:
+  provider: mock                # mock | qweather
 
 # 多模态融合配置（论文对比实验：修改权重无需重新编译）
 greenhouse:

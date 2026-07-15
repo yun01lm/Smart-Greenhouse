@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.greenhouse.ai.EmbeddingProvider;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -41,16 +42,19 @@ public class EmbeddingService {
     private final String model;
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
+    private final EmbeddingProvider embeddingProvider;  // Mock/真实 切换
 
     public EmbeddingService(
             @Value("${siliconflow.api-key}") String apiKey,
             @Value("${siliconflow.base-url}") String baseUrl,
             @Value("${siliconflow.embedding-model}") String model,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            EmbeddingProvider embeddingProvider) {
         this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.model = model;
         this.objectMapper = objectMapper;
+        this.embeddingProvider = embeddingProvider;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
@@ -65,51 +69,13 @@ public class EmbeddingService {
      */
     public List<Double> embed(String text) {
         try {
-            // 构建请求体
-            ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", model);
-            requestBody.put("input", text);
-            requestBody.put("encoding_format", "float");
-
-            Request request = new Request.Builder()
-                    .url(baseUrl + "/embeddings")
-                    .post(RequestBody.create(
-                            objectMapper.writeValueAsString(requestBody),
-                            MediaType.parse("application/json")))
-                    .addHeader("Authorization", "Bearer " + apiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    log.error("Embedding 请求失败: HTTP {} body={}", response.code(), errorBody);
-                    throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
-                }
-
-                String responseBody = response.body() != null ? response.body().string() : "";
-                JsonNode root = objectMapper.readTree(responseBody);
-
-                // 解析 data[0].embedding
-                JsonNode data = root.get("data");
-                if (data == null || !data.isArray() || data.isEmpty()) {
-                    throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
-                }
-
-                JsonNode embedding = data.get(0).get("embedding");
-                if (embedding == null || !embedding.isArray()) {
-                    throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
-                }
-
-                List<Double> result = new java.util.ArrayList<>();
-                for (JsonNode value : embedding) {
-                    result.add(value.asDouble());
-                }
-
-                log.debug("向量化完成: model={}, dimensions={}, text_length={}",
-                        model, result.size(), text.length());
-                return result;
-            }
+            // 优先使用 EmbeddingProvider（支持 Mock 模式）
+            float[] vec = embeddingProvider.embed(text);
+            List<Double> result = new java.util.ArrayList<>();
+            for (float v : vec) result.add((double) v);
+            log.debug("向量化完成(Provider): engine={}, dimensions={}, text_length={}",
+                    embeddingProvider.getEngineName(), result.size(), text.length());
+            return result;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
@@ -127,49 +93,15 @@ public class EmbeddingService {
         }
 
         try {
-            ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", model);
-            requestBody.put("encoding_format", "float");
-
-            ArrayNode inputArray = objectMapper.createArrayNode();
-            for (String text : texts) {
-                inputArray.add(text);
+            // 优先使用 EmbeddingProvider（支持 Mock 模式）
+            List<float[]> vecs = embeddingProvider.embedBatch(texts);
+            List<List<Double>> results = new java.util.ArrayList<>();
+            for (float[] vec : vecs) {
+                List<Double> list = new java.util.ArrayList<>();
+                for (float v : vec) list.add((double) v);
+                results.add(list);
             }
-            requestBody.set("input", inputArray);
-
-            Request request = new Request.Builder()
-                    .url(baseUrl + "/embeddings")
-                    .post(RequestBody.create(
-                            objectMapper.writeValueAsString(requestBody),
-                            MediaType.parse("application/json")))
-                    .addHeader("Authorization", "Bearer " + apiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
-                }
-
-                String responseBody = response.body() != null ? response.body().string() : "";
-                JsonNode root = objectMapper.readTree(responseBody);
-                JsonNode data = root.get("data");
-
-                List<List<Double>> results = new java.util.ArrayList<>();
-                if (data != null && data.isArray()) {
-                    for (JsonNode item : data) {
-                        JsonNode embedding = item.get("embedding");
-                        List<Double> vec = new java.util.ArrayList<>();
-                        if (embedding != null && embedding.isArray()) {
-                            for (JsonNode value : embedding) {
-                                vec.add(value.asDouble());
-                            }
-                        }
-                        results.add(vec);
-                    }
-                }
-                return results;
-            }
+            return results;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {

@@ -1,9 +1,9 @@
 package com.greenhouse.module.qa.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.greenhouse.ai.LlmProvider;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.QaRecord;
@@ -49,6 +49,7 @@ public class RagQaService {
     private final QaRecordRepository recordRepository;
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
+    private final LlmProvider llmProvider;  // Mock/真实 LLM 切换
 
     private final String deepseekApiKey;
     private final String deepseekBaseUrl;
@@ -71,6 +72,7 @@ public class RagQaService {
             ChromaRetrievalService retrievalService,
             QaRecordRepository recordRepository,
             ObjectMapper objectMapper,
+            LlmProvider llmProvider,
             @Value("${deepseek.api-key}") String deepseekApiKey,
             @Value("${deepseek.base-url}") String deepseekBaseUrl,
             @Value("${deepseek.model}") String deepseekModel,
@@ -82,6 +84,7 @@ public class RagQaService {
         this.retrievalService = retrievalService;
         this.recordRepository = recordRepository;
         this.objectMapper = objectMapper;
+        this.llmProvider = llmProvider;
         this.deepseekApiKey = deepseekApiKey;
         this.deepseekBaseUrl = deepseekBaseUrl;
         this.deepseekModel = deepseekModel;
@@ -184,77 +187,25 @@ public class RagQaService {
     }
 
     /**
-     * 调用 DeepSeek 生成回答
+     * 生成回答（优先使用 LlmProvider，回退到直接 HTTP 调用 DeepSeek）
      */
     private String generateAnswer(String question, RagContext ragContext) {
         try {
             String prompt = String.format(systemPrompt, ragContext.context);
 
-            // 构建 OpenAI 兼容格式的请求体
-            ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", deepseekModel);
-            requestBody.put("temperature", temperature);
-            requestBody.put("max_tokens", maxTokens);
+            // 优先使用 LlmProvider（支持 Mock 模式）
+            String answer = llmProvider.generate(prompt, question, temperature, maxTokens);
 
-            ArrayNode messages = objectMapper.createArrayNode();
-
-            // system message
-            ObjectNode systemMsg = objectMapper.createObjectNode();
-            systemMsg.put("role", "system");
-            systemMsg.put("content", prompt);
-            messages.add(systemMsg);
-
-            // user message
-            ObjectNode userMsg = objectMapper.createObjectNode();
-            userMsg.put("role", "user");
-            userMsg.put("content", question);
-            messages.add(userMsg);
-
-            requestBody.set("messages", messages);
-
-            Request request = new Request.Builder()
-                    .url(deepseekBaseUrl + "/chat/completions")
-                    .post(RequestBody.create(
-                            objectMapper.writeValueAsString(requestBody),
-                            MediaType.parse("application/json")))
-                    .addHeader("Authorization", "Bearer " + deepseekApiKey)
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    log.error("DeepSeek API 请求失败: HTTP {} body={}", response.code(), errorBody);
-                    throw new BusinessException(ErrorCode.AI_LLM_FAILED);
-                }
-
-                String responseBody = response.body() != null ? response.body().string() : "";
-                JsonNode root = objectMapper.readTree(responseBody);
-
-                // 解析 OpenAI 格式: choices[0].message.content
-                JsonNode choices = root.get("choices");
-                if (choices == null || !choices.isArray() || choices.isEmpty()) {
-                    throw new BusinessException(ErrorCode.AI_LLM_FAILED);
-                }
-
-                JsonNode message = choices.get(0).get("message");
-                if (message == null || !message.has("content")) {
-                    throw new BusinessException(ErrorCode.AI_LLM_FAILED);
-                }
-
-                String answer = message.get("content").asText();
-
-                // 如果知识库无内容，追加标注
-                if (!ragContext.hasKnowledge) {
-                    answer += "\n\n---\n*注：以上回答基于通用农业知识，知识库中暂无相关内容。*";
-                }
-
-                return answer;
+            // 如果知识库无内容，追加标注
+            if (!ragContext.hasKnowledge) {
+                answer += "\n\n---\n*注：以上回答基于通用农业知识，知识库中暂无相关内容。*";
             }
+
+            return answer;
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("DeepSeek 调用异常: {}", e.getMessage(), e);
+            log.error("LLM 调用异常: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.AI_LLM_FAILED);
         }
     }
