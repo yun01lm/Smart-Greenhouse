@@ -18,8 +18,9 @@ import org.springframework.stereotype.Component;
 /**
  * MQTT 消息订阅器
  * <p>
- * 启动后自动订阅 greenhouse/+/device/+ 主题，
+ * 启动后自动订阅设备数据主题（通配符），
  * 接收 ESP32 设备上报的传感器数据并写入 InfluxDB。
+ * Topic 常量统一由 {@link MqttTopicConstants} 管理。
  * </p>
  *
  * <h3>ESP32 上报数据格式（JSON）</h3>
@@ -44,16 +45,15 @@ public class MqttSubscriber {
     private final AlertEngine alertEngine;
     private final ObjectMapper objectMapper;
 
-    /** 订阅主题 */
-    private static final String SUBSCRIBE_TOPIC = "greenhouse/+/device/+";
-
     @PostConstruct
     public void init() {
         try {
-            mqttClient.subscribe(SUBSCRIBE_TOPIC, 1, new SensorDataListener());
-            log.info("MQTT 订阅成功: topic={}", SUBSCRIBE_TOPIC);
+            mqttClient.subscribe(MqttTopicConstants.DEVICE_DATA_WILDCARD,
+                    MqttTopicConstants.DEFAULT_QOS, new SensorDataListener());
+            log.info("MQTT 订阅成功: topic={}", MqttTopicConstants.DEVICE_DATA_WILDCARD);
         } catch (MqttException e) {
-            log.error("MQTT 订阅失败: topic={}, error={}", SUBSCRIBE_TOPIC, e.getMessage(), e);
+            log.error("MQTT 订阅失败: topic={}, error={}",
+                    MqttTopicConstants.DEVICE_DATA_WILDCARD, e.getMessage(), e);
         }
     }
 
@@ -61,7 +61,7 @@ public class MqttSubscriber {
     public void cleanup() {
         try {
             if (mqttClient.isConnected()) {
-                mqttClient.unsubscribe(SUBSCRIBE_TOPIC);
+                mqttClient.unsubscribe(MqttTopicConstants.DEVICE_DATA_WILDCARD);
                 mqttClient.disconnect();
                 log.info("MQTT 已断开连接");
             }

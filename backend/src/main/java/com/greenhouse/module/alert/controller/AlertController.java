@@ -3,20 +3,17 @@ package com.greenhouse.module.alert.controller;
 import com.greenhouse.common.ApiResponse;
 import com.greenhouse.common.PageResult;
 import com.greenhouse.entity.Alert;
-import com.greenhouse.entity.User;
 import com.greenhouse.module.alert.dto.AlertResponse;
 import com.greenhouse.module.alert.dto.AlertRuleRequest;
 import com.greenhouse.module.alert.dto.AlertRuleResponse;
 import com.greenhouse.module.alert.dto.ThresholdRequest;
 import com.greenhouse.module.alert.dto.ThresholdResponse;
 import com.greenhouse.module.alert.service.AlertRuleService;
+import com.greenhouse.module.alert.service.AlertService;
 import com.greenhouse.module.alert.service.AlertThresholdService;
-import com.greenhouse.repository.AlertRepository;
-import com.greenhouse.repository.GreenhouseRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +24,8 @@ import java.util.List;
  * 预警管理 API
  * <p>
  * 路径前缀：/api/v1/alerts
+ * 遵循 Controller→Service→Repository 分层：Controller 仅做参数校验和结果转换，
+ * 所有业务逻辑和 Repository 操作均在 AlertService / AlertRuleService / AlertThresholdService 中。
  * </p>
  */
 @RestController
@@ -34,10 +33,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AlertController {
 
-    private final AlertRepository alertRepository;
+    private final AlertService alertService;
     private final AlertRuleService ruleService;
     private final AlertThresholdService thresholdService;
-    private final GreenhouseRepository greenhouseRepository;
 
     // ===== 告警记录 =====
 
@@ -52,17 +50,11 @@ public class AlertController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String level) {
 
-        Page<Alert> alertPage;
-        if (level != null && !level.isEmpty()) {
-            alertPage = alertRepository.findByGreenhouseIdAndLevelOrderByCreatedAtDesc(
-                    greenhouseId, Alert.AlertLevel.valueOf(level), PageRequest.of(page, size));
-        } else {
-            alertPage = alertRepository.findByGreenhouseIdOrderByCreatedAtDesc(
-                    greenhouseId, PageRequest.of(page, size));
-        }
+        Alert.AlertLevel alertLevel = (level != null && !level.isEmpty())
+                ? Alert.AlertLevel.valueOf(level) : null;
 
-        String ghName = greenhouseRepository.findById(greenhouseId)
-                .map(gh -> gh.getName()).orElse("未知大棚");
+        Page<Alert> alertPage = alertService.listAlerts(greenhouseId, alertLevel, page, size);
+        String ghName = alertService.getGreenhouseName(greenhouseId);
 
         List<AlertResponse> list = alertPage.getContent().stream()
                 .map(a -> AlertResponse.fromEntity(a, ghName))
@@ -77,11 +69,7 @@ public class AlertController {
      */
     @PutMapping("/{id}/read")
     public ApiResponse<Void> markRead(@PathVariable Long id) {
-        Alert alert = alertRepository.findById(id)
-                .orElseThrow(() -> new com.greenhouse.common.BusinessException(
-                        com.greenhouse.common.ErrorCode.PARAM_ERROR, "告警记录不存在"));
-        alert.setReadStatus(true);
-        alertRepository.save(alert);
+        alertService.markAsRead(id);
         return ApiResponse.success("已标记为已读", null);
     }
 

@@ -29,6 +29,12 @@ const routes = [
         name: 'Users',
         component: () => import('@/views/users/UserPage.vue'),
         meta: { title: '用户管理' }
+      },
+      {
+        path: 'knowledge',
+        name: 'Knowledge',
+        component: () => import('@/views/knowledge/KnowledgePage.vue'),
+        meta: { title: '知识库管理' }
       }
     ]
   }

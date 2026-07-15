@@ -99,6 +99,39 @@ ai:
   voice:
     provider: xunfei             # xunfei | whisper
 
+# 多模态融合配置（论文对比实验：修改权重无需重新编译）
+greenhouse:
+  # RAG 问答配置
+  ai:
+    rag:
+      system-prompt: |
+        你是一个专业的农业助手，精通大棚蔬菜种植技术。请根据以下知识库内容回答用户问题。
+        
+        要求：
+        1. 优先使用知识库内容回答，如果知识库中有相关内容请以此为准
+        2. 如果知识库内容不充分，可以结合你的通用农业知识补充
+        3. 回答要专业、准确、实用，适合农户理解
+        4. 回答末尾标注引用来源（如有）
+        5. 如果问题超出农业范畴，礼貌说明你专注于农业技术问题
+        
+        知识库参考内容：
+        %s
+      temperature: 0.7
+      max-tokens: 2000
+      top-k: 5
+  # 多模态融合权重
+  fusion:
+    env:
+      compliance: 0.5
+      stability: 0.3
+      consistency: 0.2
+    visual:
+      disease: 0.6
+      growth: 0.4
+    overall:
+      env-weight: 0.6
+      visual-weight: 0.4
+
 # 日志
 logging:
   level:

@@ -1,5 +1,6 @@
 package com.greenhouse.entity;
 
+import com.greenhouse.module.mqtt.MqttTopicConstants;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -130,9 +131,9 @@ public class Device {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        // 自动生成 MQTT topic
+        // 自动生成 MQTT topic（使用统一常量）
         if (mqttTopic == null) {
-            mqttTopic = "greenhouse/" + greenhouseId + "/device/" + deviceSn;
+            mqttTopic = MqttTopicConstants.deviceDataTopic(greenhouseId, deviceSn);
         }
     }
 

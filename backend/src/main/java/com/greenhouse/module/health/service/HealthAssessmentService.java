@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.config.FusionConfig;
 import com.greenhouse.entity.Alert;
 import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.HealthAssessment;
@@ -32,9 +33,9 @@ import java.util.*;
  * 生成综合健康评分（0-100分）。
  * </p>
  *
- * <h3>融合公式</h3>
+ * <h3>融合公式（权重可通过 application.yml 配置）</h3>
  * <pre>
- * overall_score = (env_score × 0.6 + visual_score × 0.4) × weather_factor
+ * overall_score = (env_score × envWeight + visual_score × visualWeight) × weather_factor
  * overall_score = clamp(overall_score, 0, 100)
  * </pre>
  *
@@ -65,6 +66,7 @@ public class HealthAssessmentService {
     private final AlertRepository alertRepository;
     private final RealtimePushService pushService;
     private final ObjectMapper objectMapper;
+    private final FusionConfig fusionConfig;
 
     /**
      * 计算并保存综合健康评分
@@ -90,8 +92,10 @@ public class HealthAssessmentService {
         double weatherFactor = weatherResult.factor();
         String weatherRisk = weatherResult.description();
 
-        // 4. 加权融合
-        double overallScore = (envScore * 0.6 + visualScore * 0.4) * weatherFactor;
+        // 4. 加权融合（权重从 FusionConfig 读取）
+        FusionConfig.OverallWeights overallWeights = fusionConfig.getOverall();
+        double overallScore = (envScore * overallWeights.getEnvWeight()
+                + visualScore * overallWeights.getVisualWeight()) * weatherFactor;
         overallScore = Math.max(0, Math.min(100, overallScore));
 
         // 5. 生成分析详情

@@ -17,17 +17,21 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * RAG 问答核心服务
  * <p>
  * 完整链路：用户问题 → 向量化(EmbeddingService) → Chroma检索(ChromaRetrievalService)
  * → Prompt组装 → DeepSeek生成 → 保存记录 → 返回结果。
+ * </p>
+ *
+ * <h3>配置化说明</h3>
+ * <p>
+ * Prompt、temperature、max_tokens、top-k 均从 application.yml 读取，
+ * 支持运行时调整和论文 Prompt 工程对比实验。
  * </p>
  *
  * <h3>降级策略</h3>
@@ -50,23 +54,17 @@ public class RagQaService {
     private final String deepseekBaseUrl;
     private final String deepseekModel;
 
-    /** RAG 检索 Top-K */
-    private static final int TOP_K = 5;
+    /** RAG 系统提示词（从 application.yml 读取，支持运行时调整） */
+    private final String systemPrompt;
 
-    /** 系统提示词 */
-    private static final String SYSTEM_PROMPT = """
-            你是一个专业的农业助手，精通大棚蔬菜种植技术。请根据以下知识库内容回答用户问题。
-            
-            要求：
-            1. 优先使用知识库内容回答，如果知识库中有相关内容请以此为准
-            2. 如果知识库内容不充分，可以结合你的通用农业知识补充
-            3. 回答要专业、准确、实用，适合农户理解
-            4. 回答末尾标注引用来源（如有）
-            5. 如果问题超出农业范畴，礼貌说明你专注于农业技术问题
-            
-            知识库参考内容：
-            %s
-            """;
+    /** RAG 检索 Top-K（从 application.yml 读取，默认 5） */
+    private final int topK;
+
+    /** LLM 温度参数（从 application.yml 读取，默认 0.7） */
+    private final double temperature;
+
+    /** LLM 最大生成 token 数（从 application.yml 读取，默认 2000） */
+    private final int maxTokens;
 
     public RagQaService(
             EmbeddingService embeddingService,
@@ -75,7 +73,11 @@ public class RagQaService {
             ObjectMapper objectMapper,
             @Value("${deepseek.api-key}") String deepseekApiKey,
             @Value("${deepseek.base-url}") String deepseekBaseUrl,
-            @Value("${deepseek.model}") String deepseekModel) {
+            @Value("${deepseek.model}") String deepseekModel,
+            @Value("${greenhouse.ai.rag.system-prompt}") String systemPrompt,
+            @Value("${greenhouse.ai.rag.top-k:5}") int topK,
+            @Value("${greenhouse.ai.rag.temperature:0.7}") double temperature,
+            @Value("${greenhouse.ai.rag.max-tokens:2000}") int maxTokens) {
         this.embeddingService = embeddingService;
         this.retrievalService = retrievalService;
         this.recordRepository = recordRepository;
@@ -83,6 +85,10 @@ public class RagQaService {
         this.deepseekApiKey = deepseekApiKey;
         this.deepseekBaseUrl = deepseekBaseUrl;
         this.deepseekModel = deepseekModel;
+        this.systemPrompt = systemPrompt;
+        this.topK = topK;
+        this.temperature = temperature;
+        this.maxTokens = maxTokens;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)  // LLM 生成可能较慢
@@ -150,7 +156,7 @@ public class RagQaService {
             List<Double> queryVector = embeddingService.embed(question);
 
             // 2. Chroma 检索
-            List<ChromaRetrievalService.RetrievalResult> results = retrievalService.query(queryVector, TOP_K);
+            List<ChromaRetrievalService.RetrievalResult> results = retrievalService.query(queryVector, topK);
 
             if (results.isEmpty()) {
                 contextBuilder.append("（知识库中暂无相关内容，请基于通用农业知识回答）");
@@ -182,20 +188,20 @@ public class RagQaService {
      */
     private String generateAnswer(String question, RagContext ragContext) {
         try {
-            String systemPrompt = String.format(SYSTEM_PROMPT, ragContext.context);
+            String prompt = String.format(systemPrompt, ragContext.context);
 
             // 构建 OpenAI 兼容格式的请求体
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", deepseekModel);
-            requestBody.put("temperature", 0.7);
-            requestBody.put("max_tokens", 2000);
+            requestBody.put("temperature", temperature);
+            requestBody.put("max_tokens", maxTokens);
 
             ArrayNode messages = objectMapper.createArrayNode();
 
             // system message
             ObjectNode systemMsg = objectMapper.createObjectNode();
             systemMsg.put("role", "system");
-            systemMsg.put("content", systemPrompt);
+            systemMsg.put("content", prompt);
             messages.add(systemMsg);
 
             // user message
@@ -274,13 +280,13 @@ public class RagQaService {
     /**
      * 仅生成回答（不保存记录）
      * <p>
-     * 供 VoiceQaService 调用，避免重复保存记录。
+     * 供 VoiceQaService 和 KnowledgeService 调用，避免重复保存记录。
      * </p>
      *
      * @param question 问题内容
      * @return RAG 生成结果（answer + sources）
      */
-    AnswerResult generateAnswerOnly(String question) {
+    public AnswerResult generateAnswerOnly(String question) {
         RagContext ragContext = retrieveContext(question);
         String answer = generateAnswer(question, ragContext);
         return new AnswerResult(answer, ragContext.sources, ragContext.hasKnowledge);
@@ -289,7 +295,7 @@ public class RagQaService {
     /**
      * RAG 生成结果（不包含数据库记录）
      */
-    record AnswerResult(
+    public record AnswerResult(
             String answer,
             List<QaResponse.SourceInfo> sources,
             boolean hasKnowledge

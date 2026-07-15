@@ -47,7 +47,7 @@
             <el-icon><UserFilled /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
-          <el-menu-item index="/knowledge" disabled>
+          <el-menu-item index="/knowledge">
             <el-icon><Document /></el-icon>
             <span>知识库</span>
           </el-menu-item>

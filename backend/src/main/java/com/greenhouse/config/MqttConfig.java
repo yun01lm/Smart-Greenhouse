@@ -1,5 +1,6 @@
 package com.greenhouse.config;
 
+import com.greenhouse.module.mqtt.MqttTopicConstants;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,9 @@ import org.springframework.context.annotation.Configuration;
 /**
  * MQTT 客户端配置
  * <p>
- * 连接 Mosquitto Broker，订阅所有设备上报的传感器数据。
- * 主题通配符：greenhouse/+/device/+
+ * 连接 Mosquitto Broker，创建 MqttClient Bean。
+ * 订阅逻辑已迁移至 {@link com.greenhouse.module.mqtt.MqttSubscriber}。
+ * Topic 常量统一由 {@link com.greenhouse.module.mqtt.MqttTopicConstants} 管理。
  * </p>
  */
 @Slf4j
@@ -27,11 +29,6 @@ public class MqttConfig {
     private String username;
     private String password;
     private String clientId;
-
-    /** MQTT 订阅主题（通配符） */
-    private static final String SUBSCRIBE_TOPIC = "greenhouse/+/device/+";
-    /** 连接质量 */
-    private static final int QOS = 1;
 
     @Bean
     public MqttClient mqttClient() throws MqttException {

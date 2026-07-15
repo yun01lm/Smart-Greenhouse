@@ -6,6 +6,7 @@ import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.*;
 import com.greenhouse.module.control.dto.ControlLogResponse;
 import com.greenhouse.module.control.dto.ControlRequest;
+import com.greenhouse.module.mqtt.MqttTopicConstants;
 import com.greenhouse.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -136,8 +137,8 @@ public class ControlService {
      */
     private boolean sendMqttCommand(Device device, String action) {
         try {
-            String topic = "greenhouse/" + device.getGreenhouseId()
-                    + "/device/" + device.getDeviceSn() + "/command";
+            String topic = MqttTopicConstants.deviceControlTopic(
+                    device.getGreenhouseId(), device.getDeviceSn());
 
             Map<String, Object> payload = Map.of(
                     "action", action,
