@@ -41,6 +41,12 @@ const routes = [
         name: 'Alerts',
         component: () => import('@/views/alerts/AlertRulePage.vue'),
         meta: { title: '预警配置' }
+      },
+      {
+        path: 'export',
+        name: 'Export',
+        component: () => import('@/views/export/ReportPage.vue'),
+        meta: { title: '数据导出' }
       }
     ]
   }

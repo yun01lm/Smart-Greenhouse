@@ -55,7 +55,7 @@
             <el-icon><WarningFilled /></el-icon>
             <span>预警配置</span>
           </el-menu-item>
-          <el-menu-item index="/export" disabled>
+          <el-menu-item index="/export">
             <el-icon><Download /></el-icon>
             <span>数据导出</span>
           </el-menu-item>
