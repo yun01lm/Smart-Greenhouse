@@ -65,6 +65,12 @@ const routes = [
         name: 'Expert',
         component: () => import('@/views/expert/ExpertPage.vue'),
         meta: { title: '专家工作台' }
+      },
+      {
+        path: 'owner',
+        name: 'Owner',
+        component: () => import('@/views/owner/OwnerPage.vue'),
+        meta: { title: '棚主管理' }
       }
     ]
   }

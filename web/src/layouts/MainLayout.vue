@@ -71,7 +71,7 @@
             <el-icon><Avatar /></el-icon>
             <span>专家工作台</span>
           </el-menu-item>
-          <el-menu-item index="/owner" disabled>
+          <el-menu-item index="/owner">
             <el-icon><HomeFilled /></el-icon>
             <span>棚主管理</span>
           </el-menu-item>
