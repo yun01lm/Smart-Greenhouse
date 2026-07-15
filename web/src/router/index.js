@@ -47,6 +47,12 @@ const routes = [
         name: 'Export',
         component: () => import('@/views/export/ReportPage.vue'),
         meta: { title: '数据导出' }
+      },
+      {
+        path: 'monitor',
+        name: 'Monitor',
+        component: () => import('@/views/monitor/MonitorPage.vue'),
+        meta: { title: '系统监控' }
       }
     ]
   }

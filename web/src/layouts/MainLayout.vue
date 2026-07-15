@@ -59,7 +59,7 @@
             <el-icon><Download /></el-icon>
             <span>数据导出</span>
           </el-menu-item>
-          <el-menu-item index="/monitor" disabled>
+          <el-menu-item index="/monitor">
             <el-icon><Monitor /></el-icon>
             <span>系统监控</span>
           </el-menu-item>

@@ -45,4 +45,7 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     /** 批量查询指定ID的设备 */
     List<Device> findByIdIn(List<Long> ids);
+
+    /** 按状态统计全部设备数量（ADMIN 监控用） */
+    long countByStatus(Device.DeviceStatus status);
 }
