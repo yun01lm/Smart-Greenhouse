@@ -71,6 +71,17 @@ public class SensorDataService {
     }
 
     /**
+     * 仅更新设备在线状态（控制器心跳专用）
+     */
+    public void updateDeviceOnline(Long deviceId) {
+        deviceRepository.findById(deviceId).ifPresent(device -> {
+            device.setStatus(Device.DeviceStatus.ONLINE);
+            device.setLastDataTime(java.time.LocalDateTime.now());
+            deviceRepository.save(device);
+        });
+    }
+
+    /**
      * 查询实时数据（大棚下所有传感器最新值）
      */
     public SensorRealtimeResponse getRealtimeData(Long greenhouseId, String greenhouseName) {

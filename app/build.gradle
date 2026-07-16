@@ -21,6 +21,8 @@ android {
     buildTypes {
         release {
             minifyEnabled = true
+            // 安全加固：生产构建关闭 debuggable
+            debuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -28,6 +30,8 @@ android {
         }
         debug {
             minifyEnabled = false
+            // 开发构建：允许调试（仅在开发环境使用）
+            debuggable = true
         }
     }
 

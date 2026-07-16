@@ -130,7 +130,14 @@ class DeviceSimulator:
 
     def _publish_sensor_data(self, greenhouse: dict, device: dict):
         """生成传感器数据并通过 MQTT 发布"""
-        # 根据运行模式选择参数范围
+        device_type = device.get('type', 'SENSOR')
+
+        if device_type == 'CONTROLLER':
+            # 控制器设备发送心跳包（维持在线状态）
+            self._publish_controller_heartbeat(greenhouse, device)
+            return
+
+        # 传感器设备：根据运行模式选择参数范围
         mode_params = device[self.mode]
         value = self._generate_value(mode_params['min'], mode_params['max'], mode_params['noise'])
 
@@ -158,6 +165,31 @@ class DeviceSimulator:
 
         except Exception as e:
             print(f"  [错误] 发布异常: {topic}, {e}")
+
+    def _publish_controller_heartbeat(self, greenhouse: dict, device: dict):
+        """控制器设备发送心跳包，维持在线状态"""
+        payload = {
+            "greenhouseId": greenhouse['id'],
+            "deviceId": device['id'],
+            "deviceType": "CONTROLLER",
+            "status": "ONLINE",
+            "timestamp": int(time.time() * 1000)
+        }
+
+        topic = f"greenhouse/{greenhouse['id']}/device/{device['sn']}"
+
+        try:
+            json_payload = json.dumps(payload, ensure_ascii=False)
+            result = self.client.publish(topic, json_payload, qos=1)
+
+            if result.rc == 0:
+                ts = datetime.now().strftime('%H:%M:%S')
+                print(f"  [{ts}] {topic} → {device['name']} [心跳]")
+            else:
+                print(f"  [警告] 心跳发布失败: {topic}, rc={result.rc}")
+
+        except Exception as e:
+            print(f"  [错误] 心跳发布异常: {topic}, {e}")
 
     def _generate_value(self, min_val: float, max_val: float, noise: float) -> float:
         """生成在 [min, max] 范围内带随机噪声的值"""

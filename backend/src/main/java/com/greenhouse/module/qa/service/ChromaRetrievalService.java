@@ -31,15 +31,18 @@ public class ChromaRetrievalService {
 
     private final String chromaUrl;
     private final String collectionName;
+    private final ChromaInitializer chromaInitializer;
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
 
     public ChromaRetrievalService(
             @Value("${chroma.base-url:http://localhost:8000}") String chromaUrl,
             @Value("${chroma.collection:greenhouse_knowledge}") String collectionName,
+            ChromaInitializer chromaInitializer,
             ObjectMapper objectMapper) {
         this.chromaUrl = chromaUrl;
         this.collectionName = collectionName;
+        this.chromaInitializer = chromaInitializer;
         this.objectMapper = objectMapper;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.SECONDS)
@@ -77,7 +80,13 @@ public class ChromaRetrievalService {
             include.add("distances");
             requestBody.set("include", include);
 
-            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/query";
+            // 使用 ChromaInitializer 获取的 collection UUID 构建路径
+            String collectionPath = chromaInitializer.getCollectionPath();
+            if (collectionPath == null) {
+                log.warn("ChromaDB collection 未初始化，返回空结果");
+                return Collections.emptyList();
+            }
+            String url = chromaUrl + collectionPath + "/query";
 
             Request request = new Request.Builder()
                     .url(url)

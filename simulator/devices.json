@@ -80,6 +80,28 @@
           "normal": { "min": 18.0, "max": 26.0, "noise": 0.3 },
           "abnormal": { "min": 5.0, "max": 38.0, "noise": 1.0 },
           "disease_risk": { "min": 26.0, "max": 38.0, "noise": 0.5 }
+        },
+        {
+          "id": 7,
+          "sn": "PUMP-001",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": { "min": 0, "max": 0, "noise": 0 },
+          "abnormal": { "min": 0, "max": 0, "noise": 0 },
+          "disease_risk": { "min": 0, "max": 0, "noise": 0 }
+        },
+        {
+          "id": 8,
+          "sn": "FAN-001",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": { "min": 0, "max": 0, "noise": 0 },
+          "abnormal": { "min": 0, "max": 0, "noise": 0 },
+          "disease_risk": { "min": 0, "max": 0, "noise": 0 }
         }
       ]
     }

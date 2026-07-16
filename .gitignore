@@ -50,3 +50,4 @@ app/build/
 *.apk
 *.aab
 local.properties
+__pycache__/

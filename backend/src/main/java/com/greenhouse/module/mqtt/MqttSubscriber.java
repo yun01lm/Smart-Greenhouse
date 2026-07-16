@@ -85,6 +85,17 @@ public class MqttSubscriber {
 
                 Long greenhouseId = root.get("greenhouseId").asLong();
                 Long deviceId = root.get("deviceId").asLong();
+
+                // 判断消息类型：CONTROLLER 心跳 vs 传感器数据
+                String deviceType = root.has("deviceType") ? root.get("deviceType").asText() : null;
+                if ("CONTROLLER".equals(deviceType)) {
+                    // 控制器心跳：仅更新设备在线状态
+                    sensorDataService.updateDeviceOnline(deviceId);
+                    log.debug("控制器心跳已处理: greenhouseId={}, deviceId={}", greenhouseId, deviceId);
+                    return;
+                }
+
+                // 传感器数据：标准处理流程
                 String sensorType = root.get("sensorType").asText();
                 Double value = root.get("value").asDouble();
 

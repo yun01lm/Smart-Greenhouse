@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置
+  ============
+  开发环境：允许访问本地开发服务器（10.0.2.2:8080）的明文HTTP
+  生产环境：仅允许HTTPS流量，并配置证书固定（待添加）
+
+  使用方法：
+    开发构建：使用 debug 构建变体，自动使用此配置
+    生产构建：替换为仅允许HTTPS的配置，移除 cleartext 例外
+-->
+<network-security-config>
+    <!-- 默认：禁止明文流量 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- 开发环境例外：允许访问本地开发服务器的明文HTTP -->
+    <!-- 生产构建时应移除此配置 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

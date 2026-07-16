@@ -10,6 +10,7 @@ import com.greenhouse.module.knowledge.dto.KnowledgeDocumentResponse;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestRequest;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestResponse;
 import com.greenhouse.module.qa.service.ChromaRetrievalService;
+import com.greenhouse.module.qa.service.ChromaInitializer;
 import com.greenhouse.module.qa.service.EmbeddingService;
 import com.greenhouse.module.qa.service.RagQaService;
 import com.greenhouse.repository.KnowledgeDocumentRepository;
@@ -62,6 +63,7 @@ public class KnowledgeService {
     private final KnowledgeDocumentRepository documentRepository;
     private final EmbeddingService embeddingService;
     private final RagQaService ragQaService;
+    private final ChromaInitializer chromaInitializer;
     private final ObjectMapper objectMapper;
 
     private final String chromaUrl;
@@ -86,6 +88,7 @@ public class KnowledgeService {
             KnowledgeDocumentRepository documentRepository,
             EmbeddingService embeddingService,
             RagQaService ragQaService,
+            ChromaInitializer chromaInitializer,
             ObjectMapper objectMapper,
             @Value("${chroma.base-url:http://localhost:8000}") String chromaUrl,
             @Value("${chroma.collection:greenhouse_knowledge}") String collectionName,
@@ -93,6 +96,7 @@ public class KnowledgeService {
         this.documentRepository = documentRepository;
         this.embeddingService = embeddingService;
         this.ragQaService = ragQaService;
+        this.chromaInitializer = chromaInitializer;
         this.objectMapper = objectMapper;
         this.chromaUrl = chromaUrl;
         this.collectionName = collectionName;
@@ -422,7 +426,12 @@ public class KnowledgeService {
             }
             requestBody.set("metadatas", metadatas);
 
-            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/add";
+            String collectionPath = chromaInitializer.getCollectionPath();
+            if (collectionPath == null) {
+                throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
+                        "ChromaDB collection 未初始化，无法写入向量");
+            }
+            String url = chromaUrl + collectionPath + "/add";
 
             Request request = new Request.Builder()
                     .url(url)
@@ -466,7 +475,12 @@ public class KnowledgeService {
             whereFilter.put("doc_id", documentId);
             requestBody.set("where", whereFilter);
 
-            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/delete";
+            String collectionPath = chromaInitializer.getCollectionPath();
+            if (collectionPath == null) {
+                log.warn("ChromaDB collection 未初始化，跳过删除");
+                return;
+            }
+            String url = chromaUrl + collectionPath + "/delete";
 
             Request request = new Request.Builder()
                     .url(url)
