@@ -106,7 +106,7 @@
         <el-card class="export-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <el-icon size="20" color="#67C23A"><Switch /></el-icon>
+              <el-icon size="20" color="#67C23A"><SwitchIcon /></el-icon>
               <span>设备控制日志</span>
             </div>
           </template>
@@ -174,7 +174,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Download, Histogram, WarningFilled, Switch, TrendCharts } from '@element-plus/icons-vue'
+import { Download, Histogram, WarningFilled, Switch as SwitchIcon, TrendCharts } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getGreenhouses } from '@/api/greenhouse'
 import { exportSensors, exportAlerts, exportControls, exportHealth, downloadBlob } from '@/api/report'

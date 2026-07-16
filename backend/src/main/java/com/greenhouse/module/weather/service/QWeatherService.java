@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,6 +50,10 @@ public class QWeatherService {
     /** 缓存有效期：3 小时 */
     private static final long CACHE_DURATION_HOURS = 3;
 
+    /** 天气数据提供者：mock（本地模拟）或 qweather（和风天气 API） */
+    @Value("${weather.provider:mock}")
+    private String provider;
+
     public QWeatherService(
             @Value("${qweather.api-key}") String apiKey,
             @Value("${qweather.base-url}") String baseUrl,
@@ -70,6 +75,11 @@ public class QWeatherService {
      * @param location 位置标识（城市名或 LocationID）
      */
     public WeatherCurrentResponse getCurrentWeather(String location) {
+        // Mock 模式：直接返回模拟数据
+        if ("mock".equals(provider)) {
+            return buildMockCurrent(location);
+        }
+
         // 检查缓存
         Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
         if (cached.isPresent()) {
@@ -91,6 +101,11 @@ public class QWeatherService {
      * @param days     预报天数（3 或 7）
      */
     public WeatherForecastResponse getForecast(String location, int days) {
+        // Mock 模式：直接返回模拟数据
+        if ("mock".equals(provider)) {
+            return buildMockForecast(location, days);
+        }
+
         // 检查缓存
         Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
         if (cached.isPresent()) {
@@ -306,5 +321,70 @@ public class QWeatherService {
                 .build();
         cacheRepository.save(cache);
         log.debug("天气缓存已更新: location={} temp={}", location, temperature);
+    }
+
+    /**
+     * 生成模拟当前天气数据
+     */
+    private WeatherCurrentResponse buildMockCurrent(String location) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        BigDecimal temp = BigDecimal.valueOf(r.nextDouble(15.0, 35.0)).setScale(1, java.math.RoundingMode.HALF_UP);
+        BigDecimal feelsLike = temp.add(BigDecimal.valueOf(r.nextDouble(-2.0, 2.0))).setScale(1, java.math.RoundingMode.HALF_UP);
+        BigDecimal humidity = BigDecimal.valueOf(r.nextDouble(40.0, 90.0)).setScale(0, java.math.RoundingMode.HALF_UP);
+        BigDecimal windSpeed = BigDecimal.valueOf(r.nextDouble(0.0, 15.0)).setScale(1, java.math.RoundingMode.HALF_UP);
+        BigDecimal pressure = BigDecimal.valueOf(r.nextDouble(1000.0, 1020.0)).setScale(0, java.math.RoundingMode.HALF_UP);
+        BigDecimal visibility = BigDecimal.valueOf(r.nextDouble(5.0, 30.0)).setScale(0, java.math.RoundingMode.HALF_UP);
+
+        String[] weatherCodes = {"100", "101", "102", "103", "104", "300", "301", "302", "305"};
+        String[] weatherTexts = {"晴", "多云", "少云", "晴间多云", "多云", "阵雨", "强阵雨", "雷阵雨", "小雨"};
+        String[] windDirs = {"北风", "东北风", "东风", "东南风", "南风", "西南风", "西风", "西北风"};
+        int idx = r.nextInt(weatherCodes.length);
+
+        return WeatherCurrentResponse.builder()
+                .location(location)
+                .temperature(temp)
+                .feelsLike(feelsLike)
+                .humidity(humidity)
+                .weatherCode(weatherCodes[idx])
+                .weatherText(weatherTexts[idx])
+                .windSpeed(windSpeed)
+                .windDirection(windDirs[r.nextInt(windDirs.length)])
+                .pressure(pressure)
+                .visibility(visibility)
+                .updatedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 生成模拟天气预报数据
+     */
+    private WeatherForecastResponse buildMockForecast(String location, int days) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        int actualDays = Math.min(days, 7);
+        List<WeatherForecastResponse.DayForecast> forecasts = new ArrayList<>();
+
+        String[] weatherCodes = {"100", "101", "102", "104", "300", "301", "305"};
+        String[] weatherTexts = {"晴", "多云", "少云", "多云", "阵雨", "强阵雨", "小雨"};
+
+        for (int i = 0; i < actualDays; i++) {
+            double baseTemp = r.nextDouble(20.0, 32.0);
+            int idx = r.nextInt(weatherCodes.length);
+            forecasts.add(WeatherForecastResponse.DayForecast.builder()
+                    .date(LocalDate.now().plusDays(i))
+                    .tempMax(BigDecimal.valueOf(baseTemp + r.nextDouble(0.0, 3.0)).setScale(1, java.math.RoundingMode.HALF_UP))
+                    .tempMin(BigDecimal.valueOf(baseTemp - r.nextDouble(5.0, 10.0)).setScale(1, java.math.RoundingMode.HALF_UP))
+                    .weatherCode(weatherCodes[idx])
+                    .weatherText(weatherTexts[idx])
+                    .humidity(BigDecimal.valueOf(r.nextDouble(40.0, 90.0)).setScale(0, java.math.RoundingMode.HALF_UP))
+                    .windSpeed(BigDecimal.valueOf(r.nextDouble(0.0, 15.0)).setScale(1, java.math.RoundingMode.HALF_UP))
+                    .precipitation(BigDecimal.valueOf(r.nextDouble(0.0, 10.0)).setScale(1, java.math.RoundingMode.HALF_UP))
+                    .build());
+        }
+
+        return WeatherForecastResponse.builder()
+                .location(location)
+                .forecasts(forecasts)
+                .updatedAt(LocalDateTime.now())
+                .build();
     }
 }

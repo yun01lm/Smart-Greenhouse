@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 预警管理 API
@@ -71,6 +72,15 @@ public class AlertController {
     public ApiResponse<Void> markRead(@PathVariable Long id) {
         alertService.markAsRead(id);
         return ApiResponse.success("已标记为已读", null);
+    }
+
+    /**
+     * 获取未读告警数量
+     * GET /api/v1/alerts/unread-count?greenhouseId=1
+     */
+    @GetMapping("/unread-count")
+    public ApiResponse<Map<String, Object>> unreadCount(@RequestParam Long greenhouseId) {
+        return ApiResponse.success(alertService.getUnreadCount(greenhouseId));
     }
 
     // ===== 预警规则 =====

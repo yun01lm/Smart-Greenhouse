@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 告警记录管理服务
@@ -70,5 +71,13 @@ public class AlertService {
         return greenhouseRepository.findById(greenhouseId)
                 .map(gh -> gh.getName())
                 .orElse("未知大棚");
+    }
+
+    /**
+     * 获取未读告警数量
+     */
+    public Map<String, Object> getUnreadCount(Long greenhouseId) {
+        long count = alertRepository.countByGreenhouseIdAndReadStatusFalse(greenhouseId);
+        return Map.of("count", count);
     }
 }
