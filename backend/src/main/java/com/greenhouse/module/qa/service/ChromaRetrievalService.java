@@ -77,7 +77,7 @@ public class ChromaRetrievalService {
             include.add("distances");
             requestBody.set("include", include);
 
-            String url = chromaUrl + "/api/v1/collections/" + collectionName + "/query";
+            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/query";
 
             Request request = new Request.Builder()
                     .url(url)

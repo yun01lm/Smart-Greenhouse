@@ -26,7 +26,7 @@ public class Device {
     private Long id;
 
     /** 设备名称（如"1号温度传感器"、"水泵控制器"） */
-    @Column(nullable = false, length = 100)
+    @Column(name = "\"name\"", nullable = false, length = 100)
     private String name;
 
     /** 设备编号（用户自定义，同一大棚下唯一，如"TEMP-001"） */
@@ -62,7 +62,7 @@ public class Device {
     private LocalDateTime lastDataTime;
 
     /** 上次数值（传感器记录最新读数，控制器记录最新开关状态） */
-    @Column(name = "last_value", length = 100)
+    @Column(name = "\"last_value\"", length = 100)
     private String lastValue;
 
     /** MQTT 主题（自动生成：greenhouse/{greenhouseId}/device/{deviceSn}） */
@@ -70,7 +70,7 @@ public class Device {
     private String mqttTopic;
 
     /** 设备描述 */
-    @Column(length = 500)
+    @Column(name = "\"description\"", length = 500)
     private String description;
 
     /** 安装位置（如"大棚东北角"） */

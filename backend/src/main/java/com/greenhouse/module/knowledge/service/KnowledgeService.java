@@ -16,6 +16,7 @@ import com.greenhouse.repository.KnowledgeDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,7 +57,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class KnowledgeService {
 
     private final KnowledgeDocumentRepository documentRepository;
@@ -81,6 +81,7 @@ public class KnowledgeService {
     private final Path uploadDir;
     private final OkHttpClient httpClient;
 
+    @Autowired
     public KnowledgeService(
             KnowledgeDocumentRepository documentRepository,
             EmbeddingService embeddingService,
@@ -421,7 +422,7 @@ public class KnowledgeService {
             }
             requestBody.set("metadatas", metadatas);
 
-            String url = chromaUrl + "/api/v1/collections/" + collectionName + "/add";
+            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/add";
 
             Request request = new Request.Builder()
                     .url(url)
@@ -465,7 +466,7 @@ public class KnowledgeService {
             whereFilter.put("doc_id", documentId);
             requestBody.set("where", whereFilter);
 
-            String url = chromaUrl + "/api/v1/collections/" + collectionName + "/delete";
+            String url = chromaUrl + "/api/v2/tenants/default/databases/default/collections/" + collectionName + "/delete";
 
             Request request = new Request.Builder()
                     .url(url)

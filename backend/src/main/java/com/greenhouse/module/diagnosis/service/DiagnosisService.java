@@ -42,13 +42,22 @@ public class DiagnosisService {
      */
     @Transactional
     public DiagnosisResponse diagnose(Long userId, Long greenhouseId, MultipartFile imageFile) {
-        // 1. 保存图片文件
+        // 1. 先读取图片字节（必须在 transfer/save 之前，否则 Tomcat 临时文件会被清理）
+        byte[] imageBytes;
+        try {
+            imageBytes = imageFile.getBytes();
+        } catch (Exception e) {
+            log.error("读取图片文件失败: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "图片文件读取失败");
+        }
+
+        // 2. 保存图片文件
         String imagePath = fileService.saveDiagnosisImage(imageFile);
 
-        // 2. 调用 AI 识别
+        // 3. 调用 AI 识别
         DiseaseRecognitionProvider.RecognitionResult aiResult;
         try {
-            aiResult = recognitionProvider.recognize(imageFile.getBytes());
+            aiResult = recognitionProvider.recognize(imageBytes);
         } catch (Exception e) {
             log.error("AI 识别失败: {}", e.getMessage(), e);
 
