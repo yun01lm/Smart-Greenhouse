@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
 }
 
@@ -86,6 +86,9 @@ dependencies {
     // Glide (图片加载)
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Security — EncryptedSharedPreferences (Token 安全存储)
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // STOMP over WebSocket (规范要求: STOMP over OkHttp)
     // 使用 OkHttp 的 WebSocket 实现 STOMP 协议，不引入额外库

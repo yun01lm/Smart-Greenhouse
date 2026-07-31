@@ -1,18 +1,33 @@
-package com.greenhouse.app.data.local;
+﻿package com.greenhouse.app.data.local;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.security.crypto.EncryptedSharedPreferences;
+import androidx.security.crypto.MasterKeys;
+
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
 /**
- * Token 管理器
+ * Token 管理器（安全加固版）
  * <p>
- * 使用 SharedPreferences 存储 JWT Token 和用户基本信息。
- * 登录成功时保存，退出登录时清除。
+ * 使用 EncryptedSharedPreferences 存储 JWT Token 和用户敏感信息。
+ * 数据在写入时自动 AES-256 加密，读取时自动解密。
+ * 替代原有明文 SharedPreferences，防止 root 设备或恶意应用窃取 Token。
+ * </p>
+ *
+ * <p>加密方案：
+ * <ul>
+ *   <li>主密钥：AES256-GCM（Android Keystore 硬件保护）</li>
+ *   <li>Key 加密：AES256-SIV</li>
+ *   <li>Value 加密：AES256-GCM</li>
+ * </ul>
  * </p>
  */
 public class TokenManager {
 
-    private static final String PREF_NAME = "greenhouse_prefs";
+    private static final String PREF_NAME = "greenhouse_secure_prefs";
     private static final String KEY_TOKEN = "jwt_token";
     private static final String KEY_USER_ID = "user_id";
     private static final String KEY_USERNAME = "username";
@@ -21,8 +36,25 @@ public class TokenManager {
 
     private static SharedPreferences prefs;
 
+    /**
+     * 初始化加密存储。必须在 Application.onCreate() 中调用。
+     *
+     * @param context 应用上下文
+     * @throws RuntimeException 如果设备不支持加密或 Keystore 初始化失败
+     */
     public static void init(Context context) {
-        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        try {
+            String masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC);
+            prefs = EncryptedSharedPreferences.create(
+                    PREF_NAME,
+                    masterKeyAlias,
+                    context,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            );
+        } catch (GeneralSecurityException | IOException e) {
+            throw new RuntimeException("无法初始化加密存储，设备可能不支持", e);
+        }
     }
 
     // ===== Token =====
@@ -70,17 +102,8 @@ public class TokenManager {
 
     /**
      * 缓存员工权限位。
-     * <p>
      * 员工登录后通过 GET /worker/permissions 接口获取权限数据，
-     * 调用此方法缓存到 SharedPreferences，供 RoleAdapter 使用。
-     * </p>
-     *
-     * @param canViewData      是否可查看数据
-     * @param canControlDevice 是否可控制设备
-     * @param canDiagnose      是否可诊断
-     * @param canAskExpert     是否可咨询专家
-     * @param canViewAlerts    是否可查看预警
-     * @param canViewHistory   是否可查看历史
+     * 调用此方法缓存到加密存储，供 RoleAdapter 使用。
      */
     public static void savePermissions(boolean canViewData, boolean canControlDevice,
                                        boolean canDiagnose, boolean canAskExpert,

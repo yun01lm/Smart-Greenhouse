@@ -55,11 +55,11 @@ deepseek:
   base-url: https://api.deepseek.com/v1
   model: deepseek-chat
 
-# MQTT Broker
+# MQTT Broker（安全加固：启用认证）
 mqtt:
   broker: tcp://localhost:1883
-  username: ${MQTT_USER:}
-  password: ${MQTT_PASSWORD:}
+  username: ${MQTT_USER:greenhouse}
+  password: ${MQTT_PASSWORD:greenhouse_dev}
   client-id: greenhouse-backend-${random.uuid}
 
 # JWT 配置

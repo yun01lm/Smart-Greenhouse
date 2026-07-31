@@ -41,9 +41,11 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 # 配置
 # ============================================================
 
-# MQTT
+# MQTT（安全加固：启用认证）
 MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
+MQTT_USERNAME = os.environ.get("MQTT_USER", "greenhouse")
+MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "greenhouse_dev")
 MQTT_TOPIC_TEMPLATE = "greenhouse/{greenhouse_id}/device/{device_id}"
 
 # InfluxDB
@@ -145,6 +147,8 @@ def run_realtime_simulator(interval_sec, greenhouse_id):
         mqtt.CallbackAPIVersion.VERSION2,
         client_id=f"sensor-simulator-{greenhouse_id}"
     )
+    if MQTT_USERNAME:
+        mqtt_client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
     mqtt_client.on_connect = on_connect
     mqtt_client.on_publish = on_publish
 
