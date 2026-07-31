@@ -5,6 +5,8 @@ import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.EmployeePermission;
 import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.User;
+import com.greenhouse.entity.DataAuthorization;
+import com.greenhouse.repository.DataAuthorizationRepository;
 import com.greenhouse.repository.EmployeePermissionRepository;
 import com.greenhouse.repository.GreenhouseRepository;
 import com.greenhouse.security.annotations.RequireFunction;
@@ -46,6 +48,7 @@ public class PermissionAspect {
 
     private final GreenhouseRepository greenhouseRepository;
     private final EmployeePermissionRepository permissionRepository;
+    private final DataAuthorizationRepository dataAuthorizationRepository;
 
     /**
      * 校验大棚访问权限
@@ -102,9 +105,14 @@ public class PermissionAspect {
                 }
             }
             case EXPERT -> {
-                // TODO: 步骤后续 C17 专家授权模块实现
-                throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
-            }
+                // 检查是否有有效的数据授权（APPROVED + 未过期）
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                java.util.Optional<com.greenhouse.entity.DataAuthorization> auth =
+                        dataAuthorizationRepository.findTopByExpertIdAndGreenhouseIdAndStatusAndExpiresAtAfterOrderByApprovedAtDesc(
+                                userId, greenhouseId, com.greenhouse.entity.DataAuthorization.AuthorizationStatus.APPROVED, now);
+                if (auth.isEmpty()) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
         }
     }
 
@@ -131,6 +139,9 @@ public class PermissionAspect {
         // ADMIN 和 OWNER 全部放行
         if (role == User.Role.ADMIN || role == User.Role.OWNER) {
             return;
+        }
+        if (role == User.Role.EXPERT) {
+            return; // 专家权限已由 checkGreenhouseAccess 校验
         }
 
         // 仅 WORKER 需要校验

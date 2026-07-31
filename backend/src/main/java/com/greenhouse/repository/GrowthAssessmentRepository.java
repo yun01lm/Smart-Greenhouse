@@ -22,4 +22,6 @@ public interface GrowthAssessmentRepository extends JpaRepository<GrowthAssessme
 
     /** 按生长周期查询 */
     Page<GrowthAssessment> findByCropCycleIdOrderByCreatedAtDesc(Long cropCycleId, Pageable pageable);
-}
+
+    /** 查询大棚下有截帧图片的长势记录 */
+    Page<GrowthAssessment> findByGreenhouseIdAndImagePathIsNotNullOrderByCreatedAtDesc(Long greenhouseId, Pageable pageable);}

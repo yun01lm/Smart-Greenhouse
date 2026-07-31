@@ -43,4 +43,9 @@ public interface DataAuthorizationRepository extends JpaRepository<DataAuthoriza
 
     /** ADMIN 全量按状态分页查询 */
     Page<DataAuthorization> findByStatus(DataAuthorization.AuthorizationStatus status, Pageable pageable);
-}
+
+    /**
+     * 查询专家对某大棚的有效且未过期的授权（权限校验用）
+     */
+    Optional<DataAuthorization> findTopByExpertIdAndGreenhouseIdAndStatusAndExpiresAtAfterOrderByApprovedAtDesc(
+            Long expertId, Long greenhouseId, DataAuthorization.AuthorizationStatus status, java.time.LocalDateTime now);}
