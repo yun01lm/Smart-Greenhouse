@@ -131,6 +131,12 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Caffeine 本地缓存（传感器数据缓存，减少InfluxDB压力） -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

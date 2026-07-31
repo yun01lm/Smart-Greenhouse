@@ -9,6 +9,7 @@ import com.influxdb.query.FluxRecord;
 import com.influxdb.query.FluxTable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -83,7 +84,7 @@ public class SensorDataService {
 
     /**
      * 查询实时数据（大棚下所有传感器最新值）
-     */
+     */    @Cacheable(value = "sensorRealtime", key = "#greenhouseId")`n
     public SensorRealtimeResponse getRealtimeData(Long greenhouseId, String greenhouseName) {
         // 查询过去 5 分钟内所有传感器的最新数据
         String flux = String.format(

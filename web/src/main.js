@@ -1,8 +1,6 @@
-import { createApp } from 'vue'
+﻿import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import 'element-plus/dist/index.css'
 import 'dayjs/locale/zh-cn'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
@@ -19,9 +17,11 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 
 app.use(createPinia())
 app.use(router)
-app.use(ElementPlus, { locale: zhCn })
 
-// 全局错误处理，便于调试
+// Element Plus 按需引入（由 unplugin-vue-components 自动处理）
+// 无需手动 import 组件，在 .vue 文件中直接使用即可
+
+// 全局错误处理
 app.config.errorHandler = (err, vm, info) => {
   console.error('Vue Error:', err)
   console.error('Component:', vm)

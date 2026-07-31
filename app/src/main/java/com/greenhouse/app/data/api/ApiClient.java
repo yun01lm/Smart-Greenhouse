@@ -29,11 +29,16 @@ public class ApiClient {
 
     private static Retrofit retrofit;
     private static GreenhouseApiService apiService;
+    private static OkHttpClient okHttpClient;
 
     /** 后台任务线程池（规范要求：ExecutorService） */
     private static final ExecutorService executor = Executors.newFixedThreadPool(4);
 
     public static void init() {
+        // 已初始化则跳过（单例模式，连接池复用）
+        if (apiService != null) {
+            return;
+        }
         // 日志拦截器（Debug 模式）
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
         logging.setLevel(BuildConfig.DEBUG
@@ -58,17 +63,20 @@ public class ApiClient {
             }
         };
 
-        OkHttpClient client = new OkHttpClient.Builder()
+        if (okHttpClient == null) {
+            okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor(authInterceptor)
                 .addInterceptor(logging)
                 .build();
+                    .build();
+        }
 
         retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
-                .client(client)
+                .client(okHttpClient)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
