@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.greenhouse.app.data.model.AlertItem;
 import com.greenhouse.app.data.model.PageResult;
 import com.greenhouse.app.data.model.ThresholdItem;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.AlertRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class AlertViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final AlertRepository repository;
 
     // 预警列表
     private final MutableLiveData<List<AlertItem>> alerts = new MutableLiveData<>(new ArrayList<>());
@@ -43,7 +43,7 @@ public class AlertViewModel extends ViewModel {
     private static final int PAGE_SIZE = 20;
 
     public AlertViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new AlertRepository();
     }
 
     public LiveData<List<AlertItem>> getAlerts() { return alerts; }
@@ -75,7 +75,7 @@ public class AlertViewModel extends ViewModel {
 
         String level = filterLevel.getValue();
         repository.getAlerts(ghId, currentPage, PAGE_SIZE, level,
-                new GreenhouseRepository.Callback<PageResult<AlertItem>>() {
+                new AlertRepository.Callback<PageResult<AlertItem>>() {
             @Override
             public void onSuccess(PageResult<AlertItem> data) {
                 List<AlertItem> current = alerts.getValue();
@@ -122,7 +122,7 @@ public class AlertViewModel extends ViewModel {
 
     /** 标记已读 */
     public void markRead(long alertId) {
-        repository.markAlertRead(alertId, new GreenhouseRepository.Callback<Void>() {
+        repository.markAlertRead(alertId, new AlertRepository.Callback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 // 更新本地列表中的已读状态
@@ -151,7 +151,7 @@ public class AlertViewModel extends ViewModel {
         Long ghId = greenhouseId.getValue();
         if (ghId == null) return;
 
-        repository.getThresholds(ghId, new GreenhouseRepository.Callback<List<ThresholdItem>>() {
+        repository.getThresholds(ghId, new AlertRepository.Callback<List<ThresholdItem>>() {
             @Override
             public void onSuccess(List<ThresholdItem> data) {
                 thresholds.postValue(data);
@@ -172,7 +172,7 @@ public class AlertViewModel extends ViewModel {
         threshold.setEnabled(true);
 
         isLoading.setValue(true);
-        repository.setThreshold(threshold, new GreenhouseRepository.Callback<ThresholdItem>() {
+        repository.setThreshold(threshold, new AlertRepository.Callback<ThresholdItem>() {
             @Override
             public void onSuccess(ThresholdItem data) {
                 isLoading.postValue(false);

@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.greenhouse.app.data.model.DiagnosisHistoryItem;
 import com.greenhouse.app.data.model.DiagnosisResponse;
 import com.greenhouse.app.data.model.PageResult;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.DiagnosisRepository;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class DiagnosisViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final DiagnosisRepository repository;
 
     // 诊断结果
     private final MutableLiveData<DiagnosisResponse> diagnosisResult = new MutableLiveData<>();
@@ -39,7 +39,7 @@ public class DiagnosisViewModel extends ViewModel {
     private static final int PAGE_SIZE = 20;
 
     public DiagnosisViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new DiagnosisRepository();
     }
 
     // ===== LiveData 暴露 =====
@@ -75,7 +75,7 @@ public class DiagnosisViewModel extends ViewModel {
      */
     public void diagnose(File imageFile, long greenhouseId) {
         isLoading.setValue(true);
-        repository.diagnose(imageFile, greenhouseId, new GreenhouseRepository.Callback<DiagnosisResponse>() {
+        repository.diagnose(imageFile, greenhouseId, new DiagnosisRepository.Callback<DiagnosisResponse>() {
             @Override
             public void onSuccess(DiagnosisResponse data) {
                 isLoading.postValue(false);
@@ -113,7 +113,7 @@ public class DiagnosisViewModel extends ViewModel {
     private void loadHistoryPage(long greenhouseId, int page) {
         isLoading.setValue(true);
         repository.getDiagnosisHistory(greenhouseId, page, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<DiagnosisHistoryItem>>() {
+                new DiagnosisRepository.Callback<PageResult<DiagnosisHistoryItem>>() {
             @Override
             public void onSuccess(PageResult<DiagnosisHistoryItem> data) {
                 isLoading.postValue(false);

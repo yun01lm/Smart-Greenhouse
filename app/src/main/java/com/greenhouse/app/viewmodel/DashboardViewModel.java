@@ -12,7 +12,8 @@ import com.greenhouse.app.data.model.Greenhouse;
 import com.greenhouse.app.data.model.HealthScoreData;
 import com.greenhouse.app.data.model.SensorDataPoint;
 import com.greenhouse.app.data.model.SensorRealtimeData;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.SensorRepository;
+import com.greenhouse.app.data.repository.HealthRepository;
 import com.greenhouse.app.websocket.StompClient;
 
 import java.util.ArrayList;
@@ -31,7 +32,8 @@ public class DashboardViewModel extends ViewModel {
 
     private static final String TAG = "DashboardVM";
 
-    private final GreenhouseRepository repository;
+    private final SensorRepository sensorRepo;
+    private final HealthRepository healthRepo;
     private final Gson gson;
     private StompClient stompClient;
 
@@ -55,7 +57,8 @@ public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<Boolean> wsConnected = new MutableLiveData<>(false);
 
     public DashboardViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.sensorRepo = new SensorRepository();
+        this.healthRepo = new HealthRepository();
         this.gson = new Gson();
     }
 
@@ -75,7 +78,7 @@ public class DashboardViewModel extends ViewModel {
     /** 加载大棚列表 */
     public void loadGreenhouses() {
         isLoading.setValue(true);
-        repository.getGreenhouses(new GreenhouseRepository.Callback<List<Greenhouse>>() {
+        sensorRepo.getGreenhouses(new SensorRepository.Callback<List<Greenhouse>>() {
             @Override
             public void onSuccess(List<Greenhouse> data) {
                 greenhouses.postValue(data);
@@ -105,7 +108,7 @@ public class DashboardViewModel extends ViewModel {
     // ===== 数据加载 =====
 
     private void loadRealtimeData(long greenhouseId) {
-        repository.getRealtimeData(greenhouseId, new GreenhouseRepository.Callback<SensorRealtimeData>() {
+        sensorRepo.getRealtimeData(greenhouseId, new SensorRepository.Callback<SensorRealtimeData>() {
             @Override
             public void onSuccess(SensorRealtimeData data) {
                 // 转换：从 dataByType Map 提取每个传感器类型的最新值
@@ -134,7 +137,7 @@ public class DashboardViewModel extends ViewModel {
     }
 
     private void loadHealthScore(long greenhouseId) {
-        repository.getHealthScore(greenhouseId, new GreenhouseRepository.Callback<HealthScoreData>() {
+        healthRepo.getHealthScore(greenhouseId, new SensorRepository.Callback<HealthScoreData>() {
             @Override
             public void onSuccess(HealthScoreData data) {
                 healthScore.postValue(data);

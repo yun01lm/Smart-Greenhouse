@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel;
 import com.greenhouse.app.data.model.ActuatorInfo;
 import com.greenhouse.app.data.model.ControlResponse;
 import com.greenhouse.app.data.model.SceneInfo;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.ControlRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class ControlViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final ControlRepository repository;
 
     // 设备列表
     private final MutableLiveData<List<ActuatorInfo>> devices = new MutableLiveData<>(new ArrayList<>());
@@ -37,7 +37,7 @@ public class ControlViewModel extends ViewModel {
     private long currentGreenhouseId;
 
     public ControlViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new ControlRepository();
     }
 
     // ===== LiveData =====
@@ -55,7 +55,7 @@ public class ControlViewModel extends ViewModel {
     public void loadDevices(long greenhouseId) {
         this.currentGreenhouseId = greenhouseId;
         isLoading.setValue(true);
-        repository.getActuators(greenhouseId, new GreenhouseRepository.Callback<List<ActuatorInfo>>() {
+        repository.getActuators(greenhouseId, new ControlRepository.Callback<List<ActuatorInfo>>() {
             @Override
             public void onSuccess(List<ActuatorInfo> data) {
                 isLoading.postValue(false);
@@ -73,7 +73,7 @@ public class ControlViewModel extends ViewModel {
     // ===== 加载场景列表 =====
 
     public void loadScenes(long greenhouseId) {
-        repository.getScenes(greenhouseId, new GreenhouseRepository.Callback<List<SceneInfo>>() {
+        repository.getScenes(greenhouseId, new ControlRepository.Callback<List<SceneInfo>>() {
             @Override
             public void onSuccess(List<SceneInfo> data) {
                 scenes.postValue(data != null ? data : new ArrayList<>());
@@ -91,7 +91,7 @@ public class ControlViewModel extends ViewModel {
     public void controlActuator(ActuatorInfo device, String action) {
         isLoading.setValue(true);
         repository.controlActuator(device.getId(), action, currentGreenhouseId,
-                new GreenhouseRepository.Callback<ControlResponse>() {
+                new ControlRepository.Callback<ControlResponse>() {
                     @Override
                     public void onSuccess(ControlResponse data) {
                         isLoading.postValue(false);
@@ -114,7 +114,7 @@ public class ControlViewModel extends ViewModel {
         isLoading.setValue(true);
         actionResult.postValue("正在执行场景「" + scene.getName() + "」...");
         repository.executeScene(scene.getId(), currentGreenhouseId,
-                new GreenhouseRepository.Callback<ControlResponse>() {
+                new ControlRepository.Callback<ControlResponse>() {
                     @Override
                     public void onSuccess(ControlResponse data) {
                         isLoading.postValue(false);

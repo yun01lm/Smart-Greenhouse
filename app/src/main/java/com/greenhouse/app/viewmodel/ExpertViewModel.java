@@ -16,7 +16,7 @@ import com.greenhouse.app.data.model.PageResult;
 import com.greenhouse.app.data.model.SendMessageRequest;
 import com.greenhouse.app.data.model.SnapshotRequest;
 import com.greenhouse.app.data.model.UnreadResponse;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.ExpertRepository;
 import com.greenhouse.app.data.websocket.StompClient;
 
 import java.io.File;
@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class ExpertViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final ExpertRepository repository;
     private StompClient stompClient;
 
     // 专家列表
@@ -66,7 +66,7 @@ public class ExpertViewModel extends ViewModel {
     private boolean polling = false;
 
     public ExpertViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new ExpertRepository();
         this.pollHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -93,7 +93,7 @@ public class ExpertViewModel extends ViewModel {
 
     public void loadExperts(String specialty, boolean onlineOnly) {
         isLoading.setValue(true);
-        repository.getExperts(specialty, onlineOnly, new GreenhouseRepository.Callback<List<ExpertInfo>>() {
+        repository.getExperts(specialty, onlineOnly, new ExpertRepository.Callback<List<ExpertInfo>>() {
             @Override
             public void onSuccess(List<ExpertInfo> data) {
                 isLoading.postValue(false);
@@ -113,7 +113,7 @@ public class ExpertViewModel extends ViewModel {
     public void createConversation(long expertId, String subject) {
         isLoading.setValue(true);
         CreateConversationRequest request = new CreateConversationRequest(expertId, currentGreenhouseId, subject);
-        repository.createConversation(request, new GreenhouseRepository.Callback<ConversationInfo>() {
+        repository.createConversation(request, new ExpertRepository.Callback<ConversationInfo>() {
             @Override
             public void onSuccess(ConversationInfo data) {
                 isLoading.postValue(false);
@@ -137,7 +137,7 @@ public class ExpertViewModel extends ViewModel {
 
     private void loadConversationsPage() {
         repository.getConversations(null, conversationPage, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<ConversationInfo>>() {
+                new ExpertRepository.Callback<PageResult<ConversationInfo>>() {
                     @Override
                     public void onSuccess(PageResult<ConversationInfo> data) {
                         List<ConversationInfo> list = data.getList();
@@ -166,7 +166,7 @@ public class ExpertViewModel extends ViewModel {
         if (currentConversationId == 0) return;
         isLoading.setValue(true);
         repository.getMessages(currentConversationId, messagePage, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<ChatMessage>>() {
+                new ExpertRepository.Callback<PageResult<ChatMessage>>() {
                     @Override
                     public void onSuccess(PageResult<ChatMessage> data) {
                         isLoading.postValue(false);
@@ -192,7 +192,7 @@ public class ExpertViewModel extends ViewModel {
         SendMessageRequest request = new SendMessageRequest(currentConversationId, content);
 
         // REST 方式发送（保证送达）
-        repository.sendMessage(request, new GreenhouseRepository.Callback<ChatMessage>() {
+        repository.sendMessage(request, new ExpertRepository.Callback<ChatMessage>() {
             @Override
             public void onSuccess(ChatMessage data) {
                 // 追加到消息列表
@@ -220,7 +220,7 @@ public class ExpertViewModel extends ViewModel {
         isLoading.setValue(true);
 
         repository.sendImageMessage(currentConversationId, imageFile,
-                new GreenhouseRepository.Callback<ChatMessage>() {
+                new ExpertRepository.Callback<ChatMessage>() {
                     @Override
                     public void onSuccess(ChatMessage data) {
                         isLoading.postValue(false);
@@ -243,7 +243,7 @@ public class ExpertViewModel extends ViewModel {
         isLoading.setValue(true);
 
         repository.sendVideoMessage(currentConversationId, videoFile,
-                new GreenhouseRepository.Callback<ChatMessage>() {
+                new ExpertRepository.Callback<ChatMessage>() {
                     @Override
                     public void onSuccess(ChatMessage data) {
                         isLoading.postValue(false);
@@ -266,7 +266,7 @@ public class ExpertViewModel extends ViewModel {
         isLoading.setValue(true);
 
         SnapshotRequest request = new SnapshotRequest(currentConversationId, currentGreenhouseId);
-        repository.sendSnapshot(request, new GreenhouseRepository.Callback<ChatMessage>() {
+        repository.sendSnapshot(request, new ExpertRepository.Callback<ChatMessage>() {
             @Override
             public void onSuccess(ChatMessage data) {
                 isLoading.postValue(false);
@@ -355,7 +355,7 @@ public class ExpertViewModel extends ViewModel {
     // ===== 授权管理 =====
 
     public void loadPendingAuthorizations() {
-        repository.getPendingAuthorizations(new GreenhouseRepository.Callback<List<AuthorizationInfo>>() {
+        repository.getPendingAuthorizations(new ExpertRepository.Callback<List<AuthorizationInfo>>() {
             @Override
             public void onSuccess(List<AuthorizationInfo> data) {
                 pendingAuthorizations.postValue(data != null ? data : new ArrayList<>());
@@ -369,7 +369,7 @@ public class ExpertViewModel extends ViewModel {
     }
 
     public void loadActiveAuthorizations() {
-        repository.getActiveAuthorizations(new GreenhouseRepository.Callback<List<AuthorizationInfo>>() {
+        repository.getActiveAuthorizations(new ExpertRepository.Callback<List<AuthorizationInfo>>() {
             @Override
             public void onSuccess(List<AuthorizationInfo> data) {
                 activeAuthorizations.postValue(data != null ? data : new ArrayList<>());
@@ -384,7 +384,7 @@ public class ExpertViewModel extends ViewModel {
 
     public void approveAuthorization(long authId) {
         isLoading.setValue(true);
-        repository.approveAuthorization(authId, new GreenhouseRepository.Callback<AuthorizationInfo>() {
+        repository.approveAuthorization(authId, new ExpertRepository.Callback<AuthorizationInfo>() {
             @Override
             public void onSuccess(AuthorizationInfo data) {
                 isLoading.postValue(false);
@@ -401,7 +401,7 @@ public class ExpertViewModel extends ViewModel {
     }
 
     public void rejectAuthorization(long authId) {
-        repository.rejectAuthorization(authId, new GreenhouseRepository.Callback<Void>() {
+        repository.rejectAuthorization(authId, new ExpertRepository.Callback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 loadPendingAuthorizations();
@@ -415,7 +415,7 @@ public class ExpertViewModel extends ViewModel {
     }
 
     public void revokeAuthorization(long authId) {
-        repository.revokeAuthorization(authId, new GreenhouseRepository.Callback<Void>() {
+        repository.revokeAuthorization(authId, new ExpertRepository.Callback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 loadActiveAuthorizations();
@@ -431,7 +431,7 @@ public class ExpertViewModel extends ViewModel {
     // ===== 未读消息 =====
 
     public void loadUnreadCount() {
-        repository.getUnreadCount(new GreenhouseRepository.Callback<UnreadResponse>() {
+        repository.getUnreadCount(new ExpertRepository.Callback<UnreadResponse>() {
             @Override
             public void onSuccess(UnreadResponse data) {
                 unreadCount.postValue(data.getTotalUnread());
@@ -446,7 +446,7 @@ public class ExpertViewModel extends ViewModel {
 
     public void closeConversation() {
         if (currentConversationId == 0) return;
-        repository.closeConversation(currentConversationId, new GreenhouseRepository.Callback<Void>() {
+        repository.closeConversation(currentConversationId, new ExpertRepository.Callback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 refreshConversations();

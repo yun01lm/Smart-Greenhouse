@@ -8,7 +8,7 @@ import com.greenhouse.app.data.model.CropCycleData;
 import com.greenhouse.app.data.model.GrowthAssessment;
 import com.greenhouse.app.data.model.GrowthImage;
 import com.greenhouse.app.data.model.PageResult;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.GrowthRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import java.util.Locale;
  */
 public class GrowthViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final GrowthRepository repository;
 
     // 最新长势评估
     private final MutableLiveData<GrowthAssessment> latestAssessment = new MutableLiveData<>();
@@ -52,7 +52,7 @@ public class GrowthViewModel extends ViewModel {
     private static final int PAGE_SIZE = 10;
 
     public GrowthViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new GrowthRepository();
     }
 
     // ===== LiveData =====
@@ -83,7 +83,7 @@ public class GrowthViewModel extends ViewModel {
     public void loadLatestAssessment() {
         isLoading.setValue(true);
         repository.getLatestGrowthAssessment(currentGreenhouseId,
-                new GreenhouseRepository.Callback<GrowthAssessment>() {
+                new GrowthRepository.Callback<GrowthAssessment>() {
                     @Override
                     public void onSuccess(GrowthAssessment data) {
                         isLoading.postValue(false);
@@ -122,7 +122,7 @@ public class GrowthViewModel extends ViewModel {
     private void loadHistoryPage() {
         isLoading.setValue(true);
         repository.getGrowthHistory(currentGreenhouseId, historyPage, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<GrowthAssessment>>() {
+                new GrowthRepository.Callback<PageResult<GrowthAssessment>>() {
                     @Override
                     public void onSuccess(PageResult<GrowthAssessment> data) {
                         isLoading.postValue(false);
@@ -178,7 +178,7 @@ public class GrowthViewModel extends ViewModel {
         // 默认加载当天的截帧
         String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
         repository.getGrowthImages(currentGreenhouseId, today, imagePage, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<GrowthImage>>() {
+                new GrowthRepository.Callback<PageResult<GrowthImage>>() {
                     @Override
                     public void onSuccess(PageResult<GrowthImage> data) {
                         isLoading.postValue(false);
@@ -213,7 +213,7 @@ public class GrowthViewModel extends ViewModel {
      */
     public void loadCropCycles() {
         repository.getCropCycles(currentGreenhouseId,
-                new GreenhouseRepository.Callback<List<CropCycleData>>() {
+                new GrowthRepository.Callback<List<CropCycleData>>() {
                     @Override
                     public void onSuccess(List<CropCycleData> data) {
                         if (data != null && !data.isEmpty()) {

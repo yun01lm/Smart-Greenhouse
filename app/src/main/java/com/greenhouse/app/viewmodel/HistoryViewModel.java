@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.model.HistoryDataPoint;
 import com.greenhouse.app.data.model.HistoryResponse;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.SensorRepository;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 public class HistoryViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final SensorRepository repository;
 
     // 传感器类型列表（11种）
     private final MutableLiveData<List<SensorTypeItem>> sensorTypes = new MutableLiveData<>();
@@ -44,7 +44,7 @@ public class HistoryViewModel extends ViewModel {
     private long currentGreenhouseId;
 
     public HistoryViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new SensorRepository();
         initSensorTypes();
     }
 
@@ -131,7 +131,7 @@ public class HistoryViewModel extends ViewModel {
         String endTime = sdf.format(end.getTime());
 
         repository.getHistory(currentGreenhouseId, sensorType, startTime, endTime, aggregation,
-                new GreenhouseRepository.Callback<HistoryResponse>() {
+                new SensorRepository.Callback<HistoryResponse>() {
                     @Override
                     public void onSuccess(HistoryResponse data) {
                         isLoading.postValue(false);

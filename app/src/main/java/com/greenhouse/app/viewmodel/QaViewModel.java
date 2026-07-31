@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel;
 import com.greenhouse.app.data.model.QaHistoryItem;
 import com.greenhouse.app.data.model.QaResponse;
 import com.greenhouse.app.data.model.PageResult;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.QaRepository;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 public class QaViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final QaRepository repository;
 
     // 当前对话消息列表（用于聊天气泡展示）
     private final MutableLiveData<List<ChatMessage>> messages = new MutableLiveData<>(new ArrayList<>());
@@ -42,7 +42,7 @@ public class QaViewModel extends ViewModel {
     private static final int PAGE_SIZE = 20;
 
     public QaViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new QaRepository();
     }
 
     // ===== LiveData =====
@@ -71,7 +71,7 @@ public class QaViewModel extends ViewModel {
         messages.postValue(list);
 
         isLoading.setValue(true);
-        repository.ask(question.trim(), currentGreenhouseId, new GreenhouseRepository.Callback<QaResponse>() {
+        repository.ask(question.trim(), currentGreenhouseId, new QaRepository.Callback<QaResponse>() {
             @Override
             public void onSuccess(QaResponse data) {
                 isLoading.postValue(false);
@@ -99,7 +99,7 @@ public class QaViewModel extends ViewModel {
      */
     public void askVoice(File audioFile) {
         isLoading.setValue(true);
-        repository.askVoice(audioFile, currentGreenhouseId, new GreenhouseRepository.Callback<QaResponse>() {
+        repository.askVoice(audioFile, currentGreenhouseId, new QaRepository.Callback<QaResponse>() {
             @Override
             public void onSuccess(QaResponse data) {
                 isLoading.postValue(false);
@@ -135,7 +135,7 @@ public class QaViewModel extends ViewModel {
 
     private void loadHistoryPage(int page) {
         isLoading.setValue(true);
-        repository.getQaHistory(page, PAGE_SIZE, new GreenhouseRepository.Callback<PageResult<QaHistoryItem>>() {
+        repository.getQaHistory(page, PAGE_SIZE, new QaRepository.Callback<PageResult<QaHistoryItem>>() {
             @Override
             public void onSuccess(PageResult<QaHistoryItem> data) {
                 isLoading.postValue(false);

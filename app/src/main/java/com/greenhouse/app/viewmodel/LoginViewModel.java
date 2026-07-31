@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.local.TokenManager;
 import com.greenhouse.app.data.model.LoginResponse;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.AuthRepository;
 
 /**
  * 登录 ViewModel
@@ -17,7 +17,7 @@ import com.greenhouse.app.data.repository.GreenhouseRepository;
  */
 public class LoginViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final AuthRepository repository;
 
     // 登录结果
     private final MutableLiveData<Boolean> loginSuccess = new MutableLiveData<>();
@@ -25,7 +25,7 @@ public class LoginViewModel extends ViewModel {
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
 
     public LoginViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new AuthRepository();
     }
 
     public LiveData<Boolean> getLoginSuccess() { return loginSuccess; }
@@ -48,7 +48,7 @@ public class LoginViewModel extends ViewModel {
 
         isLoading.setValue(true);
 
-        repository.login(username, password, new GreenhouseRepository.Callback<LoginResponse>() {
+        repository.login(username, password, new AuthRepository.Callback<LoginResponse>() {
             @Override
             public void onSuccess(LoginResponse data) {
                 // 保存 Token 和用户信息到 SharedPreferences

@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.model.HealthScoreData;
 import com.greenhouse.app.data.model.PageResult;
-import com.greenhouse.app.data.repository.GreenhouseRepository;
+import com.greenhouse.app.data.repository.HealthRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.List;
  */
 public class HealthViewModel extends ViewModel {
 
-    private final GreenhouseRepository repository;
+    private final HealthRepository repository;
 
     // 当前综合评分
     private final MutableLiveData<HealthScoreData> currentScore = new MutableLiveData<>();
@@ -42,7 +42,7 @@ public class HealthViewModel extends ViewModel {
     private static final int PAGE_SIZE = 10;
 
     public HealthViewModel() {
-        this.repository = new GreenhouseRepository();
+        this.repository = new HealthRepository();
     }
 
     // ===== LiveData =====
@@ -66,7 +66,7 @@ public class HealthViewModel extends ViewModel {
     public void loadCurrentScore() {
         isLoading.setValue(true);
         repository.getHealthScore(currentGreenhouseId,
-                new GreenhouseRepository.Callback<HealthScoreData>() {
+                new HealthRepository.Callback<HealthScoreData>() {
                     @Override
                     public void onSuccess(HealthScoreData data) {
                         isLoading.postValue(false);
@@ -92,7 +92,7 @@ public class HealthViewModel extends ViewModel {
      */
     public void loadDetailReport(long scoreId) {
         repository.getHealthDetail(scoreId,
-                new GreenhouseRepository.Callback<HealthScoreData>() {
+                new HealthRepository.Callback<HealthScoreData>() {
                     @Override
                     public void onSuccess(HealthScoreData data) {
                         detailReport.postValue(data);
@@ -137,7 +137,7 @@ public class HealthViewModel extends ViewModel {
     private void loadHistoryPage() {
         isLoading.setValue(true);
         repository.getHealthHistory(currentGreenhouseId, historyPage, PAGE_SIZE,
-                new GreenhouseRepository.Callback<PageResult<HealthScoreData>>() {
+                new HealthRepository.Callback<PageResult<HealthScoreData>>() {
                     @Override
                     public void onSuccess(PageResult<HealthScoreData> data) {
                         isLoading.postValue(false);
