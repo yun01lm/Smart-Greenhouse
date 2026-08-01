@@ -32,7 +32,7 @@ public class ApiClient {
     private static OkHttpClient okHttpClient;
 
     /** 后台任务线程池（规范要求：ExecutorService） */
-    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     public static void init() {
         // 已初始化则跳过（单例模式，连接池复用）

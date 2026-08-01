@@ -1,7 +1,7 @@
 package com.greenhouse.app.data.websocket;
 
 import android.os.Handler;
-import android.os.Looper;
+import android.os.HandlerThread;
 import android.util.Log;
 
 import java.util.Map;
@@ -51,6 +51,7 @@ public class StompClient {
     // 心跳间隔（毫秒）
     private static final long HEARTBEAT_INTERVAL = 10000;
     private Handler heartbeatHandler;
+    private HandlerThread heartbeatThread;
     private Runnable heartbeatRunnable;
 
     public StompClient(String wsUrl, String authToken) {
@@ -279,7 +280,9 @@ public class StompClient {
 
     private void startHeartbeat() {
         stopHeartbeat();
-        heartbeatHandler = new Handler(Looper.getMainLooper());
+        heartbeatThread = new HandlerThread("stomp-heartbeat");
+        heartbeatThread.start();
+        heartbeatHandler = new Handler(heartbeatThread.getLooper());
         heartbeatRunnable = new Runnable() {
             @Override
             public void run() {
