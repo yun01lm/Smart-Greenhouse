@@ -86,6 +86,9 @@ public class PermissionController {
         return ApiResponse.success("员工信息更新成功", response);
     }
 
+    /**
+     * 删除员工
+     * DELETE /api/v1/owner/employees/{employeeId}
      */
     @DeleteMapping("/{employeeId}")
     public ApiResponse<Void> removeEmployee(@PathVariable Long employeeId) {

@@ -60,10 +60,10 @@ public class AlertEngine {
             try {
                 if (rule.getRuleType() == AlertRule.RuleType.THRESHOLD) {
                     checkThresholdRule(rule, greenhouseId, value);
-                }
                 // TREND / COMPOSITE / WEATHER 规则留给后续步骤完善
                 } else if (rule.getRuleType() == AlertRule.RuleType.WEATHER) {
                     checkWeatherRule(rule, greenhouseId, sensorType, value);
+                }
             } catch (Exception e) {
                 log.warn("预警规则检测异常: ruleId={}, error={}", rule.getId(), e.getMessage());
             }
@@ -77,6 +77,7 @@ public class AlertEngine {
             }
             try {
                 checkUserThreshold(threshold, greenhouseId, value);
+                }
             } catch (Exception e) {
                 log.warn("自定义阈值检测异常: thresholdId={}, error={}",
                         threshold.getId(), e.getMessage());
@@ -176,6 +177,7 @@ public class AlertEngine {
                             value, sensorType);
                 }
             }
+                }
         } catch (Exception e) {
             log.warn("天气规则检测异常: ruleId={}, greenhouseId={}, error={}", rule.getId(), greenhouseId, e.getMessage());
         }
@@ -222,11 +224,13 @@ public class AlertEngine {
                                 String.format("天气 %s（%s），请检查排水系统", weather.getWeatherText(), gh.getCity()),
                                 0.0, "WEATHER");
                     }
+                }
                 } catch (Exception e) {
                     log.warn("定时天气巡检异常: ruleId={}, error={}", rule.getId(), e.getMessage());
                 }
             }
             log.debug("定时天气巡检完成: 检测 {} 条规则", weatherRules.size());
+                }
         } catch (Exception e) {
             log.error("定时天气巡检失败: {}", e.getMessage(), e);
         }

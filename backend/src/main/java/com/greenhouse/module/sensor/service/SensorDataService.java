@@ -84,7 +84,7 @@ public class SensorDataService {
 
     /**
      * 查询实时数据（大棚下所有传感器最新值）
-     */    @Cacheable(value = "sensorRealtime", key = "#greenhouseId")`n
+     */    @Cacheable(value = "sensorRealtime", key = "#greenhouseId")
     public SensorRealtimeResponse getRealtimeData(Long greenhouseId, String greenhouseName) {
         // 查询过去 5 分钟内所有传感器的最新数据
         String flux = String.format(
