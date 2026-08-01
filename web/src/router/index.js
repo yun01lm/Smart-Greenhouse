@@ -68,6 +68,12 @@ const routes = [
       },
       {
         path: 'owner',
+      {
+        path: 'qa',
+        name: 'Qa',
+        component: () => import('@/views/qa/QaPage.vue'),
+        meta: { title: 'AI 问答' }
+      },
         name: 'Owner',
         component: () => import('@/views/owner/OwnerPage.vue'),
         meta: { title: '棚主管理' }

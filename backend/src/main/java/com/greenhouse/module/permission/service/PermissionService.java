@@ -199,7 +199,38 @@ public class PermissionService {
      * 删除员工（移除所有权限 + 解除归属关系）
      */
     @Transactional
-    public void removeEmployee(Long ownerId, Long employeeId) {
+    
+    /**
+     * 更新员工基本信息（姓名、手机号）
+     */
+    @Transactional
+    public EmployeeResponse updateEmployee(Long ownerId, Long employeeId, UpdateEmployeeRequest request) {
+        // 校验员工归属
+        User employee = userRepository.findById(employeeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (!ownerId.equals(employee.getOwnerId())) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 更新非空字段
+        if (request.getRealName() != null && !request.getRealName().isBlank()) {
+            employee.setRealName(request.getRealName());
+        }
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            // 校验手机号唯一性
+            if (!request.getPhone().equals(employee.getPhone())
+                    && userRepository.findByPhone(request.getPhone()).isPresent()) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "该手机号已被其他用户使用");
+            }
+            employee.setPhone(request.getPhone());
+        }
+
+        employee = userRepository.save(employee);
+        log.info("员工信息更新成功: employeeId={}, ownerId={}", employeeId, ownerId);
+
+        return EmployeeResponse.fromUser(employee);
+    }
+public void removeEmployee(Long ownerId, Long employeeId) {
         // 校验员工归属
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));

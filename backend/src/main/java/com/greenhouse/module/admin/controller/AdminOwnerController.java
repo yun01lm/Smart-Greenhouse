@@ -81,6 +81,8 @@ public class AdminOwnerController {
             map.put("province", gh.getProvince() != null ? gh.getProvince() : "");
             map.put("city", gh.getCity() != null ? gh.getCity() : "");
             map.put("district", gh.getDistrict() != null ? gh.getDistrict() : "");
+            map.put("town", gh.getTown() != null ? gh.getTown() : "");
+            map.put("village", gh.getVillage() != null ? gh.getVillage() : "");
             map.put("status", gh.getStatus());
             map.put("createdAt", gh.getCreatedAt());
             result.add(map);

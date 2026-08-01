@@ -72,6 +72,20 @@ public class PermissionController {
     /**
      * 删除员工
      * DELETE /api/v1/owner/employees/{employeeId}
+
+    /**
+     * 更新员工基本信息
+     * PUT /api/v1/owner/employees/{employeeId}
+     */
+    @PutMapping("/{employeeId}")
+    public ApiResponse<EmployeeResponse> updateEmployee(
+            @PathVariable Long employeeId,
+            @Valid @RequestBody UpdateEmployeeRequest request) {
+        Long ownerId = getCurrentUserId();
+        EmployeeResponse response = permissionService.updateEmployee(ownerId, employeeId, request);
+        return ApiResponse.success("员工信息更新成功", response);
+    }
+
      */
     @DeleteMapping("/{employeeId}")
     public ApiResponse<Void> removeEmployee(@PathVariable Long employeeId) {

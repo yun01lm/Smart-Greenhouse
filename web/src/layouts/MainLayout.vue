@@ -35,6 +35,10 @@
           text-color="#ffffffa6"
           active-text-color="#fff"
         >
+          <el-menu-item index="/qa">
+            <el-icon><ChatDotRound /></el-icon>
+            <span>AI 问答</span>
+          </el-menu-item>
           <el-menu-item index="/dashboard">
             <el-icon><DataAnalysis /></el-icon>
             <span>数据总览</span>

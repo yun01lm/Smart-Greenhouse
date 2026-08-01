@@ -62,6 +62,8 @@ public class AlertEngine {
                     checkThresholdRule(rule, greenhouseId, value);
                 }
                 // TREND / COMPOSITE / WEATHER 规则留给后续步骤完善
+                } else if (rule.getRuleType() == AlertRule.RuleType.WEATHER) {
+                    checkWeatherRule(rule, greenhouseId, sensorType, value);
             } catch (Exception e) {
                 log.warn("预警规则检测异常: ruleId={}, error={}", rule.getId(), e.getMessage());
             }
@@ -140,6 +142,95 @@ public class AlertEngine {
     /**
      * 创建告警记录 + WebSocket 推送
      */
+    /**
+     * 天气关联规则检测（传感器数据触发）
+     */
+    private void checkWeatherRule(AlertRule rule, Long greenhouseId, String sensorType, Double value) {
+        try {
+            Greenhouse gh = greenhouseRepository.findById(greenhouseId).orElse(null);
+            if (gh == null || gh.getCity() == null || gh.getCity().isBlank()) return;
+
+            WeatherCurrentResponse weather = weatherService.getCurrentWeather(gh.getCity());
+
+            if ("TEMPERATURE".equalsIgnoreCase(sensorType)) {
+                if (value > 35 && weather.getTemperature().doubleValue() > 33) {
+                    createAlert(greenhouseId, rule.getGroupId(), rule.getId(),
+                            AlertRule.AlertLevel.WARNING, "高温天气预警",
+                            String.format("棚内温度 %.1f°C，室外温度 %s°C，请注意通风降温", value, weather.getTemperature()),
+                            value, sensorType);
+                }
+                if (value < 10 && weather.getTemperature().doubleValue() < 8) {
+                    createAlert(greenhouseId, rule.getGroupId(), rule.getId(),
+                            AlertRule.AlertLevel.WARNING, "低温天气预警",
+                            String.format("棚内温度 %.1f°C，室外温度 %s°C，请注意保温", value, weather.getTemperature()),
+                            value, sensorType);
+                }
+            }
+            if ("HUMIDITY".equalsIgnoreCase(sensorType)) {
+                boolean isRainy = weather.getWeatherCode() != null
+                        && (weather.getWeatherCode().startsWith("3") || weather.getWeatherCode().startsWith("4"));
+                if (value > 90 && isRainy) {
+                    createAlert(greenhouseId, rule.getGroupId(), rule.getId(),
+                            AlertRule.AlertLevel.WARNING, "高湿+降雨预警",
+                            String.format("棚内湿度 %.1f%% + 室外天气 %s，请注意防涝", value, weather.getWeatherText()),
+                            value, sensorType);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("天气规则检测异常: ruleId={}, greenhouseId={}, error={}", rule.getId(), greenhouseId, e.getMessage());
+        }
+    }
+
+    /**
+     * 定时天气巡检（每 30 分钟）
+     */
+    @Scheduled(fixedDelay = 1800000)
+    public void scheduledWeatherCheck() {
+        try {
+            List<AlertRule> weatherRules = ruleRepository.findByRuleTypeAndEnabledTrue(AlertRule.RuleType.WEATHER);
+            if (weatherRules.isEmpty()) return;
+
+            for (AlertRule rule : weatherRules) {
+                try {
+                    Greenhouse gh = greenhouseRepository.findById(rule.getGreenhouseId()).orElse(null);
+                    if (gh == null || gh.getCity() == null || gh.getCity().isBlank()) continue;
+
+                    WeatherCurrentResponse weather = weatherService.getCurrentWeather(gh.getCity());
+
+                    if (weather.getTemperature().doubleValue() > 38) {
+                        createAlert(rule.getGreenhouseId(), rule.getGroupId(), rule.getId(),
+                                AlertRule.AlertLevel.CRITICAL, "极端高温天气",
+                                String.format("室外温度达 %s°C（%s），请采取紧急降温措施", weather.getTemperature(), gh.getCity()),
+                                weather.getTemperature().doubleValue(), "WEATHER");
+                    }
+                    if (weather.getTemperature().doubleValue() < 0) {
+                        createAlert(rule.getGreenhouseId(), rule.getGroupId(), rule.getId(),
+                                AlertRule.AlertLevel.CRITICAL, "霜冻预警",
+                                String.format("室外温度 %s°C（%s），请立即启动加温设备", weather.getTemperature(), gh.getCity()),
+                                weather.getTemperature().doubleValue(), "WEATHER");
+                    }
+                    if (weather.getWindSpeed().doubleValue() > 10.7) {
+                        createAlert(rule.getGreenhouseId(), rule.getGroupId(), rule.getId(),
+                                AlertRule.AlertLevel.WARNING, "大风预警",
+                                String.format("风速 %s m/s（%s），请检查大棚结构安全", weather.getWindSpeed(), gh.getCity()),
+                                weather.getWindSpeed().doubleValue(), "WEATHER");
+                    }
+                    if (weather.getWeatherCode() != null
+                            && (weather.getWeatherCode().startsWith("4") || "302".equals(weather.getWeatherCode()))) {
+                        createAlert(rule.getGreenhouseId(), rule.getGroupId(), rule.getId(),
+                                AlertRule.AlertLevel.WARNING, "暴雨预警",
+                                String.format("天气 %s（%s），请检查排水系统", weather.getWeatherText(), gh.getCity()),
+                                0.0, "WEATHER");
+                    }
+                } catch (Exception e) {
+                    log.warn("定时天气巡检异常: ruleId={}, error={}", rule.getId(), e.getMessage());
+                }
+            }
+            log.debug("定时天气巡检完成: 检测 {} 条规则", weatherRules.size());
+        } catch (Exception e) {
+            log.error("定时天气巡检失败: {}", e.getMessage(), e);
+        }
+    }
     private void createAlert(Long greenhouseId, Long groupId, Long ruleId,
                               AlertRule.AlertLevel level, String title, String content,
                               Double sensorValue, String sensorType) {
