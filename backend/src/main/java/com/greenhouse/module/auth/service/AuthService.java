@@ -123,4 +123,26 @@ public class AuthService {
                 .realName(user.getRealName())
                 .build();
     }
+
+    /**
+     * 刷新 Token
+     */
+    public LoginResponse refreshToken(String refreshToken) {
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED.getCode(), "Refresh Token 无效或已过期");
+        }
+        Long userId = jwtTokenProvider.getUserIdFromExpiredToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        String newAccessToken = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRole().name());
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername());
+        return LoginResponse.builder()
+                .token(newAccessToken)
+                .userId(user.getId())
+                .username(user.getUsername())
+                .role(user.getRole().name())
+                .refreshToken(newRefreshToken)
+                .realName(user.getRealName())
+                .build();
+    }
 }
