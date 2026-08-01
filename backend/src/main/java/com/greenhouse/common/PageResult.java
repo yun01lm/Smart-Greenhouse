@@ -1,4 +1,4 @@
-﻿package com.greenhouse.common;
+package com.greenhouse.common;
 
 import org.springframework.data.domain.Page;
 

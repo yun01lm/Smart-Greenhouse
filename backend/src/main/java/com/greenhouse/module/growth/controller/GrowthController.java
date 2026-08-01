@@ -1,4 +1,4 @@
-﻿package com.greenhouse.module.growth.controller;
+package com.greenhouse.module.growth.controller;
 
 import com.greenhouse.common.ApiResponse;
 import com.greenhouse.common.PageResult;

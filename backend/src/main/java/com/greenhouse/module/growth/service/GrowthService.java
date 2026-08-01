@@ -1,4 +1,4 @@
-﻿package com.greenhouse.module.growth.service;
+package com.greenhouse.module.growth.service;
 
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;

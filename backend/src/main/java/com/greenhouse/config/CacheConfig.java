@@ -1,4 +1,4 @@
-﻿package com.greenhouse.config;
+package com.greenhouse.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.cache.CacheManager;

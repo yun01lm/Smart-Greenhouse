@@ -1,4 +1,4 @@
-﻿package com.greenhouse.module.growth.dto;
+package com.greenhouse.module.growth.dto;
 
 import com.greenhouse.entity.GrowthAssessment;
 import lombok.Builder;

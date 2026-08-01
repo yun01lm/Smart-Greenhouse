@@ -1,4 +1,4 @@
-﻿package com.greenhouse.config;
+package com.greenhouse.config;
 
 import com.greenhouse.common.ApiResponse;
 import com.greenhouse.common.ErrorCode;
