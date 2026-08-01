@@ -41,10 +41,13 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                              Object handler) throws Exception {
         String ip = getClientIp(request);
         String path = request.getRequestURI();
-        int limit = path.contains("/auth/login") ? LOGIN_LIMIT : REQUEST_LIMIT;
+        boolean isLogin = path.contains("/auth/login");
+        int limit = isLogin ? LOGIN_LIMIT : REQUEST_LIMIT;
+        // 登录接口与普通 API 分开计数，避免普通轮询请求误触发登录限流
+        String counterKey = (isLogin ? "login|" : "api|") + ip;
 
         long now = System.currentTimeMillis();
-        WindowCounter counter = counters.computeIfAbsent(ip, k -> new WindowCounter(now));
+        WindowCounter counter = counters.computeIfAbsent(counterKey, k -> new WindowCounter(now));
 
         synchronized (counter) {
             if (now - counter.windowStart > WINDOW_MS) {

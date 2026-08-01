@@ -1,4 +1,4 @@
-﻿{
+{
     "_description":  "设备模拟器配置文件 — 定义模拟的传感器设备及其参数",
     "_protocol_note":  "MQTT Topic 格式必须与 MqttTopicConstants.java 保持一致：greenhouse/{greenhouseId}/device/{deviceSn}",
     "mqtt":  {

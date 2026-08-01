@@ -1,4 +1,4 @@
-﻿import { createApp } from 'vue'
+import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'dayjs/locale/zh-cn'
