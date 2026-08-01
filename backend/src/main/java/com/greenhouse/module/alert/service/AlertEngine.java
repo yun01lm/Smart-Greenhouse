@@ -4,11 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.greenhouse.entity.Alert;
 import com.greenhouse.entity.AlertRule;
+import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.UserAlertThreshold;
+import com.greenhouse.module.weather.dto.WeatherCurrentResponse;
+import com.greenhouse.module.weather.service.QWeatherService;
 import com.greenhouse.module.websocket.service.RealtimePushService;
 import com.greenhouse.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,6 +43,8 @@ public class AlertEngine {
     private final UserAlertThresholdRepository thresholdRepository;
     private final RealtimePushService pushService;
     private final ObjectMapper objectMapper;
+    private final GreenhouseRepository greenhouseRepository;
+    private final QWeatherService weatherService;
 
     /**
      * 检测传感器数据是否触发预警
@@ -77,7 +83,6 @@ public class AlertEngine {
             }
             try {
                 checkUserThreshold(threshold, greenhouseId, value);
-                }
             } catch (Exception e) {
                 log.warn("自定义阈值检测异常: thresholdId={}, error={}",
                         threshold.getId(), e.getMessage());
@@ -122,52 +127,37 @@ public class AlertEngine {
     private void checkUserThreshold(UserAlertThreshold threshold, Long greenhouseId, Double value) {
         String alertTitle = null;
         String alertContent = null;
-        AlertRule.AlertLevel level = AlertRule.AlertLevel.WARNING;
 
         if (threshold.getMinThreshold() != null && value < threshold.getMinThreshold()) {
             alertTitle = String.format("「%s」低于自定义阈值", threshold.getSensorType());
-            alertContent = String.format("%s 当前值 %.1f，低于您设置的阈值 %.1f",
+            alertContent = String.format("%s 当前值 %.1f，低于您设定的最低值 %.1f",
                     threshold.getSensorType(), value, threshold.getMinThreshold());
         } else if (threshold.getMaxThreshold() != null && value > threshold.getMaxThreshold()) {
             alertTitle = String.format("「%s」超过自定义阈值", threshold.getSensorType());
-            alertContent = String.format("%s 当前值 %.1f，超过您设置的阈值 %.1f",
+            alertContent = String.format("%s 当前值 %.1f，超过您设定的最高值 %.1f",
                     threshold.getSensorType(), value, threshold.getMaxThreshold());
         }
 
         if (alertTitle != null) {
-            createAlert(greenhouseId, threshold.getGroupId(), null,
-                    level, alertTitle, alertContent, value, threshold.getSensorType());
+            createAlert(greenhouseId, threshold.getGroupId(), threshold.getId(),
+                    AlertRule.AlertLevel.WARNING, alertTitle, alertContent,
+                    value, threshold.getSensorType());
         }
     }
 
     /**
-     * 创建告警记录 + WebSocket 推送
-     */
-    /**
-     * 天气关联规则检测（传感器数据触发）
+     * 天气联动规则检测
      */
     private void checkWeatherRule(AlertRule rule, Long greenhouseId, String sensorType, Double value) {
         try {
             Greenhouse gh = greenhouseRepository.findById(greenhouseId).orElse(null);
-            if (gh == null || gh.getCity() == null || gh.getCity().isBlank()) return;
+            if (gh == null || gh.getCity() == null || gh.getCity().isBlank()) {
+                return;
+            }
 
             WeatherCurrentResponse weather = weatherService.getCurrentWeather(gh.getCity());
 
-            if ("TEMPERATURE".equalsIgnoreCase(sensorType)) {
-                if (value > 35 && weather.getTemperature().doubleValue() > 33) {
-                    createAlert(greenhouseId, rule.getGroupId(), rule.getId(),
-                            AlertRule.AlertLevel.WARNING, "高温天气预警",
-                            String.format("棚内温度 %.1f°C，室外温度 %s°C，请注意通风降温", value, weather.getTemperature()),
-                            value, sensorType);
-                }
-                if (value < 10 && weather.getTemperature().doubleValue() < 8) {
-                    createAlert(greenhouseId, rule.getGroupId(), rule.getId(),
-                            AlertRule.AlertLevel.WARNING, "低温天气预警",
-                            String.format("棚内温度 %.1f°C，室外温度 %s°C，请注意保温", value, weather.getTemperature()),
-                            value, sensorType);
-                }
-            }
-            if ("HUMIDITY".equalsIgnoreCase(sensorType)) {
+            if ("humidity".equalsIgnoreCase(sensorType)) {
                 boolean isRainy = weather.getWeatherCode() != null
                         && (weather.getWeatherCode().startsWith("3") || weather.getWeatherCode().startsWith("4"));
                 if (value > 90 && isRainy) {
@@ -177,7 +167,6 @@ public class AlertEngine {
                             value, sensorType);
                 }
             }
-                }
         } catch (Exception e) {
             log.warn("天气规则检测异常: ruleId={}, greenhouseId={}, error={}", rule.getId(), greenhouseId, e.getMessage());
         }
@@ -224,17 +213,16 @@ public class AlertEngine {
                                 String.format("天气 %s（%s），请检查排水系统", weather.getWeatherText(), gh.getCity()),
                                 0.0, "WEATHER");
                     }
-                }
                 } catch (Exception e) {
                     log.warn("定时天气巡检异常: ruleId={}, error={}", rule.getId(), e.getMessage());
                 }
             }
             log.debug("定时天气巡检完成: 检测 {} 条规则", weatherRules.size());
-                }
         } catch (Exception e) {
             log.error("定时天气巡检失败: {}", e.getMessage(), e);
         }
     }
+
     private void createAlert(Long greenhouseId, Long groupId, Long ruleId,
                               AlertRule.AlertLevel level, String title, String content,
                               Double sensorValue, String sensorType) {

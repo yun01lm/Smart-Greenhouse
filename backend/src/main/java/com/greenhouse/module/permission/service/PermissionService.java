@@ -195,10 +195,6 @@ public class PermissionService {
         return PermissionResponse.fromEntity(permission, ghName);
     }
 
-    /**
-     * 删除员工（移除所有权限 + 解除归属关系）
-     */
-    @Transactional
     
     /**
      * 更新员工基本信息（姓名、手机号）
@@ -230,7 +226,8 @@ public class PermissionService {
 
         return EmployeeResponse.fromUser(employee);
     }
-public void removeEmployee(Long ownerId, Long employeeId) {
+    @Transactional
+    public void removeEmployee(Long ownerId, Long employeeId) {
         // 校验员工归属
         User employee = userRepository.findById(employeeId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));

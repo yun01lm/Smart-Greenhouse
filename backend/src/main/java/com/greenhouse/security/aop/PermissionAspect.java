@@ -107,12 +107,13 @@ public class PermissionAspect {
             case EXPERT -> {
                 // 检查是否有有效的数据授权（APPROVED + 未过期）
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
-                java.util.Optional<com.greenhouse.entity.DataAuthorization> auth =
+                java.util.Optional<com.greenhouse.entity.DataAuthorization> dataAuth =
                         dataAuthorizationRepository.findTopByExpertIdAndGreenhouseIdAndStatusAndExpiresAtAfterOrderByApprovedAtDesc(
                                 userId, greenhouseId, com.greenhouse.entity.DataAuthorization.AuthorizationStatus.APPROVED, now);
-                if (auth.isEmpty()) {
+                if (dataAuth.isEmpty()) {
                     throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
                 }
+            }
         }
     }
 
