@@ -40,6 +40,12 @@ public class AuthService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不允许注册管理员账号");
         }
 
+        // 校验密码复杂度（>=8位，含字母+数字）
+        String pwd = request.getPassword();
+        if (pwd == null || pwd.length() < 8 || !pwd.matches(".*[a-zA-Z].*") || !pwd.matches(".*[0-9].*")) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "密码至少8位，且必须包含字母和数字");
+        }
+
         // 校验用户名唯一
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException(ErrorCode.USERNAME_EXISTS);
@@ -80,6 +86,7 @@ public class AuthService {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .role(user.getRole().name())
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername()))
                 .realName(user.getRealName())
                 .build();
     }
@@ -112,6 +119,7 @@ public class AuthService {
                 .userId(user.getId())
                 .username(user.getUsername())
                 .role(user.getRole().name())
+                .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername()))
                 .realName(user.getRealName())
                 .build();
     }

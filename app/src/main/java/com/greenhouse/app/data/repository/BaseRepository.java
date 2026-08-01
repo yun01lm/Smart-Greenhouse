@@ -1,6 +1,9 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import android.os.Handler;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import android.os.Looper;
 
 import com.greenhouse.app.data.api.ApiClient;
@@ -21,6 +24,22 @@ public abstract class BaseRepository {
     protected final GreenhouseApiService apiService;
     protected final ExecutorService executor;
     protected final Handler mainHandler;
+    /** LRU 内存缓存（最大 50 条，30 秒过期） */
+    private static final Map<String, CacheEntry<?>> cache = new LinkedHashMap<String, CacheEntry<?>>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, CacheEntry<?>> eldest) {
+            return size() > 50;
+        }
+    };
+    private static final long CACHE_TTL_MS = 30_000;
+
+    private static class CacheEntry<T> {
+        final T data;
+        final long timestamp;
+        CacheEntry(T data) { this.data = data; this.timestamp = System.currentTimeMillis(); }
+        boolean isExpired() { return System.currentTimeMillis() - timestamp > CACHE_TTL_MS; }
+    }
+
 
     public BaseRepository() {
         this.apiService = ApiClient.getApiService();
@@ -39,6 +58,23 @@ public abstract class BaseRepository {
     /**
      * 在后台线程执行任务
      */
+    
+    /** 从缓存获取 */
+    @SuppressWarnings("unchecked")
+    protected synchronized <T> T getFromCache(String key) {
+        CacheEntry<?> entry = cache.get(key);
+        if (entry != null && !entry.isExpired()) return (T) entry.data;
+        cache.remove(key);
+        return null;
+    }
+
+    /** 写入缓存 */
+    protected synchronized void putToCache(String key, Object data) {
+        cache.put(key, new CacheEntry<>(data));
+    }
+
+    /** 清除缓存 */
+    protected synchronized void clearCache() { cache.clear(); }
     protected void execute(Runnable task) {
         executor.execute(task);
     }

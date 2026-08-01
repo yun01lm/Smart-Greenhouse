@@ -40,6 +40,15 @@ public class SecurityConfig {
         http
                 // 关闭 CSRF（API 服务不需要）
                 .csrf(AbstractHttpConfigurer::disable)
+                // CORS 白名单（生产环境替换为实际域名）
+                .cors(cors -> cors.configurationSource(request -> {
+                    var config = new org.springframework.web.cors.CorsConfiguration();
+                    config.addAllowedOriginPattern("*");
+                    config.addAllowedMethod("*");
+                    config.addAllowedHeader("*");
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
                 // 无状态会话（JWT 不需要 Session）
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

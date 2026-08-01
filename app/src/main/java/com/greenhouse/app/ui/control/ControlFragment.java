@@ -56,6 +56,7 @@ public class ControlFragment extends Fragment {
         // 设备列表 RecyclerView
         deviceAdapter = new DeviceAdapter();
         binding.rvDevices.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvDevices.setHasFixedSize(true);
         binding.rvDevices.setAdapter(deviceAdapter);
         deviceAdapter.setOnDeviceSwitchListener((device, turnOn) -> {
             viewModel.controlActuator(device, turnOn ? "ON" : "OFF");
@@ -65,6 +66,7 @@ public class ControlFragment extends Fragment {
         sceneAdapter = new SceneAdapter();
         binding.rvScenes.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        binding.rvScenes.setHasFixedSize(true);
         binding.rvScenes.setAdapter(sceneAdapter);
         sceneAdapter.setOnSceneExecuteListener(scene -> {
             viewModel.executeScene(scene);

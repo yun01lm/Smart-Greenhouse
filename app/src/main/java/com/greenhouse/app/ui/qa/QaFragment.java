@@ -74,6 +74,7 @@ public class QaFragment extends Fragment {
         // RecyclerView
         adapter = new ChatAdapter();
         binding.rvChat.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvChat.setHasFixedSize(true);
         binding.rvChat.setAdapter(adapter);
 
         adapter.setOnTtsClickListener(text -> viewModel.speakAnswer(text));

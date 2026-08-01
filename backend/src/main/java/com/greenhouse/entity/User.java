@@ -75,6 +75,15 @@ public class User {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // 登录失败计数（B4安全加固）
+    @Column(name = "login_fail_count")
+    @Builder.Default
+    private Integer loginFailCount = 0;
+
+    // 锁定截止时间（B4安全加固）
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 

@@ -9,6 +9,7 @@ class RealtimeClient {
     this.ws = null
     this.subscriptions = new Map()
     this.reconnectTimer = null
+    this.reconnectAttempts = 0
     this.heartbeatTimer = null
     this.connected = false
   }
@@ -152,6 +153,8 @@ class RealtimeClient {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
+      this.reconnectAttempts = 0
+    this.reconnectAttempts = 0
     }
     if (this.ws) {
       this.sendFrame('DISCONNECT\nreceipt:disconnect\n\n\0')

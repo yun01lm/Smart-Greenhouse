@@ -32,4 +32,7 @@ public class LoginResponse {
 
     /** 真实姓名 */
     private String realName;
+
+    /** Refresh Token（用于刷新AccessToken，有效期24h） */
+    private String refreshToken;
 }

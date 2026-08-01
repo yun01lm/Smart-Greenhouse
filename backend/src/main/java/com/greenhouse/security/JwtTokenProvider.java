@@ -24,12 +24,14 @@ public class JwtTokenProvider {
 
     private final SecretKey secretKey;
     private final long expiration;
+    private final long refreshExpiration;
 
     public JwtTokenProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration:7200000}") long expiration) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiration = expiration;
+        this.refreshExpiration = expiration * 12; // refresh token: 24h (access: 2h)
     }
 
     /**
@@ -82,6 +84,20 @@ public class JwtTokenProvider {
     /**
      * 验证 Token 是否有效
      */
+    public String generateRefreshToken(Long userId, String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshExpiration);
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "refresh");
+        return Jwts.builder().claims(claims).subject(username).issuedAt(now).expiration(expiryDate).signWith(secretKey).compact();
+    }
+
+    public Long getUserIdFromExpiredToken(String token) {
+        try { return getUserId(token); }
+        catch (ExpiredJwtException e) { return e.getClaims().get("userId", Long.class); }
+    }
+
     public boolean validateToken(String token) {
         try {
             getClaims(token);

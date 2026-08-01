@@ -49,6 +49,7 @@ public class AlertFragment extends Fragment {
         // RecyclerView
         adapter = new AlertAdapter();
         binding.rvAlerts.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvAlerts.setHasFixedSize(true);
         binding.rvAlerts.setAdapter(adapter);
 
         // 点击预警 → 详情页

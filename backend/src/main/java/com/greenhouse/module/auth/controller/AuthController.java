@@ -9,6 +9,7 @@ import com.greenhouse.module.auth.dto.UserProfileResponse;
 import com.greenhouse.module.auth.service.AuthService;
 import com.greenhouse.repository.UserRepository;
 import jakarta.validation.Valid;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,6 +50,20 @@ public class AuthController {
      * 获取当前用户信息
      * GET /api/v1/auth/profile
      */
+    /**
+     * 刷新 Token
+     * POST /api/v1/auth/refresh
+     */
+    @PostMapping("/refresh")
+    public ApiResponse<LoginResponse> refresh(@RequestBody Map<String, String> body) {
+        String refreshToken = body.get("refreshToken");
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return ApiResponse.error("refreshToken 不能为空");
+        }
+        LoginResponse response = authService.refreshToken(refreshToken);
+        return ApiResponse.success("Token 刷新成功", response);
+    }
+
     @GetMapping("/profile")
     public ApiResponse<UserProfileResponse> profile() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

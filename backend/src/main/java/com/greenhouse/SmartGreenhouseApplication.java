@@ -3,6 +3,7 @@ package com.greenhouse;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
  */
 @SpringBootApplication
 @EnableScheduling
+@EnableAsync
 @EnableAutoConfiguration(exclude = {
     org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaVectorStoreAutoConfiguration.class
 })

@@ -64,6 +64,7 @@ public class DashboardFragment extends Fragment {
         // 初始化 RecyclerView
         sensorAdapter = new SensorAdapter();
         binding.rvSensors.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.rvSensors.setHasFixedSize(true);
         binding.rvSensors.setAdapter(sensorAdapter);
 
         // 初始化大棚选择器

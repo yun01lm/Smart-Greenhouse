@@ -96,6 +96,7 @@ public class ChatActivity extends AppCompatActivity {
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         layoutManager.setStackFromEnd(true);
         binding.rvMessages.setLayoutManager(layoutManager);
+        binding.rvMessages.setHasFixedSize(true);
         binding.rvMessages.setAdapter(adapter);
     }
 
