@@ -1,4 +1,4 @@
-﻿package com.greenhouse.config;
+package com.greenhouse.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;

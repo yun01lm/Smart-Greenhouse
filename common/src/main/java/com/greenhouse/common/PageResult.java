@@ -43,4 +43,23 @@ public class PageResult<T> {
                 page.getSize()
         );
     }
+
+    // ===== Builder 模式（用于灵活构建分页响应）=====
+
+    public static <T> PageResultBuilder<T> builder() {
+        return new PageResultBuilder<>();
+    }
+
+    public static class PageResultBuilder<T> {
+        private List<T> content;
+        private long total;
+        private int page;
+        private int size;
+
+        public PageResultBuilder<T> list(List<T> content) { this.content = content; return this; }
+        public PageResultBuilder<T> total(long total) { this.total = total; return this; }
+        public PageResultBuilder<T> page(int page) { this.page = page; return this; }
+        public PageResultBuilder<T> size(int size) { this.size = size; return this; }
+        public PageResult<T> build() { return new PageResult<>(content, total, page, size); }
+    }
 }
