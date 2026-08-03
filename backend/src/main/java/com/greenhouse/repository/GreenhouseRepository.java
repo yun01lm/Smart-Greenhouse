@@ -42,4 +42,30 @@ public interface GreenhouseRepository extends JpaRepository<Greenhouse, Long> {
 
     /** 根据地区筛选大棚 */
     List<Greenhouse> findByProvinceAndCityAndDistrict(String province, String city, String district);
+
+    // ===== 地区聚合（管理员功能，R2） =====
+
+    /** 全部省份 */
+    @Query("SELECT DISTINCT g.province FROM Greenhouse g WHERE g.province IS NOT NULL AND g.province <> '' ORDER BY g.province")
+    List<String> findDistinctProvinces();
+
+    /** 某省下的城市 */
+    @Query("SELECT DISTINCT g.city FROM Greenhouse g WHERE g.city IS NOT NULL AND g.city <> '' AND g.province = :province ORDER BY g.city")
+    List<String> findDistinctCities(@Param("province") String province);
+
+    /** 某省市下的区县 */
+    @Query("SELECT DISTINCT g.district FROM Greenhouse g WHERE g.district IS NOT NULL AND g.district <> '' AND g.province = :province AND g.city = :city ORDER BY g.district")
+    List<String> findDistinctDistricts(@Param("province") String province, @Param("city") String city);
+
+    /** 某省市县下的乡镇 */
+    @Query("SELECT DISTINCT g.town FROM Greenhouse g WHERE g.town IS NOT NULL AND g.town <> '' AND g.province = :province AND g.city = :city AND g.district = :district ORDER BY g.town")
+    List<String> findDistinctTowns(@Param("province") String province, @Param("city") String city, @Param("district") String district);
+
+    /** 某省市县镇下的村 */
+    @Query("SELECT DISTINCT g.village FROM Greenhouse g WHERE g.village IS NOT NULL AND g.village <> '' AND g.province = :province AND g.city = :city AND g.district = :district AND g.town = :town ORDER BY g.village")
+    List<String> findDistinctVillages(@Param("province") String province, @Param("city") String city, @Param("district") String district, @Param("town") String town);
+
+    /** 按五级地区筛选大棚（各级参数均可空） */
+    @Query("SELECT g FROM Greenhouse g WHERE (:province IS NULL OR g.province = :province) AND (:city IS NULL OR g.city = :city) AND (:district IS NULL OR g.district = :district) AND (:town IS NULL OR g.town = :town) AND (:village IS NULL OR g.village = :village)")
+    List<Greenhouse> findByRegion(@Param("province") String province, @Param("city") String city, @Param("district") String district, @Param("town") String town, @Param("village") String village);
 }
