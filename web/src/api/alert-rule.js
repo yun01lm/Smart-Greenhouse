@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-const BASE = '/admin/alerts'
+const BASE = '/alerts'
 
 // ===== 预警规则 =====
 

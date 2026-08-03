@@ -3,11 +3,15 @@ package com.greenhouse.module.alert.service;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.AlertRule;
+import com.greenhouse.entity.EmployeePermission;
 import com.greenhouse.entity.Greenhouse;
+import com.greenhouse.entity.User;
 import com.greenhouse.module.alert.dto.AlertRuleRequest;
 import com.greenhouse.module.alert.dto.AlertRuleResponse;
 import com.greenhouse.repository.AlertRuleRepository;
+import com.greenhouse.repository.EmployeePermissionRepository;
 import com.greenhouse.repository.GreenhouseRepository;
+import com.greenhouse.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,6 +32,8 @@ public class AlertRuleService {
 
     private final AlertRuleRepository ruleRepository;
     private final GreenhouseRepository greenhouseRepository;
+    private final UserRepository userRepository;
+    private final EmployeePermissionRepository permissionRepository;
 
     private static final long MAX_RULES_PER_GREENHOUSE = 50;
 
@@ -55,6 +61,61 @@ public class AlertRuleService {
     public List<AlertRuleResponse> listRules(Long greenhouseId) {
         List<AlertRule> rules = ruleRepository.findByGreenhouseId(greenhouseId);
         return rules.stream().map(AlertRuleResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    /**
+     * 查询当前用户可见的预警规则（R8 权限收口）
+     * <p>OWNER 只能看自己大棚的规则；WORKER 只能看被授权大棚的规则；其他角色返回空列表。
+     * greenhouseId 为空时返回用户全部可见大棚的规则，便于前端「全部」筛选。</p>
+     */
+    public List<AlertRuleResponse> listRulesForUser(Long userId, Long greenhouseId) {
+        if (greenhouseId != null) {
+            assertGreenhouseAccess(userId, greenhouseId);
+            return listRules(greenhouseId);
+        }
+        List<Long> accessibleIds = accessibleGreenhouseIds(userId);
+        if (accessibleIds.isEmpty()) {
+            return List.of();
+        }
+        return ruleRepository.findByGreenhouseIdIn(accessibleIds).stream()
+                .map(AlertRuleResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 校验用户对大棚的访问权限：OWNER 本人大棚 / WORKER 被授权大棚
+     */
+    private void assertGreenhouseAccess(Long userId, Long greenhouseId) {
+        Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        boolean allowed = (user.getRole() == User.Role.OWNER && greenhouse.getOwnerId().equals(userId))
+                || (user.getRole() == User.Role.WORKER
+                    && permissionRepository.existsByEmployeeIdAndGreenhouseId(userId, greenhouseId));
+        if (!allowed) {
+            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+        }
+    }
+
+    /**
+     * 获取用户可见的大棚 ID 列表（OWNER → 自己的大棚；WORKER → 被授权的大棚）
+     */
+    private List<Long> accessibleGreenhouseIds(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (user.getRole() == User.Role.OWNER) {
+            return greenhouseRepository.findByOwnerId(userId).stream()
+                    .map(Greenhouse::getId)
+                    .toList();
+        }
+        if (user.getRole() == User.Role.WORKER) {
+            return permissionRepository.findByEmployeeId(userId).stream()
+                    .map(EmployeePermission::getGreenhouseId)
+                    .distinct()
+                    .toList();
+        }
+        return List.of();
     }
 
     /**

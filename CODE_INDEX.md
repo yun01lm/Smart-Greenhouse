@@ -1,4 +1,4 @@
-﻿# Smart-Greenhouse 代码索引
+# Smart-Greenhouse 代码索引
 
 > 自动生成于 2026-07-31 | 基于代码实际内容，非文档描述
 
@@ -115,7 +115,7 @@
 - /experts — 专家列表 + 在线切换 + 授权记录 + 统计
 - /monitor/overview — 系统监控概览
 - /owners — 棚主列表 + 名下大棚
-- /report — 多类型数据导出（传感器/预警/控制/健康）
+- /report — 多类型数据导出（ADMIN 系统级，前端不暴露；农户/技术员导出走 /api/v1/report，见模块 20）
 
 ### 15. permission — 权限管理 (/api/v1/owner/employees + /api/v1/worker)
 - 棚主视角: POST/GET/DELETE 员工 + GET/PUT 权限
@@ -134,6 +134,13 @@
 
 ### 19. mqtt — MQTT 集成
 - Mosquitto MQTT 客户端
+
+### 20. report — 数据导出（OWNER/WORKER 专用，R8 新增）
+- GET /sensors — 导出传感器历史数据（Excel）
+- GET /alerts — 导出预警记录（Excel）
+- GET /controls — 导出设备控制日志（Excel）
+- GET /health — 导出健康评分记录（Excel）
+- 权限：SecurityConfig 限定 OWNER/WORKER；ReportAccessService 按大棚归属校验（OWNER 本人大棚 / WORKER 被授权大棚）
 
 ### 安全层
 - JwtTokenProvider: JWT 令牌生成/验证
@@ -177,7 +184,7 @@
 | /users | UserPage.vue | 用户管理与角色概览 |
 | /knowledge | KnowledgePage.vue | 知识库文档管理 |
 | /alerts | AlertRulePage.vue | 预警规则配置 |
-| /export | ReportPage.vue | 多类型数据导出 |
+| /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |
 | /corpus | CorpusPage.vue | 语料管理 |
 | /expert | ExpertPage.vue | 专家工作台 |

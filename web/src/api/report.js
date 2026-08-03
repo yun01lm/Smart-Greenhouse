@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-const BASE = '/admin/report'
+const BASE = '/report'
 
 /**
  * 导出传感器历史数据
@@ -10,7 +10,8 @@ const BASE = '/admin/report'
 export function exportSensors(params) {
   return request.get(`${BASE}/sensors`, {
     params,
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 60000
   })
 }
 
@@ -21,7 +22,8 @@ export function exportSensors(params) {
 export function exportAlerts(params) {
   return request.get(`${BASE}/alerts`, {
     params,
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 60000
   })
 }
 
@@ -32,7 +34,8 @@ export function exportAlerts(params) {
 export function exportControls(params) {
   return request.get(`${BASE}/controls`, {
     params,
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 60000
   })
 }
 
@@ -43,7 +46,8 @@ export function exportControls(params) {
 export function exportHealth(params) {
   return request.get(`${BASE}/health`, {
     params,
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 60000
   })
 }
 

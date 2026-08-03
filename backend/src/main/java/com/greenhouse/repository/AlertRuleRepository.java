@@ -15,6 +15,9 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     /** 按大棚查询所有规则 */
     List<AlertRule> findByGreenhouseId(Long greenhouseId);
 
+    /** 按大棚ID集合查询所有规则（用户可见范围查询用） */
+    List<AlertRule> findByGreenhouseIdIn(List<Long> greenhouseIds);
+
     /** 按大棚和传感器类型查询启用的规则 */
     List<AlertRule> findByGreenhouseIdAndSensorTypeAndEnabledTrue(Long greenhouseId, String sensorType);
 

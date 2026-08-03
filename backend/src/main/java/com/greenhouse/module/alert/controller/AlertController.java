@@ -86,12 +86,14 @@ public class AlertController {
     // ===== 预警规则 =====
 
     /**
-     * 规则列表
-     * GET /api/v1/alerts/rules?greenhouseId=1
+     * 规则列表（OWNER 自己的大棚 / WORKER 被授权大棚）
+     * GET /api/v1/alerts/rules?greenhouseId=1（可选，缺省返回用户全部可见大棚的规则）
      */
     @GetMapping("/rules")
-    public ApiResponse<List<AlertRuleResponse>> listRules(@RequestParam Long greenhouseId) {
-        return ApiResponse.success(ruleService.listRules(greenhouseId));
+    public ApiResponse<List<AlertRuleResponse>> listRules(
+            @RequestParam(required = false) Long greenhouseId) {
+        Long userId = getCurrentUserId();
+        return ApiResponse.success(ruleService.listRulesForUser(userId, greenhouseId));
     }
 
     /**
