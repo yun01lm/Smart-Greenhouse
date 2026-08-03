@@ -48,4 +48,15 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
 
     /** 按状态统计全部设备数量（ADMIN 监控用） */
     long countByStatus(Device.DeviceStatus status);
+
+    // ===== 按大棚集合统计（管理员地区聚合，R3） =====
+
+    /** 按大棚ID集合查询设备 */
+    List<Device> findByGreenhouseIdIn(List<Long> greenhouseIds);
+
+    /** 按大棚ID集合统计设备数 */
+    long countByGreenhouseIdIn(List<Long> greenhouseIds);
+
+    /** 按大棚ID集合 + 状态统计设备数 */
+    long countByGreenhouseIdInAndStatus(List<Long> greenhouseIds, Device.DeviceStatus status);
 }

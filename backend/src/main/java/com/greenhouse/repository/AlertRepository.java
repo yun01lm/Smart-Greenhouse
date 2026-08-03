@@ -26,4 +26,15 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     /** 统计大棚未读告警数 */
     long countByGreenhouseIdAndReadStatusFalse(Long greenhouseId);
+
+    // ===== 按大棚集合统计（管理员地区聚合，R3） =====
+
+    /** 按大棚ID集合查询预警（按时间倒序） */
+    List<Alert> findByGreenhouseIdInOrderByCreatedAtDesc(List<Long> greenhouseIds, Pageable pageable);
+
+    /** 按大棚ID集合统计预警数 */
+    long countByGreenhouseIdIn(List<Long> greenhouseIds);
+
+    /** 按大棚ID集合 + 级别统计预警数 */
+    long countByGreenhouseIdInAndLevel(List<Long> greenhouseIds, Alert.AlertLevel level);
 }
