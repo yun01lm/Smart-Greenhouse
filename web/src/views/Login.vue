@@ -75,7 +75,7 @@ async function handleLogin() {
   try {
     await authStore.login(form.username, form.password)
     ElMessage.success('登录成功')
-    router.push('/')
+    router.push('/dashboard')
   } catch (e) {
     // 错误已在 request 拦截器中处理
   } finally {

@@ -6,8 +6,9 @@
         <h2>🌱 智慧大棚AIoT系统</h2>
       </div>
       <div class="header-right">
-        <!-- 大棚选择器 -->
+        <!-- 大棚选择器（管理员不显示，管理员按地区查看） -->
         <el-select
+          v-if="!authStore.isAdmin()"
           v-model="currentGreenhouseId"
           placeholder="选择大棚"
           style="width: 200px; margin-right: 16px"
@@ -35,49 +36,9 @@
           text-color="#ffffffa6"
           active-text-color="#fff"
         >
-          <el-menu-item index="/qa">
-            <el-icon><ChatDotRound /></el-icon>
-            <span>AI 问答</span>
-          </el-menu-item>
-          <el-menu-item index="/dashboard">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>数据总览</span>
-          </el-menu-item>
-          <el-menu-item index="/devices">
-            <el-icon><Cpu /></el-icon>
-            <span>设备管理</span>
-          </el-menu-item>
-          <el-menu-item index="/users">
-            <el-icon><UserFilled /></el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/knowledge">
-            <el-icon><Document /></el-icon>
-            <span>知识库</span>
-          </el-menu-item>
-          <el-menu-item index="/alerts">
-            <el-icon><WarningFilled /></el-icon>
-            <span>预警配置</span>
-          </el-menu-item>
-          <el-menu-item index="/export">
-            <el-icon><Download /></el-icon>
-            <span>数据导出</span>
-          </el-menu-item>
-          <el-menu-item index="/monitor">
-            <el-icon><Monitor /></el-icon>
-            <span>系统监控</span>
-          </el-menu-item>
-          <el-menu-item index="/corpus">
-            <el-icon><Microphone /></el-icon>
-            <span>语料管理</span>
-          </el-menu-item>
-          <el-menu-item index="/expert">
-            <el-icon><Avatar /></el-icon>
-            <span>专家工作台</span>
-          </el-menu-item>
-          <el-menu-item index="/owner">
-            <el-icon><HomeFilled /></el-icon>
-            <span>棚主管理</span>
+          <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.title }}</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
@@ -90,10 +51,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getGreenhouses } from '@/api/greenhouse'
+import {
+  ChatDotRound, DataAnalysis, Cpu, UserFilled, Document, WarningFilled,
+  Download, Microphone, Avatar, HomeFilled
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -102,6 +67,40 @@ const greenhouses = ref([])
 const currentGreenhouseId = ref(1)
 
 const activeMenu = ref(route.path)
+
+// ===== 角色化菜单配置：各角色看到的页面不同 =====
+const MENU_CONFIG = {
+  ADMIN: [
+    { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
+    { path: '/devices', title: '设备管理', icon: Cpu },
+    { path: '/users', title: '用户管理', icon: UserFilled },
+    { path: '/knowledge', title: '知识库', icon: Document },
+    { path: '/corpus', title: '语料管理', icon: Microphone },
+    { path: '/expert', title: '专家工作台', icon: Avatar },
+    { path: '/owner', title: '棚主管理', icon: HomeFilled },
+    { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
+  ],
+  OWNER: [
+    { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
+    { path: '/devices', title: '设备管理', icon: Cpu },
+    { path: '/alerts', title: '预警配置', icon: WarningFilled },
+    { path: '/export', title: '数据导出', icon: Download },
+    { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
+  ],
+  WORKER: [
+    { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
+    { path: '/devices', title: '设备管理', icon: Cpu },
+    { path: '/alerts', title: '预警配置', icon: WarningFilled },
+    { path: '/export', title: '数据导出', icon: Download },
+    { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
+  ],
+  EXPERT: [
+    { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
+    { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
+  ]
+}
+
+const menus = computed(() => MENU_CONFIG[authStore.role()] || MENU_CONFIG.OWNER)
 
 function onGreenhouseChange(id) {
   currentGreenhouseId.value = id
