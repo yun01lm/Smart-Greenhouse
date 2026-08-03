@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * 聊天消息 Repository
  */
@@ -18,6 +20,22 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
      * 按对话ID分页查询消息（时间正序）
      */
     Page<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId, Pageable pageable);
+
+    /**
+     * 按对话ID查询全部消息（时间正序，R9 管理端明细/导出用）
+     */
+    List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
+
+    /**
+     * 统计对话消息数（R9）
+     */
+    long countByConversationId(Long conversationId);
+
+    /**
+     * 批量统计多个对话的消息数（R9）
+     */
+    @Query("SELECT m.conversationId, COUNT(m) FROM ChatMessage m WHERE m.conversationId IN :ids GROUP BY m.conversationId")
+    List<Object[]> countByConversationIds(@Param("ids") List<Long> ids);
 
     /**
      * 统计未读消息数

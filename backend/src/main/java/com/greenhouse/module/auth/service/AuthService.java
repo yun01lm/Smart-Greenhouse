@@ -2,10 +2,12 @@ package com.greenhouse.module.auth.service;
 
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.entity.ExpertAvailability;
 import com.greenhouse.entity.User;
 import com.greenhouse.module.auth.dto.LoginRequest;
 import com.greenhouse.module.auth.dto.LoginResponse;
 import com.greenhouse.module.auth.dto.RegisterRequest;
+import com.greenhouse.repository.ExpertAvailabilityRepository;
 import com.greenhouse.repository.UserRepository;
 import com.greenhouse.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private final ExpertAvailabilityRepository availabilityRepository;
 
     /**
      * 用户注册
@@ -114,6 +117,11 @@ public class AuthService {
 
         log.info("用户登录成功: username={}, role={}", user.getUsername(), user.getRole());
 
+        // 专家登录自动置在线（R9）
+        if (user.getRole() == User.Role.EXPERT) {
+            setExpertOnline(user.getId(), true);
+        }
+
         return LoginResponse.builder()
                 .token(token)
                 .userId(user.getId())
@@ -122,6 +130,35 @@ public class AuthService {
                 .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername()))
                 .realName(user.getRealName())
                 .build();
+    }
+
+    /**
+     * 用户登出（R9）：专家登出自动置离线
+     */
+    @Transactional
+    public void logout(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (user.getRole() == User.Role.EXPERT) {
+            setExpertOnline(userId, false);
+        }
+        log.info("用户登出: userId={}, role={}", userId, user.getRole());
+    }
+
+    /**
+     * 更新专家在线状态（登录置在线 / 登出置离线，R9）
+     */
+    @Transactional
+    protected void setExpertOnline(Long expertId, boolean online) {
+        ExpertAvailability availability = availabilityRepository.findByExpertId(expertId)
+                .orElse(ExpertAvailability.builder()
+                        .expertId(expertId)
+                        .maxConcurrent(5)
+                        .build());
+        availability.setIsOnline(online ? 1 : 0);
+        availability.setLastActiveAt(java.time.LocalDateTime.now());
+        availabilityRepository.save(availability);
+        log.info("专家在线状态自动更新: expertId={}, online={}", expertId, online);
     }
 
     /**

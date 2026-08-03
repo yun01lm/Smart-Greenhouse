@@ -6,8 +6,15 @@ import com.greenhouse.module.admin.service.AdminExpertService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -70,5 +77,58 @@ public class AdminExpertController {
     @GetMapping("/stats")
     public ApiResponse<Map<String, Object>> getStats() {
         return ApiResponse.success(expertService.getStats());
+    }
+
+    /**
+     * 咨询记录分页查询（R9）
+     * GET /api/v1/admin/experts/conversations?expertId=&userId=&userKeyword=&startTime=&endTime=&page=&size=
+     */
+    @GetMapping("/conversations")
+    public ApiResponse<PageResult<Map<String, Object>>> listConversations(
+            @RequestParam(required = false) Long expertId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String userKeyword,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<Map<String, Object>> result = expertService.listConversations(
+                expertId, userId, userKeyword, startTime, endTime, page, size);
+        return ApiResponse.success(PageResult.of(
+                result.getContent(), result.getTotalElements(), page, size));
+    }
+
+    /**
+     * 对话消息明细（R9）
+     * GET /api/v1/admin/experts/conversations/{id}/messages
+     */
+    @GetMapping("/conversations/{id}/messages")
+    public ApiResponse<List<Map<String, Object>>> conversationMessages(@PathVariable Long id) {
+        return ApiResponse.success(expertService.getConversationMessages(id));
+    }
+
+    /**
+     * 咨询记录导出 Excel（R9）
+     * GET /api/v1/admin/experts/conversations/export?expertId=&userId=&userKeyword=&startTime=&endTime=
+     */
+    @GetMapping("/conversations/export")
+    public ResponseEntity<byte[]> exportConversations(
+            @RequestParam(required = false) Long expertId,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String userKeyword,
+            @RequestParam(required = false) Long startTime,
+            @RequestParam(required = false) Long endTime) {
+
+        log.info("[ADMIN] 导出咨询记录: expertId={}, userId={}, userKeyword={}", expertId, userId, userKeyword);
+        byte[] data = expertService.exportConversations(expertId, userId, userKeyword, startTime, endTime);
+
+        String filename = "咨询记录_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".xlsx";
+        String encoded = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
     }
 }

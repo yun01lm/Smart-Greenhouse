@@ -21,3 +21,24 @@ export function getAuthorizations(params) {
 export function getExpertStats() {
   return request.get(`${BASE}/stats`)
 }
+
+// ===== 咨询记录（R9） =====
+
+/** 咨询记录分页查询（支持 expertId/userKeyword/startTime/endTime 筛选） */
+export function getConversations(params) {
+  return request.get(`${BASE}/conversations`, { params })
+}
+
+/** 对话消息明细 */
+export function getConversationMessages(id) {
+  return request.get(`${BASE}/conversations/${id}/messages`)
+}
+
+/** 导出咨询记录 Excel */
+export function exportConversations(params) {
+  return request.get(`${BASE}/conversations/export`, {
+    params,
+    responseType: 'blob',
+    timeout: 60000
+  })
+}

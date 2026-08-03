@@ -152,14 +152,107 @@
           </div>
         </div>
       </el-tab-pane>
+
+      <!-- Tab 3: 咨询记录（R9） -->
+      <el-tab-pane label="咨询记录" name="conversations">
+        <div class="tab-content">
+          <!-- 筛选工具栏 -->
+          <div class="toolbar">
+            <el-select v-model="convFilter.expertId" placeholder="按专家筛选" clearable filterable style="width: 170px">
+              <el-option v-for="e in experts" :key="e.id" :label="e.name" :value="e.id" />
+            </el-select>
+            <el-input
+              v-model="convFilter.userKeyword"
+              placeholder="按用户账号搜索"
+              clearable
+              style="width: 180px; margin-left: 12px"
+              @keyup.enter="searchConversations"
+            />
+            <el-date-picker
+              v-model="convFilter.dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              format="YYYY-MM-DD"
+              value-format="x"
+              style="width: 280px; margin-left: 12px"
+            />
+            <el-button type="primary" style="margin-left: 12px" @click="searchConversations">查询</el-button>
+            <el-button type="success" :loading="convExporting" @click="doExportConversations">
+              <el-icon style="margin-right: 4px"><Download /></el-icon>导出 Excel
+            </el-button>
+          </div>
+
+          <el-table v-loading="convLoading" :data="conversations" stripe border>
+            <el-table-column prop="id" label="ID" width="70" align="center" />
+            <el-table-column label="专家" min-width="100">
+              <template #default="{ row }">{{ row.expertName }}</template>
+            </el-table-column>
+            <el-table-column label="用户" min-width="100">
+              <template #default="{ row }">{{ row.userName }}</template>
+            </el-table-column>
+            <el-table-column label="大棚" min-width="120">
+              <template #default="{ row }">{{ row.greenhouseName || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="咨询主题" min-width="170" show-overflow-tooltip>
+              <template #default="{ row }">{{ row.subject }}</template>
+            </el-table-column>
+            <el-table-column label="状态" width="90" align="center">
+              <template #default="{ row }">
+                <el-tag :type="convStatusTag(row.status)" size="small">{{ convStatusLabel(row.status) }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="messageCount" label="消息数" width="80" align="center" />
+            <el-table-column label="创建时间" width="170" align="center">
+              <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+            </el-table-column>
+            <el-table-column label="操作" width="110" align="center" fixed="right">
+              <template #default="{ row }">
+                <el-button type="primary" link size="small" @click="openConversationDetail(row)">查看明细</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <div class="pagination-wrapper">
+            <el-pagination
+              v-model:current-page="convPage"
+              v-model:page-size="convSize"
+              :page-sizes="[10, 20, 50]"
+              :total="convTotal"
+              layout="total, sizes, prev, pager, next"
+              @size-change="loadConversations"
+              @current-change="loadConversations"
+            />
+          </div>
+        </div>
+      </el-tab-pane>
     </el-tabs>
+
+    <!-- 对话明细抽屉（R9） -->
+    <el-drawer v-model="detailVisible" title="对话记录明细" size="560px">
+      <div v-if="detailMessages.length === 0" class="drawer-empty">暂无消息记录</div>
+      <div v-else class="msg-list">
+        <div v-for="m in detailMessages" :key="m.id" class="msg-item" :class="m.senderType === 'EXPERT' ? 'from-expert' : 'from-user'">
+          <div class="msg-meta">
+            <span class="msg-sender">{{ m.senderName }}</span>
+            <span class="msg-time">{{ formatTime(m.createdAt) }}</span>
+          </div>
+          <div class="msg-bubble">{{ m.content || (m.filePath ? '[' + m.messageType + ' 附件]' : '[' + m.messageType + ']') }}</div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getExperts, toggleExpertOnline, getAuthorizations, getExpertStats } from '@/api/expert'
+import { Download } from '@element-plus/icons-vue'
+import {
+  getExperts, toggleExpertOnline, getAuthorizations, getExpertStats,
+  getConversations, getConversationMessages, exportConversations
+} from '@/api/expert'
 
 // ===== 统计 =====
 const stats = reactive({ expertTotal: 0, onlineCount: 0, authTotal: 0, convTotal: 0 })
@@ -176,6 +269,88 @@ const authPage = ref(1)
 const authSize = ref(20)
 const authTotal = ref(0)
 const authFilter = reactive({ status: '' })
+
+// ===== 咨询记录（R9） =====
+const convLoading = ref(false)
+const conversations = ref([])
+const convPage = ref(1)
+const convSize = ref(20)
+const convTotal = ref(0)
+const convExporting = ref(false)
+const convFilter = reactive({ expertId: null, userKeyword: '', dateRange: null })
+
+// 对话明细
+const detailVisible = ref(false)
+const detailMessages = ref([])
+
+async function loadConversations() {
+  convLoading.value = true
+  try {
+    const params = { page: convPage.value - 1, size: convSize.value }
+    if (convFilter.expertId) params.expertId = convFilter.expertId
+    if (convFilter.userKeyword) params.userKeyword = convFilter.userKeyword.trim()
+    if (convFilter.dateRange && convFilter.dateRange.length === 2) {
+      params.startTime = convFilter.dateRange[0]
+      params.endTime = convFilter.dateRange[1]
+    }
+    const res = await getConversations(params)
+    conversations.value = res.data?.list || []
+    convTotal.value = res.data?.total || 0
+  } catch { /* handled by interceptor */ }
+  finally { convLoading.value = false }
+}
+
+function searchConversations() {
+  convPage.value = 1
+  loadConversations()
+}
+
+async function openConversationDetail(row) {
+  try {
+    const res = await getConversationMessages(row.id)
+    detailMessages.value = res.data || []
+    detailVisible.value = true
+  } catch { /* handled by interceptor */ }
+}
+
+async function doExportConversations() {
+  const params = {}
+  if (convFilter.expertId) params.expertId = convFilter.expertId
+  if (convFilter.userKeyword) params.userKeyword = convFilter.userKeyword.trim()
+  if (convFilter.dateRange && convFilter.dateRange.length === 2) {
+    params.startTime = convFilter.dateRange[0]
+    params.endTime = convFilter.dateRange[1]
+  }
+  convExporting.value = true
+  try {
+    const blob = await exportConversations(params)
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    downloadBlob(blob, `咨询记录_${today}.xlsx`)
+    ElMessage.success('咨询记录导出成功')
+  } catch { ElMessage.error('导出失败，请稍后重试') }
+  finally { convExporting.value = false }
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+function convStatusLabel(s) {
+  const m = { WAITING: '等待中', ACTIVE: '进行中', CLOSED: '已关闭' }
+  return m[s] || s
+}
+
+function convStatusTag(s) {
+  const m = { WAITING: 'warning', ACTIVE: 'success', CLOSED: 'info' }
+  return m[s] || 'info'
+}
 
 // ===== 数据加载 =====
 async function loadStats() {
@@ -238,6 +413,7 @@ onMounted(() => {
   loadStats()
   loadExperts()
   loadAuthorizations()
+  loadConversations()
 })
 </script>
 
@@ -301,5 +477,45 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+/* ===== R9 对话明细 ===== */
+.drawer-empty {
+  text-align: center;
+  color: #909399;
+  padding: 40px 0;
+}
+.msg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.msg-item {
+  display: flex;
+  flex-direction: column;
+}
+.msg-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+.msg-sender {
+  font-weight: 600;
+  color: #606266;
+}
+.msg-bubble {
+  background: #f4f4f5;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg-item.from-expert .msg-bubble {
+  background: #ecf5ff;
 }
 </style>

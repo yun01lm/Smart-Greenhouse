@@ -121,7 +121,7 @@ public class ChatController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return auth.getAuthorities().stream()
                 .findFirst()
-                .map(Object::toString)
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
                 .orElse("OWNER");
     }
 }

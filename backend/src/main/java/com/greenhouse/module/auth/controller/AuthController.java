@@ -47,6 +47,18 @@ public class AuthController {
     }
 
     /**
+     * 用户登出（R9：专家登出自动置离线）
+     * POST /api/v1/auth/logout
+     */
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        authService.logout(userId);
+        return ApiResponse.success("已退出登录", null);
+    }
+
+    /**
      * 获取当前用户信息
      * GET /api/v1/auth/profile
      */

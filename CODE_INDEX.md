@@ -106,6 +106,8 @@
 - GET /api/v1/expert/authorize/active — 已激活授权
 - GET /api/v1/expert/authorize/history — 授权历史
 - PUT /api/v1/expert/status — 切换在线状态
+- 专家登录/登出自动置在线/离线（R9：AuthService + ExpertPresenceListener WebSocket 兜底）
+- 会话列表角色前缀 Bug 修复（R9：getCurrentUserRole 去 ROLE_ 前缀，专家侧会话列表不再为空）
 
 ### 14. admin — 管理员功能 (/api/v1/admin)
 - /users — 用户 CRUD
@@ -113,6 +115,9 @@
 - /alerts — 预警规则 CRUD + 阈值管理
 - /corpus — 语料 CRUD + 方言类型
 - /experts — 专家列表 + 在线切换 + 授权记录 + 统计
+- /experts/conversations — 咨询记录分页查询（R9：按专家/用户关键词/时间筛选）
+- /experts/conversations/{id}/messages — 对话消息明细（R9）
+- /experts/conversations/export — 咨询记录导出 Excel（R9）
 - /monitor/overview — 系统监控概览
 - /owners — 棚主列表 + 名下大棚
 - /report — 多类型数据导出（ADMIN 系统级，前端不暴露；农户/技术员导出走 /api/v1/report，见模块 20）
@@ -128,6 +133,7 @@
 ### 17. websocket — 实时推送
 - STOMP over WebSocket 认证拦截
 - 实时数据推送、预警推送、设备状态推送
+- ExpertPresenceListener（R9）：专家 WebSocket 连接/断开自动置在线/离线
 
 ### 18. file — 文件服务
 - 文件上传/存储（图片、文档等）
@@ -187,7 +193,7 @@
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |
 | /corpus | CorpusPage.vue | 语料管理 |
-| /expert | ExpertPage.vue | 专家工作台 |
+| /expert | ExpertPage.vue | 专家工作台（在线状态 + 咨询记录查询/明细/导出） |
 | /owner | OwnerPage.vue | 棚主管理 |
 
 ---

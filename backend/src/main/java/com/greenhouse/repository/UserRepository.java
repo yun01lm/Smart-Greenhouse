@@ -19,6 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** 根据手机号查找 */
     Optional<User> findByPhone(String phone);
 
+    /** 按用户名模糊查询（R9 咨询记录用户筛选用） */
+    List<User> findByUsernameContaining(String keyword);
+
     /** 检查用户名是否存在 */
     boolean existsByUsername(String username);
 

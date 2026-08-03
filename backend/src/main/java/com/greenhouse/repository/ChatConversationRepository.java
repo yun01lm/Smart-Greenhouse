@@ -4,6 +4,7 @@ import com.greenhouse.entity.ChatConversation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.List;
  * 聊天对话 Repository
  */
 @Repository
-public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long> {
+public interface ChatConversationRepository extends JpaRepository<ChatConversation, Long>,
+        JpaSpecificationExecutor<ChatConversation> {
 
     /**
      * 按用户ID分页查询对话
