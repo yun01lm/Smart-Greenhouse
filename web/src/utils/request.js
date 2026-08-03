@@ -8,31 +8,6 @@ const request = axios.create({
 })
 
 
-// 请求去重缓存（相同请求 300ms 内不重复发送）
-const pendingRequests = new Map()
-
-function getRequestKey(config) {
-  const { method, url, params, data } = config
-  return [method, url, JSON.stringify(params), JSON.stringify(data)].join('&')
-}
-
-request.interceptors.request.use(config => {
-  const key = getRequestKey(config)
-  if (pendingRequests.has(key)) {
-    // 返回已有的 Promise，取消当前请求
-    const controller = new AbortController()
-    config.signal = controller.signal
-    controller.abort()
-    return pendingRequests.get(key)
-  }
-
-  const promise = Promise.resolve(config)
-  pendingRequests.set(key, promise)
-
-  // 300ms 后清除
-  setTimeout(() => pendingRequests.delete(key), 300)
-  return promise
-}, error => Promise.reject(error))
 // 请求拦截器：自动附加 Token
 request.interceptors.request.use(
   config => {

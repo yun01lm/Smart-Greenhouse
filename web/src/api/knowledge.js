@@ -16,10 +16,11 @@ export function getCategories() {
   return request.get('/knowledge/categories')
 }
 
-/** 上传文档 */
+/** 上传文档（含切片+向量化，放宽超时到 180s，避免大文档处理超时） */
 export function uploadDocument(formData) {
   return request.post('/knowledge/documents', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 180000
   })
 }
 

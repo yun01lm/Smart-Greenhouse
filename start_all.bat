@@ -8,6 +8,15 @@ set "MAVEN=F:\apache-maven-3.9.16-bin\apache-maven-3.9.16\bin\mvn.cmd"
 set "NPM=F:\node_js\npm.cmd"
 set "PYTHON=E:\mingw\ucrt64\bin\python.exe"
 set "URL=http://localhost:3000"
+REM ========== 0. Load .env.local (keys injection, gitignored) ==========
+if exist "%ROOT%\.env.local" (
+    for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%ROOT%\.env.local") do set "%%a=%%b"
+    echo   [OK] .env.local loaded (AI keys injected)
+) else (
+    echo   [--] .env.local not found, AI features stay in Mock mode
+)
+echo.
+
 
 echo ================================================
 echo        ????AIoT?? - ????

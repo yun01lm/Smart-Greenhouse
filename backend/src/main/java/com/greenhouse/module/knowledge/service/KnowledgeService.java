@@ -286,12 +286,14 @@ public class KnowledgeService {
             }
         }
 
-        // 2. 删除本地文件
-        try {
-            Path filePath = uploadDir.resolve(doc.getFilePath());
-            Files.deleteIfExists(filePath);
-        } catch (IOException e) {
-            log.warn("本地文件删除失败: path={}, error={}", doc.getFilePath(), e.getMessage());
+        // 2. 删除本地文件（filePath 可能为 NULL，如历史损坏数据）
+        if (doc.getFilePath() != null) {
+            try {
+                Path filePath = uploadDir.resolve(doc.getFilePath());
+                Files.deleteIfExists(filePath);
+            } catch (IOException e) {
+                log.warn("本地文件删除失败: path={}, error={}", doc.getFilePath(), e.getMessage());
+            }
         }
 
         // 3. 删除 MySQL 记录

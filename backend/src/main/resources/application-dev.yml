@@ -3,6 +3,8 @@
 # ===========================================
 
 spring:
+  # HTTP 请求/响应统一 UTF-8（防止 multipart 表单字段中文乱码，如知识库分类）
+  # （实际配置在 application.yml server.servlet.encoding，此处仅为说明；见 application.yml）
   # 数据源 — MySQL
   datasource:
     url: jdbc:mysql://localhost:3306/smart_greenhouse?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
@@ -106,9 +108,9 @@ ai:
   voice:
     provider: mock              # mock | xunfei | whisper
   llm:
-    provider: mock              # mock | deepseek
+    provider: ${AI_LLM_PROVIDER:mock}            # mock | deepseek（R7 真实问答；.env.local 注入）
   embedding:
-    provider: mock              # mock | siliconflow
+    provider: ${AI_EMBEDDING_PROVIDER:mock}      # mock | siliconflow（R6 真实向量化；.env.local 注入 SILICONFLOW_API_KEY）
 
 # 天气服务
 weather:

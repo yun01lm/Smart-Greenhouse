@@ -5,23 +5,28 @@ import com.greenhouse.repository.KnowledgeDocumentRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 知识库种子数据初始化
  * <p>
  * 应用启动后检查知识库是否为空，如为空则自动创建示例知识文档。
- * 文件已预置在 uploads/knowledge/ 目录下，初始化过程：
- * 1. 创建 MySQL 元数据记录
- * 2. 调用 indexDocument 进行文本切片和向量化
- * 3. 将向量写入 ChromaDB
+ * 种子文档源文件置于 classpath 的 knowledge-seed/ 目录（随仓库分发），
+ * 初始化时将内容写入上传目录，保证克隆后可复现，不依赖手工放置文件。
+ * 初始化过程：
+ * 1. 将种子内容写入 uploads/knowledge/ 目录
+ * 2. 创建 MySQL 元数据记录
+ * 3. 调用 indexDocument 进行文本切片和向量化
+ * 4. 将向量写入 ChromaDB
  * </p>
  */
 @Slf4j
@@ -32,7 +37,13 @@ public class KnowledgeSeeder {
     private final KnowledgeDocumentRepository documentRepository;
     private final KnowledgeService knowledgeService;
 
-    private static final String KNOWLEDGE_DIR = "./uploads/knowledge";
+    /** 种子资源目录（classpath） */
+    private static final String SEED_RESOURCE_DIR = "knowledge-seed";
+    /** 上传目录下的知识库子目录 */
+    private static final String KNOWLEDGE_SUB_DIR = "knowledge";
+
+    @Value("${file.upload-dir:./uploads}")
+    private String uploadDirPath;
 
     /**
      * 种子文档定义
@@ -72,29 +83,38 @@ public class KnowledgeSeeder {
     }
 
     private void seedDocument(SeedDoc seed) throws Exception {
-        Path filePath = Paths.get(KNOWLEDGE_DIR, seed.filename);
-        if (!Files.exists(filePath)) {
-            log.warn("种子文档文件不存在: {}", filePath.toAbsolutePath());
+        // 1. 从 classpath 读取种子内容
+        Resource resource = new ClassPathResource(SEED_RESOURCE_DIR + "/" + seed.filename);
+        if (!resource.exists()) {
+            log.warn("种子文档资源不存在: {}", resource.getDescription());
             return;
         }
+        String content = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
 
-        String content = Files.readString(filePath, StandardCharsets.UTF_8);
-        long fileSize = Files.size(filePath);
+        // 2. 写入上传目录（文件已存在则复用）
+        Path uploadRoot = Paths.get(uploadDirPath).toAbsolutePath();
+        Path targetDir = uploadRoot.resolve(KNOWLEDGE_SUB_DIR);
+        Files.createDirectories(targetDir);
+        Path targetFile = targetDir.resolve(seed.filename);
+        if (!Files.exists(targetFile)) {
+            Files.write(targetFile, content.getBytes(StandardCharsets.UTF_8));
+        }
+        long fileSize = Files.size(targetFile);
 
-        // 1. 创建 MySQL 记录
+        // 3. 创建 MySQL 记录
         KnowledgeDocument doc = KnowledgeDocument.builder()
                 .title(seed.title)
                 .category(seed.category)
-                .filePath("knowledge/" + seed.filename)
+                .filePath(KNOWLEDGE_SUB_DIR + "/" + seed.filename)
                 .fileType("md")
                 .fileSize(fileSize)
                 .chunkCount(0)
                 .vectorIndexed(false)
                 .build();
         doc = documentRepository.save(doc);
-        log.info("知识文档元数据已创建: id={}, title={}", doc.getId(), seed.title);
+        log.info("知识文档元数据已创建: id={}, title={}, category={}", doc.getId(), seed.title, seed.category);
 
-        // 2. 向量化索引
+        // 4. 向量化索引
         try {
             knowledgeService.indexDocument(doc.getId());
             log.info("知识文档向量化完成: id={}, title={}", doc.getId(), seed.title);

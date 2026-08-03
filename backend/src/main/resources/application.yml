@@ -6,3 +6,8 @@ spring:
 
 server:
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true        # 请求/响应统一 UTF-8，修复 multipart 表单字段中文乱码
