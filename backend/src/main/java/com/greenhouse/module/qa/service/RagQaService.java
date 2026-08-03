@@ -44,6 +44,11 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class RagQaService {
 
+    /** 非农问题拒绝回答（守卫拦截，不调用 LLM） */
+    private static final String REJECT_ANSWER =
+            "我专注于农业种植领域的问题，例如大棚管理、病虫害防治、施肥灌溉、作物种植等。\n" +
+            "请换个农业相关的问题试试，我会尽力为你解答。";
+
     private final EmbeddingService embeddingService;
     private final ChromaRetrievalService retrievalService;
     private final QaRecordRepository recordRepository;
@@ -67,6 +72,12 @@ public class RagQaService {
     /** LLM 最大生成 token 数（从 application.yml 读取，默认 2000） */
     private final int maxTokens;
 
+    /** 农业域守卫（R7：防止非农业问题消耗真实 API 额度） */
+    private final AgricultureDomainGuard domainGuard;
+
+    /** 农业域守卫开关（application.yml，默认开启） */
+    private final boolean agricultureGuardEnabled;
+
     public RagQaService(
             EmbeddingService embeddingService,
             ChromaRetrievalService retrievalService,
@@ -79,7 +90,9 @@ public class RagQaService {
             @Value("${greenhouse.ai.rag.system-prompt}") String systemPrompt,
             @Value("${greenhouse.ai.rag.top-k:5}") int topK,
             @Value("${greenhouse.ai.rag.temperature:0.7}") double temperature,
-            @Value("${greenhouse.ai.rag.max-tokens:2000}") int maxTokens) {
+            @Value("${greenhouse.ai.rag.max-tokens:2000}") int maxTokens,
+            AgricultureDomainGuard domainGuard,
+            @Value("${greenhouse.ai.rag.agriculture-guard-enabled:true}") boolean agricultureGuardEnabled) {
         this.embeddingService = embeddingService;
         this.retrievalService = retrievalService;
         this.recordRepository = recordRepository;
@@ -92,6 +105,8 @@ public class RagQaService {
         this.topK = topK;
         this.temperature = temperature;
         this.maxTokens = maxTokens;
+        this.domainGuard = domainGuard;
+        this.agricultureGuardEnabled = agricultureGuardEnabled;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(60, TimeUnit.SECONDS)  // LLM 生成可能较慢
@@ -108,6 +123,11 @@ public class RagQaService {
      */
     @Transactional
     public QaResponse askText(Long userId, String question, Long greenhouseId) {
+        // 0. 农业域守卫预检（R7）
+        if (agricultureGuardEnabled && domainGuard.check(question) == AgricultureDomainGuard.GuardResult.REJECT) {
+            return saveRejectedRecord(userId, question);
+        }
+
         // 1. RAG 检索
         RagContext ragContext = retrieveContext(question);
 
@@ -238,6 +258,11 @@ public class RagQaService {
      * @return RAG 生成结果（answer + sources）
      */
     public AnswerResult generateAnswerOnly(String question) {
+        // 农业域守卫预检（R7）：非农问题不调用 LLM
+        if (agricultureGuardEnabled && domainGuard.check(question) == AgricultureDomainGuard.GuardResult.REJECT) {
+            return new AnswerResult(REJECT_ANSWER, Collections.emptyList(), false);
+        }
+
         RagContext ragContext = retrieveContext(question);
         String answer = generateAnswer(question, ragContext);
         return new AnswerResult(answer, ragContext.sources, ragContext.hasKnowledge);
@@ -251,6 +276,23 @@ public class RagQaService {
             List<QaResponse.SourceInfo> sources,
             boolean hasKnowledge
     ) {}
+
+    /**
+     * 保存被守卫拒绝的问题记录（用于审计，不消耗 LLM 额度）
+     */
+    private QaResponse saveRejectedRecord(Long userId, String question) {
+        QaRecord record = QaRecord.builder()
+                .userId(userId)
+                .question(question)
+                .answer(REJECT_ANSWER)
+                .inputType(QaRecord.InputType.TEXT)
+                .sources("[]")
+                .createdAt(LocalDateTime.now())
+                .build();
+        record = recordRepository.save(record);
+        log.info("农业域守卫拒绝非农问题: recordId={}, userId={}, question={}", record.getId(), userId, question);
+        return QaResponse.fromEntity(record);
+    }
 
     /**
      * RAG 检索上下文内部类
