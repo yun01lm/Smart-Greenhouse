@@ -26,6 +26,9 @@ public interface GreenhouseRepository extends JpaRepository<Greenhouse, Long> {
     /** 统计某棚主的大棚数量 */
     long countByOwnerId(Long ownerId);
 
+    /** 批量查询多个棚主的大棚（管理端地区归属计算用） */
+    List<Greenhouse> findByOwnerIdIn(java.util.Collection<Long> ownerIds);
+
     // ===== 地区统计（管理员功能） =====
 
     /** 按省份统计 */

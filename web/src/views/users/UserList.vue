@@ -15,15 +15,18 @@
           <el-option label="员工" value="WORKER" />
           <el-option label="专家" value="EXPERT" />
         </el-select>
+        <RegionCascader v-model="regionPath" width="300px" style="margin-left: 12px" />
         <el-input
           v-model="searchKeyword"
-          placeholder="搜索用户名/手机号"
+          placeholder="搜索用户名/姓名/手机号"
           clearable
           style="width: 220px; margin-left: 12px"
           :prefix-icon="Search"
-          @clear="onFilterChange"
-          @keyup.enter="onFilterChange"
+          @clear="loadUsers"
+          @keyup.enter="loadUsers"
         />
+        <el-button type="primary" style="margin-left: 12px" :loading="loading" @click="loadUsers">查询</el-button>
+        <el-button @click="resetFilter">重置</el-button>
       </div>
     </div>
 
@@ -45,6 +48,12 @@
       <el-table-column prop="phone" label="手机号" width="130">
         <template #default="{ row }">
           <span>{{ row.phone || '-' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="所属地区" min-width="170">
+        <template #default="{ row }">
+          <span v-if="row.regionText">{{ row.regionText }}</span>
+          <span v-else class="text-muted">-</span>
         </template>
       </el-table-column>
       <el-table-column label="角色" width="100" align="center">
@@ -138,12 +147,14 @@ import { ref, computed, onMounted } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUsers, updateUser, deleteUser } from '@/api/admin'
+import RegionCascader from '@/components/RegionCascader.vue'
 
 // ===== 数据 =====
 const loading = ref(false)
 const users = ref([])
 const filterRole = ref('')
 const searchKeyword = ref('')
+const regionPath = ref([])
 const currentPage = ref(1)
 const pageSize = ref(10)
 
@@ -165,22 +176,8 @@ const formRules = {
   role: [{ required: true, message: '请选择角色', trigger: 'change' }]
 }
 
-// ===== 计算属性 =====
-const filteredUsers = computed(() => {
-  let list = users.value
-  if (filterRole.value) {
-    list = list.filter(u => u.role === filterRole.value)
-  }
-  if (searchKeyword.value) {
-    const kw = searchKeyword.value.toLowerCase()
-    list = list.filter(u =>
-      (u.username && u.username.toLowerCase().includes(kw)) ||
-      (u.phone && u.phone.includes(kw)) ||
-      (u.realName && u.realName.toLowerCase().includes(kw))
-    )
-  }
-  return list
-})
+// ===== 计算属性（筛选由后端完成，前端仅分页） =====
+const filteredUsers = computed(() => users.value)
 
 const pagedUsers = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
@@ -188,11 +185,23 @@ const pagedUsers = computed(() => {
 })
 
 // ===== 方法 =====
+function regionParams() {
+  const p = regionPath.value || []
+  return {
+    province: p[0] || undefined,
+    city: p[1] || undefined,
+    district: p[2] || undefined,
+    town: p[3] || undefined,
+    village: p[4] || undefined
+  }
+}
+
 async function loadUsers() {
   loading.value = true
   try {
-    const params = {}
+    const params = { ...regionParams() }
     if (filterRole.value) params.role = filterRole.value
+    if (searchKeyword.value) params.keyword = searchKeyword.value
     const res = await getUsers(params)
     users.value = res.data || []
   } catch {
@@ -203,6 +212,14 @@ async function loadUsers() {
 }
 
 function onFilterChange() {
+  currentPage.value = 1
+  loadUsers()
+}
+
+function resetFilter() {
+  filterRole.value = ''
+  searchKeyword.value = ''
+  regionPath.value = []
   currentPage.value = 1
   loadUsers()
 }
@@ -310,5 +327,9 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.text-muted {
+  color: #c0c4cc;
 }
 </style>

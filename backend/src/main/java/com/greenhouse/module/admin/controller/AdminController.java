@@ -32,12 +32,20 @@ public class AdminController {
      * 用户列表
      * GET /api/v1/admin/users
      *
-     * @param role 可选角色筛选（ADMIN/OWNER/WORKER/EXPERT）
+     * @param role     可选角色筛选（ADMIN/OWNER/WORKER/EXPERT）
+     * @param province 可选地区筛选（省/市/县/乡镇/村，从大棚地区字段聚合）
+     * @param keyword  可选关键词（用户名/姓名/手机号）
      */
     @GetMapping("/users")
     public ApiResponse<List<UserSummaryResponse>> listUsers(
-            @RequestParam(required = false) User.Role role) {
-        return ApiResponse.success(adminService.listUsers(role));
+            @RequestParam(required = false) User.Role role,
+            @RequestParam(required = false) String province,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String town,
+            @RequestParam(required = false) String village,
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.success(adminService.listUsers(role, province, city, district, town, village, keyword));
     }
 
     /**
