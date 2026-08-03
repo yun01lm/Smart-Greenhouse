@@ -51,13 +51,8 @@ public class DeviceService {
         Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        // 只有棚主可以添加设备到自己的大棚
-        if (user.getRole() != User.Role.ADMIN && !greenhouse.getOwnerId().equals(userId)) {
-            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
-        }
+        // 棚主添加设备到自己的大棚；管理员可代管（旁路校验见 checkOwnerOrAdmin）
+        checkOwnerOrAdmin(userId, greenhouse);
 
         // 校验设备数量上限
         long count = deviceRepository.countByGreenhouseId(greenhouseId);
@@ -162,12 +157,10 @@ public class DeviceService {
         Device device = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEVICE_NOT_FOUND));
 
-        // 校验大棚归属
+        // 校验大棚归属（管理员可代管）
         Greenhouse greenhouse = greenhouseRepository.findById(device.getGreenhouseId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
-        if (!greenhouse.getOwnerId().equals(userId)) {
-            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
-        }
+        checkOwnerOrAdmin(userId, greenhouse);
 
         // 校验名称唯一性（排除自己）
         if (!device.getName().equals(request.getName())
@@ -195,18 +188,27 @@ public class DeviceService {
         Device device = deviceRepository.findById(deviceId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DEVICE_NOT_FOUND));
 
-        // 校验大棚归属
+        // 校验大棚归属（管理员可代管）
         Greenhouse greenhouse = greenhouseRepository.findById(device.getGreenhouseId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
-        if (!greenhouse.getOwnerId().equals(userId)) {
-            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
-        }
+        checkOwnerOrAdmin(userId, greenhouse);
 
         deviceRepository.delete(device);
         log.info("设备删除成功: id={}, name={}, sn={}", device.getId(), device.getName(), device.getDeviceSn());
     }
 
     // ===== 辅助方法 =====
+
+    /**
+     * 校验棚主本人或管理员（管理员可代管任意大棚设备）
+     */
+    private void checkOwnerOrAdmin(Long userId, Greenhouse greenhouse) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (user.getRole() != User.Role.ADMIN && !greenhouse.getOwnerId().equals(userId)) {
+            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+        }
+    }
 
     /**
      * 校验用户是否有权限访问该大棚
