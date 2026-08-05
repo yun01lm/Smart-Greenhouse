@@ -45,4 +45,33 @@ public class ReportAccessService {
             throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
         }
     }
+
+    /**
+     * 导出权限校验（R10 支持 ADMIN 代查棚主视角）
+     * <p>
+     * ownerId 非空时：仅 ADMIN 可携带，且目标必须是 OWNER、大棚必须归属该棚主；
+     * ownerId 为空时：走原有 OWNER/WORKER 归属校验。
+     * </p>
+     */
+    public void assertExportAccess(Long userId, Long greenhouseId, Long ownerId) {
+        if (ownerId == null) {
+            assertExportAccess(userId, greenhouseId);
+            return;
+        }
+        User admin = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (admin.getRole() != User.Role.ADMIN) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (owner.getRole() != User.Role.OWNER) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
+        if (!greenhouse.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+        }
+    }
 }

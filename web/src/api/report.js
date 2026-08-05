@@ -1,6 +1,13 @@
 import request from '@/utils/request'
+import { useViewModeStore } from '@/stores/viewMode'
 
 const BASE = '/report'
+
+/** 棚主视角下自动附加 ownerId（ADMIN 后端代查，R10） */
+function withOwner(params = {}) {
+  const vm = useViewModeStore()
+  return vm.active && vm.ownerId ? { ...params, ownerId: vm.ownerId } : params
+}
 
 /**
  * 导出传感器历史数据
@@ -9,7 +16,7 @@ const BASE = '/report'
  */
 export function exportSensors(params) {
   return request.get(`${BASE}/sensors`, {
-    params,
+    params: withOwner(params),
     responseType: 'blob',
     timeout: 60000
   })
@@ -21,7 +28,7 @@ export function exportSensors(params) {
  */
 export function exportAlerts(params) {
   return request.get(`${BASE}/alerts`, {
-    params,
+    params: withOwner(params),
     responseType: 'blob',
     timeout: 60000
   })
@@ -33,7 +40,7 @@ export function exportAlerts(params) {
  */
 export function exportControls(params) {
   return request.get(`${BASE}/controls`, {
-    params,
+    params: withOwner(params),
     responseType: 'blob',
     timeout: 60000
   })
@@ -45,7 +52,7 @@ export function exportControls(params) {
  */
 export function exportHealth(params) {
   return request.get(`${BASE}/health`, {
-    params,
+    params: withOwner(params),
     responseType: 'blob',
     timeout: 60000
   })

@@ -65,8 +65,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         // Admin 管理接口（仅 ADMIN 角色）
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
-                        // 数据导出接口（仅 OWNER/WORKER 角色，R8）
-                        .requestMatchers("/api/v1/report/**").hasAnyRole("OWNER", "WORKER")
+                        // 数据导出接口（R8 仅 OWNER/WORKER；R10 放开为认证即可，细粒度校验在 ReportAccessService，
+                        // ADMIN 可携带 ownerId 代查棚主视角导出，非 ADMIN 仍按 OWNER/WORKER 归属校验）
+                        .requestMatchers("/api/v1/report/**").authenticated()
                         // 知识库管理接口（仅 ADMIN 角色）
                         .requestMatchers("/api/v1/knowledge/**").hasRole("ADMIN")
                         // OPTIONS 预检请求

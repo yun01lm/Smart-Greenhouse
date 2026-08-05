@@ -48,6 +48,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useViewModeStore } from '@/stores/viewMode'
 import AdminDashboard from './AdminDashboard.vue'
 import SensorCards from './SensorCards.vue'
 import TrendChart from './TrendChart.vue'
@@ -65,7 +66,9 @@ const props = defineProps({
 })
 
 const authStore = useAuthStore()
-const isAdmin = computed(() => authStore.isAdmin())
+const viewStore = useViewModeStore()
+// R10：管理员进入棚主视角后按棚主版数据总览展示
+const isAdmin = computed(() => authStore.isAdmin() && !viewStore.active)
 
 const realtimeData = ref({})
 const historyData = ref([])

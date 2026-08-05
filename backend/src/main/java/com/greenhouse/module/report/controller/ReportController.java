@@ -22,8 +22,9 @@ import java.time.format.DateTimeFormatter;
 /**
  * 棚主/技术员数据导出 API（R8 新增）
  * <p>
- * 路径前缀：/api/v1/report，仅 OWNER / WORKER 角色可访问（SecurityConfig 统一收口）。
- * 细粒度校验由 ReportAccessService 负责：OWNER 仅导出本人大棚，WORKER 仅导出被授权大棚。
+ * 路径前缀：/api/v1/report。R10 起 SecurityConfig 放开角色限制为认证即可，
+ * 细粒度校验由 ReportAccessService 负责：OWNER 仅导出本人大棚，WORKER 仅导出被授权大棚，
+ * ADMIN 可携带 ownerId 代查棚主视角导出（ownerId 必须为 OWNER 且大棚归属该校验）。
  * Excel 生成逻辑复用 AdminReportService，避免重复实现。
  * </p>
  */
@@ -45,10 +46,11 @@ public class ReportController {
             @RequestParam Long greenhouseId,
             @RequestParam String sensorType,
             @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime) {
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false) Long ownerId) {
 
         Long userId = currentUserId();
-        accessService.assertExportAccess(userId, greenhouseId);
+        accessService.assertExportAccess(userId, greenhouseId, ownerId);
 
         // 默认最近 7 天
         if (endTime == null || endTime <= 0) endTime = System.currentTimeMillis();
@@ -69,10 +71,11 @@ public class ReportController {
             @RequestParam Long greenhouseId,
             @RequestParam(required = false) String level,
             @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime) {
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false) Long ownerId) {
 
         Long userId = currentUserId();
-        accessService.assertExportAccess(userId, greenhouseId);
+        accessService.assertExportAccess(userId, greenhouseId, ownerId);
 
         if (endTime == null || endTime <= 0) endTime = System.currentTimeMillis();
         if (startTime == null || startTime <= 0) startTime = endTime - 30L * 24 * 60 * 60 * 1000;
@@ -90,10 +93,11 @@ public class ReportController {
     public ResponseEntity<byte[]> exportControls(
             @RequestParam Long greenhouseId,
             @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime) {
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false) Long ownerId) {
 
         Long userId = currentUserId();
-        accessService.assertExportAccess(userId, greenhouseId);
+        accessService.assertExportAccess(userId, greenhouseId, ownerId);
 
         if (endTime == null || endTime <= 0) endTime = System.currentTimeMillis();
         if (startTime == null || startTime <= 0) startTime = endTime - 30L * 24 * 60 * 60 * 1000;
@@ -111,10 +115,11 @@ public class ReportController {
     public ResponseEntity<byte[]> exportHealth(
             @RequestParam Long greenhouseId,
             @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime) {
+            @RequestParam(required = false) Long endTime,
+            @RequestParam(required = false) Long ownerId) {
 
         Long userId = currentUserId();
-        accessService.assertExportAccess(userId, greenhouseId);
+        accessService.assertExportAccess(userId, greenhouseId, ownerId);
 
         log.info("[REPORT] 导出健康评分记录: userId={}, greenhouseId={}", userId, greenhouseId);
         byte[] data = reportService.exportHealthScores(greenhouseId, startTime, endTime);

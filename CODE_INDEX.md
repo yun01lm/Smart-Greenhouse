@@ -119,7 +119,10 @@
 - /experts/conversations/{id}/messages — 对话消息明细（R9）
 - /experts/conversations/export — 咨询记录导出 Excel（R9）
 - /monitor/overview — 系统监控概览
-- /owners — 棚主列表 + 名下大棚
+- /owners — 棚主列表（R10：关键词搜索/五级地区筛选/分页/regionText 地区列）
+- /owners/{id}/greenhouses — 棚主名下大棚详情
+- 预警规则/阈值接口支持 ADMIN 携带 ownerId 代查（R10，非 ADMIN 拒绝）
+- /report 导出接口支持 ADMIN 携带 ownerId 代查（R10，非 ADMIN 仍按 OWNER/WORKER 归属校验）
 - /report — 多类型数据导出（ADMIN 系统级，前端不暴露；农户/技术员导出走 /api/v1/report，见模块 20）
 
 ### 15. permission — 权限管理 (/api/v1/owner/employees + /api/v1/worker)
@@ -194,7 +197,8 @@
 | /monitor | MonitorPage.vue | 系统监控 |
 | /corpus | CorpusPage.vue | 语料管理 |
 | /expert | ExpertPage.vue | 专家工作台（在线状态 + 咨询记录查询/明细/导出） |
-| /owner | OwnerPage.vue | 棚主管理 |
+| /owner | OwnerPage.vue | 棚主管理（搜索/地区筛选/进入棚主视角） |
+| 视角切换 | stores/viewMode.js | 棚主视角状态（R10：管理员进入棚主视角查看其系统，一键切回；菜单/路由按有效角色 OWNER 放行） |
 
 ---
 

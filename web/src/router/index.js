@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useViewModeStore } from '@/stores/viewMode'
 
 const routes = [
   {
@@ -98,9 +99,10 @@ router.beforeEach((to, from, next) => {
     next('/dashboard')
     return
   }
-  // 角色权限校验
+  // 角色权限校验（R10：棚主视角下有效角色为 OWNER，放行棚主页面）
   const user = JSON.parse(localStorage.getItem('user') || 'null')
-  const role = user?.role || ''
+  const viewStore = useViewModeStore()
+  const role = viewStore.active ? 'OWNER' : (user?.role || '')
   const allowed = to.meta?.roles
   if (allowed && allowed.length > 0 && !allowed.includes(role)) {
     next('/dashboard')

@@ -17,6 +17,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useViewModeStore } from '@/stores/viewMode'
 import DeviceList from './DeviceList.vue'
 import DeviceGroup from './DeviceGroup.vue'
 import AdminDevicePage from './AdminDevicePage.vue'
@@ -26,7 +27,9 @@ defineProps({
 })
 
 const authStore = useAuthStore()
-const isAdmin = computed(() => authStore.isAdmin())
+const viewStore = useViewModeStore()
+// R10：管理员进入棚主视角后按棚主版设备管理展示
+const isAdmin = computed(() => authStore.isAdmin() && !viewStore.active)
 const activeTab = ref('list')
 </script>
 

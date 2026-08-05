@@ -1,7 +1,11 @@
 package com.greenhouse.module.alert.controller;
 
 import com.greenhouse.common.ApiResponse;
+import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.ErrorCode;
 import com.greenhouse.common.PageResult;
+import com.greenhouse.entity.User;
+import com.greenhouse.repository.UserRepository;
 import com.greenhouse.entity.Alert;
 import com.greenhouse.module.alert.dto.AlertResponse;
 import com.greenhouse.module.alert.dto.AlertRuleRequest;
@@ -37,6 +41,7 @@ public class AlertController {
     private final AlertService alertService;
     private final AlertRuleService ruleService;
     private final AlertThresholdService thresholdService;
+    private final UserRepository userRepository;
 
     // ===== 告警记录 =====
 
@@ -91,8 +96,9 @@ public class AlertController {
      */
     @GetMapping("/rules")
     public ApiResponse<List<AlertRuleResponse>> listRules(
-            @RequestParam(required = false) Long greenhouseId) {
-        Long userId = getCurrentUserId();
+            @RequestParam(required = false) Long greenhouseId,
+            @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success(ruleService.listRulesForUser(userId, greenhouseId));
     }
 
@@ -101,8 +107,9 @@ public class AlertController {
      * POST /api/v1/alerts/rules
      */
     @PostMapping("/rules")
-    public ApiResponse<AlertRuleResponse> createRule(@Valid @RequestBody AlertRuleRequest request) {
-        Long userId = getCurrentUserId();
+    public ApiResponse<AlertRuleResponse> createRule(@Valid @RequestBody AlertRuleRequest request,
+                                                       @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success("规则创建成功", ruleService.createRule(userId, request));
     }
 
@@ -112,8 +119,9 @@ public class AlertController {
      */
     @PutMapping("/rules/{id}")
     public ApiResponse<AlertRuleResponse> updateRule(@PathVariable Long id,
-                                                      @Valid @RequestBody AlertRuleRequest request) {
-        Long userId = getCurrentUserId();
+                                                      @Valid @RequestBody AlertRuleRequest request,
+                                                      @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success("规则更新成功", ruleService.updateRule(userId, id, request));
     }
 
@@ -122,8 +130,9 @@ public class AlertController {
      * DELETE /api/v1/alerts/rules/{id}
      */
     @DeleteMapping("/rules/{id}")
-    public ApiResponse<Void> deleteRule(@PathVariable Long id) {
-        Long userId = getCurrentUserId();
+    public ApiResponse<Void> deleteRule(@PathVariable Long id,
+                                           @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         ruleService.deleteRule(userId, id);
         return ApiResponse.success("规则已删除", null);
     }
@@ -136,8 +145,9 @@ public class AlertController {
      */
     @GetMapping("/thresholds")
     public ApiResponse<List<ThresholdResponse>> listThresholds(
-            @RequestParam(required = false) Long greenhouseId) {
-        Long userId = getCurrentUserId();
+            @RequestParam(required = false) Long greenhouseId,
+            @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success(thresholdService.listThresholds(userId, greenhouseId));
     }
 
@@ -146,8 +156,9 @@ public class AlertController {
      * POST /api/v1/alerts/thresholds
      */
     @PostMapping("/thresholds")
-    public ApiResponse<ThresholdResponse> setThreshold(@Valid @RequestBody ThresholdRequest request) {
-        Long userId = getCurrentUserId();
+    public ApiResponse<ThresholdResponse> setThreshold(@Valid @RequestBody ThresholdRequest request,
+                                                         @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success("阈值设置成功", thresholdService.setThreshold(userId, request));
     }
 
@@ -157,8 +168,9 @@ public class AlertController {
      */
     @PutMapping("/thresholds/{id}")
     public ApiResponse<ThresholdResponse> updateThreshold(@PathVariable Long id,
-                                                           @Valid @RequestBody ThresholdRequest request) {
-        Long userId = getCurrentUserId();
+                                                           @Valid @RequestBody ThresholdRequest request,
+                                                           @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         return ApiResponse.success("阈值更新成功", thresholdService.setThreshold(userId, request));
     }
 
@@ -167,8 +179,9 @@ public class AlertController {
      * DELETE /api/v1/alerts/thresholds/{id}
      */
     @DeleteMapping("/thresholds/{id}")
-    public ApiResponse<Void> deleteThreshold(@PathVariable Long id) {
-        Long userId = getCurrentUserId();
+    public ApiResponse<Void> deleteThreshold(@PathVariable Long id,
+                                                 @RequestParam(required = false) Long ownerId) {
+        Long userId = resolveUserId(ownerId);
         thresholdService.deleteThreshold(userId, id);
         return ApiResponse.success("阈值已删除", null);
     }
@@ -178,5 +191,30 @@ public class AlertController {
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return (Long) auth.getPrincipal();
+    }
+
+    /**
+     * 解析目标用户：默认当前登录用户；ADMIN 可携带 ownerId 代查棚主视角数据（R10）。
+     * 非 ADMIN 携带 ownerId 一律拒绝，防止越权。
+     */
+    private Long resolveUserId(Long ownerId) {
+        if (ownerId == null) {
+            return getCurrentUserId();
+        }
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        User.Role role = auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(x -> x.startsWith("ROLE_"))
+                .map(x -> User.Role.valueOf(x.replace("ROLE_", "")))
+                .findFirst().orElse(null);
+        if (role != User.Role.ADMIN) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+        if (owner.getRole() != User.Role.OWNER) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        return ownerId;
     }
 }

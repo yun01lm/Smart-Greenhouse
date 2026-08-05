@@ -177,6 +177,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Download, Histogram, WarningFilled, Switch as SwitchIcon, TrendCharts } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getGreenhouses } from '@/api/greenhouse'
+import { useViewModeStore } from '@/stores/viewMode'
 import { exportSensors, exportAlerts, exportControls, exportHealth, downloadBlob } from '@/api/report'
 
 // ===== 基础数据 =====
@@ -258,11 +259,18 @@ async function doExport(type) {
   }
 }
 
+const viewStore = useViewModeStore()
+
 // ===== 初始化 =====
 onMounted(async () => {
   try {
-    const res = await getGreenhouses()
-    greenhouses.value = res.data || []
+    // R10：棚主视角下使用该棚主的大棚列表
+    if (viewStore.active) {
+      greenhouses.value = viewStore.greenhouses || []
+    } else {
+      const res = await getGreenhouses()
+      greenhouses.value = res.data || []
+    }
     if (greenhouses.value.length > 0) {
       filter.greenhouseId = greenhouses.value[0].id
     }

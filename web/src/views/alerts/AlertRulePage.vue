@@ -258,6 +258,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getGreenhouses } from '@/api/greenhouse'
+import { useViewModeStore } from '@/stores/viewMode'
 import {
   getAlertRules, createAlertRule, updateAlertRule, deleteAlertRule,
   getThresholds, deleteThreshold
@@ -346,8 +347,15 @@ const sensorTypes = [
   { value: 'WIND_SPEED', label: '风速' }
 ]
 
+const viewStore = useViewModeStore()
+
 // ===== 数据加载 =====
 async function loadGreenhouses() {
+  // R10：棚主视角下使用该棚主的大棚列表
+  if (viewStore.active) {
+    greenhouses.value = viewStore.greenhouses || []
+    return
+  }
   try {
     const res = await getGreenhouses()
     greenhouses.value = res.data || []

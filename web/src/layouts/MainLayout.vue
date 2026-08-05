@@ -6,16 +6,21 @@
         <h2>🌱 智慧大棚AIoT系统</h2>
       </div>
       <div class="header-right">
-        <!-- 大棚选择器（管理员不显示，管理员按地区查看） -->
+        <!-- 棚主视角提示（R10：管理员进入棚主视角后显示，可一键切回） -->
+        <div v-if="viewStore.active" class="view-banner">
+          <el-tag type="warning" effect="dark" size="small">棚主视角</el-tag>
+          <span class="view-text">正在以「{{ viewStore.ownerName }}」身份查看</span>
+          <el-button type="primary" size="small" @click="backToAdmin">返回管理员</el-button>
+        </div>
+        <!-- 大棚选择器（棚主视角下显示该棚主的大棚） -->
         <el-select
-          v-if="!authStore.isAdmin()"
-          v-model="currentGreenhouseId"
+          v-if="!authStore.isAdmin() || viewStore.active"
+          v-model="selectGreenhouseId"
           placeholder="选择大棚"
           style="width: 200px; margin-right: 16px"
-          @change="onGreenhouseChange"
         >
           <el-option
-            v-for="gh in greenhouses"
+            v-for="gh in ghOptions"
             :key="gh.id"
             :label="gh.name"
             :value="gh.id"
@@ -44,7 +49,7 @@
       </el-aside>
 
       <el-main class="layout-main">
-        <router-view :greenhouse-id="currentGreenhouseId" />
+        <router-view :greenhouse-id="displayGreenhouseId" />
       </el-main>
     </el-container>
   </div>
@@ -52,8 +57,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useViewModeStore } from '@/stores/viewMode'
 import { getGreenhouses } from '@/api/greenhouse'
 import {
   ChatDotRound, DataAnalysis, Cpu, UserFilled, Document, WarningFilled,
@@ -61,7 +67,9 @@ import {
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
+const viewStore = useViewModeStore()
 
 const greenhouses = ref([])
 const currentGreenhouseId = ref(1)
@@ -100,10 +108,30 @@ const MENU_CONFIG = {
   ]
 }
 
-const menus = computed(() => MENU_CONFIG[authStore.role()] || MENU_CONFIG.OWNER)
+// 棚主视角：菜单切换为棚主菜单；否则按当前角色
+const menus = computed(() => {
+  if (viewStore.active) return MENU_CONFIG.OWNER
+  return MENU_CONFIG[authStore.role()] || MENU_CONFIG.OWNER
+})
 
-function onGreenhouseChange(id) {
-  currentGreenhouseId.value = id
+// 大棚选项：棚主视角显示该棚主的大棚，否则显示当前用户大棚
+const ghOptions = computed(() => (viewStore.active ? viewStore.greenhouses : greenhouses.value))
+
+// 生效中的大棚 ID：棚主视角取自 viewStore，否则取自本组件
+const displayGreenhouseId = computed(() => (viewStore.active ? viewStore.greenhouseId : currentGreenhouseId.value))
+
+const selectGreenhouseId = computed({
+  get: () => displayGreenhouseId.value,
+  set: (id) => {
+    if (viewStore.active) viewStore.setGreenhouse(id)
+    else currentGreenhouseId.value = id
+  }
+})
+
+/** 返回管理员视角（R10） */
+function backToAdmin() {
+  viewStore.exitOwnerView()
+  router.push('/dashboard')
 }
 
 onMounted(async () => {
@@ -149,6 +177,18 @@ onMounted(async () => {
 .user-info {
   margin-right: 16px;
   color: #ffffffa6;
+}
+
+.view-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+
+.view-text {
+  color: #ffd04b;
+  font-size: 13px;
 }
 
 .layout-body {
