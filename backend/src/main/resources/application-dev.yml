@@ -22,8 +22,8 @@ spring:
   # 文件上传
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 30MB
+      max-request-size: 35MB
 
   # JPA
   jpa:
@@ -79,7 +79,7 @@ jwt:
 # 文件存储
 file:
   upload-dir: ./uploads
-  max-file-size: 10MB
+  max-file-size: 30MB
 
 # 第三方API
 baidu:
@@ -118,6 +118,9 @@ weather:
 
 # 多模态融合配置（论文对比实验：修改权重无需重新编译）
 greenhouse:
+  # 方言语料上传目录（与 file.upload-dir 保持一致，AdminCorpusService 读取）
+  upload:
+    path: ./uploads
   # RAG 问答配置
   ai:
     rag:

@@ -23,3 +23,8 @@ export function uploadCorpus(formData) {
 export function deleteCorpus(id) {
   return request.delete(`${BASE}/${id}`)
 }
+
+/** 获取语料音频（Blob，用于播放；audio 标签不携带 JWT，需经 axios 拉取） */
+export function getCorpusAudio(id) {
+  return request.get(`${BASE}/${id}/audio`, { responseType: 'blob' })
+}

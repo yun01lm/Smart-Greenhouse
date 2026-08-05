@@ -114,6 +114,7 @@
 - /roles — 角色统计
 - /alerts — 预警规则 CRUD + 阈值管理
 - /corpus — 语料 CRUD + 方言类型
+- /corpus/{id}/audio — 语料音频流式播放（R11：ADMIN 鉴权，在线播放；前端经 axios Blob 懒加载）
 - /experts — 专家列表 + 在线切换 + 授权记录 + 统计
 - /experts/conversations — 咨询记录分页查询（R9：按专家/用户关键词/时间筛选）
 - /experts/conversations/{id}/messages — 对话消息明细（R9）
@@ -195,7 +196,7 @@
 | /alerts | AlertRulePage.vue | 预警规则配置 |
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |
-| /corpus | CorpusPage.vue | 语料管理 |
+| /corpus | CorpusPage.vue | 语料管理（R11：用途说明/上传/列表/音频播放/删除，方言选项动态合并） |
 | /expert | ExpertPage.vue | 专家工作台（在线状态 + 咨询记录查询/明细/导出） |
 | /owner | OwnerPage.vue | 棚主管理（搜索/地区筛选/进入棚主视角） |
 | 视角切换 | stores/viewMode.js | 棚主视角状态（R10：管理员进入棚主视角查看其系统，一键切回；菜单/路由按有效角色 OWNER 放行） |

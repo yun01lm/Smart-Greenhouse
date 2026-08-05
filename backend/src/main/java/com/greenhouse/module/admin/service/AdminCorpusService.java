@@ -76,7 +76,9 @@ public class AdminCorpusService {
         String dateDir = LocalDate.now().format(DATE_FMT);
         String ext = getFileExtension(audio.getOriginalFilename());
         String storedName = UUID.randomUUID().toString() + ext;
-        Path dir = Paths.get(uploadRoot, "corpus", dateDir);
+        // 必须使用绝对路径：MultipartFile.transferTo 对相对路径会按 Tomcat 工作目录解析，
+        // 导致保存到临时目录下而失败（此前语料上传因此不可用）
+        Path dir = Paths.get(uploadRoot).toAbsolutePath().resolve("corpus").resolve(dateDir);
         try {
             Files.createDirectories(dir);
             Path filePath = dir.resolve(storedName);
@@ -151,6 +153,22 @@ public class AdminCorpusService {
 
         corpusRepository.delete(corpus);
         log.info("语料记录已删除: id={}", id);
+    }
+
+    /**
+     * 解析语料音频文件的服务器路径（用于播放/下载）
+     */
+    public Path resolveAudioPath(Long id) {
+        DialectCorpus corpus = corpusRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR, "语料记录不存在"));
+        Path path = Paths.get(corpus.getAudioPath());
+        if (!path.isAbsolute()) {
+            path = Paths.get(uploadRoot).toAbsolutePath().resolve(path);
+        }
+        if (!Files.exists(path) || !Files.isRegularFile(path)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "音频文件不存在或已被删除");
+        }
+        return path;
     }
 
     private String getFileExtension(String filename) {

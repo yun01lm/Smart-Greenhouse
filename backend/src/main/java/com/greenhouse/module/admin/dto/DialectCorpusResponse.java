@@ -21,6 +21,7 @@ public class DialectCorpusResponse {
     private String dialect;
     private String audioFilename;
     private Long audioSize;
+    private String audioUrl;
     private String annotationText;
     private String dialectText;
     private String source;
@@ -33,6 +34,7 @@ public class DialectCorpusResponse {
                 .dialect(c.getDialect())
                 .audioFilename(c.getAudioFilename())
                 .audioSize(c.getAudioSize())
+                .audioUrl("/api/v1/admin/corpus/" + c.getId() + "/audio")
                 .annotationText(c.getAnnotationText())
                 .dialectText(c.getDialectText())
                 .source(c.getSource())

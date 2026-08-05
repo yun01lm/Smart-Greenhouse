@@ -1,5 +1,10 @@
 <template>
   <div class="corpus-page">
+    <!-- 用途说明 -->
+    <div class="page-desc">
+      方言语料库用于方言识别模型的微调训练。请上传清晰的方言音频，并填写对应的标准普通话转写（标注文本）与方言原文，便于后续训练与评测。
+    </div>
+
     <!-- 操作栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
@@ -46,6 +51,14 @@
           <div class="audio-cell">
             <span class="audio-name">{{ row.audioFilename }}</span>
             <span class="audio-size">{{ formatSize(row.audioSize) }}</span>
+            <audio
+              v-if="row.audioUrl"
+              controls
+              preload="none"
+              class="audio-player"
+              :src="row.audioBlobUrl"
+              @play="handlePlay(row)"
+            ></audio>
           </div>
         </template>
       </el-table-column>
@@ -111,12 +124,12 @@
       <el-form ref="uploadFormRef" :model="uploadForm" :rules="uploadRules" label-width="100px">
         <el-form-item label="方言类型" prop="dialect">
           <el-select v-model="uploadForm.dialect" placeholder="请选择方言类型" style="width: 100%">
-            <el-option label="河北话" value="hebei" />
-            <el-option label="山东话" value="shandong" />
-            <el-option label="东北话" value="dongbei" />
-            <el-option label="河南话" value="henan" />
-            <el-option label="四川话" value="sichuan" />
-            <el-option label="广东话" value="guangdong" />
+            <el-option
+              v-for="d in uploadDialectOptions"
+              :key="d.value"
+              :label="d.label"
+              :value="d.value"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="音频文件" prop="audio">
@@ -172,10 +185,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { Search, Upload, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getCorpusList, getDialects, uploadCorpus, deleteCorpus } from '@/api/corpus'
+import { getCorpusList, getDialects, uploadCorpus, deleteCorpus, getCorpusAudio } from '@/api/corpus'
 
 // ===== 数据 =====
 const loading = ref(false)
@@ -192,6 +205,24 @@ const uploadVisible = ref(false)
 const uploading = ref(false)
 const uploadFormRef = ref(null)
 const uploadRef = ref(null)
+
+// 内置方言选项（静态兜底，若后端返回其他方言类型则动态追加）
+const DIALECT_OPTIONS = [
+  { label: '河北话', value: 'hebei' },
+  { label: '山东话', value: 'shandong' },
+  { label: '东北话', value: 'dongbei' },
+  { label: '河南话', value: 'henan' },
+  { label: '四川话', value: 'sichuan' },
+  { label: '广东话', value: 'guangdong' }
+]
+
+const uploadDialectOptions = computed(() => {
+  const merged = DIALECT_OPTIONS.map(o => ({ ...o }))
+  for (const d of dialects.value) {
+    if (!merged.some(o => o.value === d)) merged.push({ label: d, value: d })
+  }
+  return merged
+})
 
 const uploadForm = reactive({
   dialect: '',
@@ -236,6 +267,12 @@ function openUploadDialog() {
 }
 
 function onAudioChange(file) {
+  if (file.raw && file.raw.size > 30 * 1024 * 1024) {
+    ElMessage.warning('音频文件大小不能超过 30MB')
+    uploadRef.value?.clearFiles()
+    uploadForm.audio = null
+    return
+  }
   uploadForm.audio = file.raw
 }
 
@@ -280,6 +317,16 @@ async function submitUpload() {
     await loadData()
   } catch { /* handled by interceptor */ }
   finally { uploading.value = false }
+}
+
+// ===== 音频播放 =====
+/** 播放音频：懒加载 Blob（audio 标签不带 JWT，需经 axios 拉取） */
+async function handlePlay(row) {
+  if (row.audioBlobUrl) return
+  try {
+    const blob = await getCorpusAudio(row.id)
+    row.audioBlobUrl = URL.createObjectURL(blob)
+  } catch { /* 由拦截器提示 */ }
 }
 
 // ===== 删除 =====
@@ -328,6 +375,12 @@ onMounted(() => {
   loadDialects()
   loadData()
 })
+
+onUnmounted(() => {
+  corpusList.value.forEach(row => {
+    if (row.audioBlobUrl) URL.revokeObjectURL(row.audioBlobUrl)
+  })
+})
 </script>
 
 <style scoped>
@@ -335,6 +388,17 @@ onMounted(() => {
   background: #fff;
   border-radius: 8px;
   padding: 16px;
+}
+
+.page-desc {
+  background: #f4f8ff;
+  border: 1px solid #d9e6ff;
+  border-radius: 6px;
+  color: #4a6fa5;
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 10px 14px;
+  margin-bottom: 16px;
 }
 
 .toolbar {
@@ -368,6 +432,11 @@ onMounted(() => {
   font-size: 12px;
   color: #909399;
   white-space: nowrap;
+}
+
+.audio-player {
+  height: 32px;
+  max-width: 240px;
 }
 
 .text-ellipsis {

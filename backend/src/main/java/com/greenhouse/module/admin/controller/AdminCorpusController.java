@@ -6,10 +6,18 @@ import com.greenhouse.module.admin.dto.DialectCorpusResponse;
 import com.greenhouse.module.admin.service.AdminCorpusService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -69,6 +77,26 @@ public class AdminCorpusController {
                 audio.getOriginalFilename());
         return ApiResponse.success("语料上传成功",
                 corpusService.upload(audio, dialect, annotationText, dialectText, source, remark));
+    }
+
+    /**
+     * 获取语料音频文件（在线播放）
+     * GET /api/v1/admin/corpus/{id}/audio
+     */
+    @GetMapping("/{id}/audio")
+    public ResponseEntity<Resource> getAudio(@PathVariable Long id) throws IOException {
+        Path audioPath = corpusService.resolveAudioPath(id);
+        Resource resource = new FileSystemResource(audioPath);
+        String contentType = Files.probeContentType(audioPath);
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + audioPath.getFileName() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
+                .contentLength(Files.size(audioPath))
+                .body(resource);
     }
 
     /**
