@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.entity.KnowledgeCategory;
 import com.greenhouse.entity.KnowledgeDocument;
 import com.greenhouse.module.knowledge.dto.KnowledgeDocumentResponse;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestRequest;
@@ -14,6 +15,7 @@ import com.greenhouse.module.qa.service.ChromaRetrievalService;
 import com.greenhouse.module.qa.service.ChromaInitializer;
 import com.greenhouse.module.qa.service.EmbeddingService;
 import com.greenhouse.module.qa.service.RagQaService;
+import com.greenhouse.repository.KnowledgeCategoryRepository;
 import com.greenhouse.repository.KnowledgeDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -72,6 +75,8 @@ import java.util.stream.Collectors;
 public class KnowledgeService {
 
     private final KnowledgeDocumentRepository documentRepository;
+    private final KnowledgeCategoryRepository categoryRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final EmbeddingService embeddingService;
     private final RagQaService ragQaService;
     private final ChromaInitializer chromaInitializer;
@@ -109,6 +114,8 @@ public class KnowledgeService {
     @Autowired
     public KnowledgeService(
             KnowledgeDocumentRepository documentRepository,
+            KnowledgeCategoryRepository categoryRepository,
+            JdbcTemplate jdbcTemplate,
             EmbeddingService embeddingService,
             RagQaService ragQaService,
             ChromaInitializer chromaInitializer,
@@ -117,6 +124,8 @@ public class KnowledgeService {
             @Value("${chroma.collection:greenhouse_knowledge}") String collectionName,
             @Value("${file.upload-dir:./uploads}") String uploadDirPath) {
         this.documentRepository = documentRepository;
+        this.categoryRepository = categoryRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.embeddingService = embeddingService;
         this.ragQaService = ragQaService;
         this.chromaInitializer = chromaInitializer;
@@ -219,6 +228,7 @@ public class KnowledgeService {
                 throw new BusinessException(ErrorCode.PARAM_ERROR, "分类长度不能超过 100 字符");
             }
             doc.setCategory(category.isEmpty() ? null : category);
+            ensureCategoryRegistered(category);
         }
 
         // 4. 简介
@@ -254,6 +264,91 @@ public class KnowledgeService {
     private String defaultDocNo(Long id) {
         return "DOC-" + String.format("%04d", id);
     }
+
+    /**
+     * 分配文档 ID
+     * <p>
+     * 优先复用回收池（knowledge_document_id_recycle）中最小的已删除 ID；
+     * 池为空时从计数器（knowledge_document_id_seq）取下一连续值并自增。
+     * 通过 SELECT ... FOR UPDATE 保证并发分配不冲突，须在事务中调用。
+     * </p>
+     *
+     * @return 分配结果（ID + 是否复用回收池）
+     */
+    @Transactional
+    public IdAllocation allocateDocumentId() {
+        // 1. 优先复用回收池中最小的 ID
+        List<Long> recycled = jdbcTemplate.queryForList(
+                "SELECT recycled_id FROM knowledge_document_id_recycle ORDER BY recycled_id LIMIT 1 FOR UPDATE",
+                Long.class);
+        if (!recycled.isEmpty()) {
+            Long id = recycled.get(0);
+            jdbcTemplate.update("DELETE FROM knowledge_document_id_recycle WHERE recycled_id = ?", id);
+            log.info("文档 ID 复用回收池: id={}", id);
+            return new IdAllocation(id, true);
+        }
+
+        // 2. 池空：取计数器下一个 ID 并自增
+        Long nextId = jdbcTemplate.queryForObject(
+                "SELECT next_id FROM knowledge_document_id_seq FOR UPDATE", Long.class);
+        if (nextId == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "文档 ID 计数器未初始化");
+        }
+        jdbcTemplate.update("UPDATE knowledge_document_id_seq SET next_id = next_id + 1");
+        return new IdAllocation(nextId, false);
+    }
+
+    /**
+     * 分类登记兜底：文档使用了分类表中不存在的分类时自动登记
+     */
+    private void ensureCategoryRegistered(String category) {
+        if (category == null || category.isBlank()) {
+            return;
+        }
+        try {
+            if (!categoryRepository.existsByName(category)) {
+                categoryRepository.save(KnowledgeCategory.builder().name(category).build());
+                log.info("新分类已自动登记: {}", category);
+            }
+        } catch (Exception e) {
+            log.warn("分类自动登记失败（不影响文档保存）: category={}, error={}", category, e.getMessage());
+        }
+    }
+
+    /**
+     * 分类重命名级联：更新文档分类并同步已向量化文档的 Chroma 元数据
+     *
+     * @param oldName 旧分类名
+     * @param newName 新分类名
+     */
+    @Transactional
+    public void renameDocumentCategory(String oldName, String newName) {
+        List<KnowledgeDocument> docs = documentRepository.findByCategory(oldName);
+        int vectorSynced = 0;
+        for (KnowledgeDocument doc : docs) {
+            doc.setCategory(newName);
+            documentRepository.save(doc);
+            if (Boolean.TRUE.equals(doc.getVectorIndexed())
+                    && doc.getChunkCount() != null && doc.getChunkCount() > 0) {
+                try {
+                    updateChromaMetadata(doc);
+                    vectorSynced++;
+                } catch (Exception e) {
+                    log.warn("分类重命名 Chroma 同步失败: doc_id={}, error={}", doc.getId(), e.getMessage());
+                }
+            }
+        }
+        log.info("分类重命名级联完成: old={}, new={}, docs={}, vectorSynced={}",
+                oldName, newName, docs.size(), vectorSynced);
+    }
+
+    /**
+     * 文档 ID 分配结果
+     *
+     * @param id       分配到的文档 ID
+     * @param recycled 是否来自回收池（复用已删除 ID）
+     */
+    public record IdAllocation(Long id, boolean recycled) {}
 
     /**
      * 上传文档（自动触发处理管道）
@@ -306,8 +401,20 @@ public class KnowledgeService {
                 ? title
                 : (originalName != null ? originalName : "未命名文档");
 
-        // 3. 创建 MySQL 记录（初始状态：未向量化）
+        // 3. 分配文档 ID（优先复用回收池中的已删除 ID，池空则取计数器下一值）
+        IdAllocation allocation = allocateDocumentId();
+        if (allocation.recycled()) {
+            // 复用历史 ID：防御性清理 Chroma 中该 ID 的残留向量，避免新旧文档数据串扰
+            deleteFromChroma(allocation.id());
+            log.info("复用回收 ID 前已清理潜在残留向量: id={}", allocation.id());
+        }
+
+        // 4. 分类自动登记（分类表不存在的分类自动入库，保证分类管理完整）
+        ensureCategoryRegistered(category);
+
+        // 5. 创建 MySQL 记录（初始状态：未向量化）
         KnowledgeDocument doc = KnowledgeDocument.builder()
+                .id(allocation.id())
                 .title(docTitle)
                 .category(category)
                 .filePath(filePath)
@@ -370,11 +477,9 @@ public class KnowledgeService {
         log.info("开始向量化处理: id={}, title={}", doc.getId(), doc.getTitle());
 
         try {
-            // 0. 幂等处理：若已向量化，先清理旧向量，避免重复写入
-            if (Boolean.TRUE.equals(doc.getVectorIndexed())) {
-                deleteFromChroma(doc.getId());
-                log.info("重新向量化前已清理旧向量: doc_id={}", doc.getId());
-            }
+            // 0. 幂等处理：向量化前统一清理该文档旧向量（避免重复写入与历史残留，含 ID 复用场景）
+            deleteFromChroma(doc.getId());
+            log.info("向量化前已清理旧向量: doc_id={}", doc.getId());
 
             // 1. 读取文件内容（自动识别 UTF-8 / GBK 编码）
             Path filePath = uploadDir.resolve(doc.getFilePath());
@@ -436,6 +541,17 @@ public class KnowledgeService {
 
         // 3. 删除 MySQL 记录
         documentRepository.delete(doc);
+
+        // 4. 回收 ID：写入回收池，供后续新增文档优先复用
+        try {
+            jdbcTemplate.update(
+                    "INSERT INTO knowledge_document_id_recycle (recycled_id, created_at) VALUES (?, NOW())",
+                    documentId);
+            log.info("文档 ID 已回收: id={}", documentId);
+        } catch (Exception e) {
+            log.warn("文档 ID 回收失败（不影响删除）: id={}, error={}", documentId, e.getMessage());
+        }
+
         log.info("知识库文档已删除: id={}, title={}", doc.getId(), doc.getTitle());
     }
 

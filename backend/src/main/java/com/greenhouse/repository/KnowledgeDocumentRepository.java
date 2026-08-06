@@ -22,6 +22,9 @@ public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocu
     /** 按分类分页查询 */
     Page<KnowledgeDocument> findByCategory(String category, Pageable pageable);
 
+    /** 按分类查询全部文档（用于分类重命名级联） */
+    List<KnowledgeDocument> findByCategory(String category);
+
     /** 按标题模糊搜索（分页） */
     Page<KnowledgeDocument> findByTitleContaining(String keyword, Pageable pageable);
 

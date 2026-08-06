@@ -38,6 +38,10 @@
               </el-button>
             </div>
             <div class="toolbar-right">
+              <el-button @click="openCategoryDialog">
+                <el-icon><Collection /></el-icon>
+                分类管理
+              </el-button>
               <el-button type="primary" @click="showUploadDialog = true">
                 <el-icon><Upload /></el-icon>
                 上传文档
@@ -219,16 +223,18 @@
         <el-form-item label="分类">
           <el-select
             v-model="uploadForm.category"
-            placeholder="选择分类"
+            placeholder="选择或输入分类"
             clearable
+            filterable
+            allow-create
             style="width: 100%"
           >
-            <el-option label="病虫害防治" value="病虫害防治" />
-            <el-option label="栽培技术" value="栽培技术" />
-            <el-option label="水肥管理" value="水肥管理" />
-            <el-option label="品种选择" value="品种选择" />
-            <el-option label="土壤管理" value="土壤管理" />
-            <el-option label="其他" value="其他" />
+            <el-option
+              v-for="cat in categories"
+              :key="cat"
+              :label="cat"
+              :value="cat"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="文件">
@@ -264,6 +270,71 @@
         >
           {{ uploading ? '上传中...' : '上传并向量化' }}
         </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 分类管理对话框 -->
+    <el-dialog
+      v-model="showCategoryDialog"
+      title="分类管理"
+      width="680px"
+      :close-on-click-modal="false"
+    >
+      <div class="cat-toolbar">
+        <el-input
+          v-model="catForm.name"
+          placeholder="分类名称（唯一）"
+          maxlength="100"
+          style="width: 200px"
+        />
+        <el-input
+          v-model="catForm.description"
+          placeholder="分类说明（可选）"
+          maxlength="255"
+          style="width: 200px; margin-left: 8px"
+        />
+        <el-button
+          type="primary"
+          style="margin-left: 8px"
+          :loading="catSaving"
+          @click="handleCategorySave"
+        >
+          {{ catEditingId ? '保存修改' : '新增分类' }}
+        </el-button>
+        <el-button v-if="catEditingId" @click="resetCategoryForm">取消编辑</el-button>
+      </div>
+      <el-table
+        :data="managedCategories"
+        v-loading="catLoading"
+        stripe
+        style="width: 100%; margin-top: 12px"
+      >
+        <el-table-column prop="id" label="ID" width="60" />
+        <el-table-column prop="name" label="分类名称" min-width="140" />
+        <el-table-column prop="description" label="说明" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span v-if="row.description">{{ row.description }}</span>
+            <span v-else style="color: #999">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="docCount" label="文档数" width="80" align="center" />
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" link @click="startEditCategory(row)">编辑</el-button>
+            <el-popconfirm
+              title="删除后不可恢复，确认删除该分类？"
+              @confirm="handleCategoryDelete(row)"
+            >
+              <template #reference>
+                <el-button type="danger" size="small" link :disabled="row.docCount > 0">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="cat-tip">分类已被文档使用时不可删除；重命名会自动更新文档与问答引用来源。</div>
+      <template #footer>
+        <el-button @click="showCategoryDialog = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -329,7 +400,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Upload, UploadFilled, ChatDotRound } from '@element-plus/icons-vue'
+import { Search, Upload, UploadFilled, ChatDotRound, Collection } from '@element-plus/icons-vue'
 import {
   getDocuments,
   getCategories,
@@ -337,7 +408,11 @@ import {
   indexDocument,
   deleteDocument,
   updateDocument,
-  testQa
+  testQa,
+  getManagedCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory
 } from '@/api/knowledge'
 
 // ===== 文档管理 =====
@@ -446,6 +521,84 @@ async function handleDelete(id) {
     await deleteDocument(id)
     ElMessage.success('文档已删除')
     loadDocuments()
+    loadCategories()
+  } catch (e) {
+    // 拦截器已处理
+  }
+}
+
+// ===== 分类管理 =====
+
+const showCategoryDialog = ref(false)
+const catLoading = ref(false)
+const catSaving = ref(false)
+const managedCategories = ref([])
+const catForm = ref({ name: '', description: '' })
+const catEditingId = ref(null)
+
+function openCategoryDialog() {
+  showCategoryDialog.value = true
+  loadManagedCategories()
+}
+
+async function loadManagedCategories() {
+  catLoading.value = true
+  try {
+    const res = await getManagedCategories()
+    managedCategories.value = res.data || []
+  } catch (e) {
+    // 拦截器已处理
+  } finally {
+    catLoading.value = false
+  }
+}
+
+function resetCategoryForm() {
+  catForm.value = { name: '', description: '' }
+  catEditingId.value = null
+}
+
+async function handleCategorySave() {
+  if (!catForm.value.name.trim()) {
+    ElMessage.warning('请输入分类名称')
+    return
+  }
+  catSaving.value = true
+  try {
+    if (catEditingId.value) {
+      await updateCategory(catEditingId.value, {
+        name: catForm.value.name.trim(),
+        description: catForm.value.description || ''
+      })
+      ElMessage.success('分类已更新')
+    } else {
+      await createCategory({
+        name: catForm.value.name.trim(),
+        description: catForm.value.description || ''
+      })
+      ElMessage.success('分类已创建')
+    }
+    resetCategoryForm()
+    loadManagedCategories()
+    loadCategories()
+    loadDocuments()
+  } catch (e) {
+    // 拦截器已处理
+  } finally {
+    catSaving.value = false
+  }
+}
+
+function startEditCategory(row) {
+  catEditingId.value = row.id
+  catForm.value = { name: row.name, description: row.description || '' }
+}
+
+async function handleCategoryDelete(row) {
+  try {
+    await deleteCategory(row.id)
+    ElMessage.success('分类已删除')
+    loadManagedCategories()
     loadCategories()
   } catch (e) {
     // 拦截器已处理
@@ -589,6 +742,17 @@ onMounted(() => {
 
 .doc-desc {
   color: #606266;
+}
+
+.cat-toolbar {
+  display: flex;
+  align-items: center;
+}
+
+.cat-tip {
+  margin-top: 10px;
+  color: #909399;
+  font-size: 12px;
 }
 
 /* 问答测试 */

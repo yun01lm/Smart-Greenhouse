@@ -82,12 +82,17 @@
 
 ### 11. knowledge — 知识库 (/api/v1/knowledge)
 - GET /documents — 文档列表
-- GET /categories — 分类列表
-- POST /documents — 上传文档
-- POST /index — 触发向量化索引
+- GET /categories — 分类列表（含文档数统计）
+- GET /categories/managed — 分类管理列表（正式分类 CRUD，含 docCount/description）
+- POST /categories/managed — 新建分类（名称唯一）
+- PUT /categories/managed/{id} — 编辑分类（重命名级联文档 + Chroma 元数据）
+- DELETE /categories/managed/{id} — 删除分类（有文档时拒绝）
+- POST /documents — 上传文档（ID 优先复用回收池最小 ID）
+- POST /index — 触发向量化索引（幂等，先清旧向量）
 - PUT /documents/{id} — 更新文档标记信息（编号/标题/分类/简介）
-- DELETE /documents/{id} — 删除文档
+- DELETE /documents/{id} — 删除文档（ID 入回收池）
 - POST /test — 问答测试
+- 服务: KnowledgeService（allocateDocumentId/ensureCategoryRegistered/renameDocumentCategory）, KnowledgeCategoryService
 
 ### 12. chat — 专家聊天 (/api/v1/chat)
 - POST /conversations — 创建会话
@@ -194,7 +199,7 @@
 | /dashboard | DashboardPage.vue | 数据总览（传感器卡片+预警+图表+健康） |
 | /devices | DevicePage.vue | 设备管理与分组 |
 | /users | UserPage.vue | 用户管理与角色概览 |
-| /knowledge | KnowledgePage.vue | 知识库文档管理（上传/编辑标记信息/向量化/问答测试） |
+| /knowledge | KnowledgePage.vue | 知识库文档管理（上传/分类管理/ID复用/编辑标记信息/向量化/问答测试） |
 | /alerts | AlertRulePage.vue | 预警规则配置 |
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |

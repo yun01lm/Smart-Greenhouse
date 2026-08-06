@@ -101,8 +101,9 @@ public class KnowledgeSeeder {
         }
         long fileSize = Files.size(targetFile);
 
-        // 3. 创建 MySQL 记录
+        // 3. 创建 MySQL 记录（ID 走统一分配器：优先复用回收池，池空取计数器）
         KnowledgeDocument doc = KnowledgeDocument.builder()
+                .id(knowledgeService.allocateDocumentId().id())
                 .title(seed.title)
                 .category(seed.category)
                 .filePath(KNOWLEDGE_SUB_DIR + "/" + seed.filename)

@@ -43,3 +43,23 @@ export function updateDocument(id, data) {
 export function testQa(data) {
   return request.post('/knowledge/test', data)
 }
+
+/** 分类管理：列表（含文档数） */
+export function getManagedCategories() {
+  return request.get('/knowledge/categories/managed')
+}
+
+/** 分类管理：新增 */
+export function createCategory(data) {
+  return request.post('/knowledge/categories/managed', data)
+}
+
+/** 分类管理：重命名/编辑 */
+export function updateCategory(id, data) {
+  return request.put(`/knowledge/categories/managed/${id}`, data)
+}
+
+/** 分类管理：删除 */
+export function deleteCategory(id) {
+  return request.delete(`/knowledge/categories/managed/${id}`)
+}

@@ -40,7 +40,7 @@ import java.time.LocalDateTime;
 public class KnowledgeDocument {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    // ID 由服务层显式分配：优先复用回收池中的已删除 ID，池空则取计数器下一值
     private Long id;
 
     /** 文档标题 */
