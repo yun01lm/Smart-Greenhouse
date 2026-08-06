@@ -1,9 +1,11 @@
 package com.greenhouse.module.auth.service;
 
 import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.PasswordPolicy;
 import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.ExpertAvailability;
 import com.greenhouse.entity.User;
+import com.greenhouse.module.auth.dto.ChangePasswordRequest;
 import com.greenhouse.module.auth.dto.LoginRequest;
 import com.greenhouse.module.auth.dto.LoginResponse;
 import com.greenhouse.module.auth.dto.RegisterRequest;
@@ -43,11 +45,8 @@ public class AuthService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "不允许注册管理员账号");
         }
 
-        // 校验密码复杂度（>=8位，含字母+数字）
-        String pwd = request.getPassword();
-        if (pwd == null || pwd.length() < 8 || !pwd.matches(".*[a-zA-Z].*") || !pwd.matches(".*[0-9].*")) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "密码至少8位，且必须包含字母和数字");
-        }
+        // 校验密码复杂度（>=8位，含字母+数字，规则见 PasswordPolicy）
+        PasswordPolicy.validate(request.getPassword());
 
         // 校验用户名唯一
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -92,6 +91,27 @@ public class AuthService {
                 .refreshToken(jwtTokenProvider.generateRefreshToken(user.getId(), user.getUsername()))
                 .realName(user.getRealName())
                 .build();
+    }
+
+    /**
+     * 用户自助修改密码（R16，全端通用）
+     * <p>
+     * 校验原密码正确后更新，登录态（JWT）不失效。
+     * </p>
+     */
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new BusinessException(ErrorCode.LOGIN_FAILED.getCode(), "原密码不正确");
+        }
+
+        PasswordPolicy.validate(request.getNewPassword());
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("用户修改密码: userId={}, username={}", userId, user.getUsername());
     }
 
     /**

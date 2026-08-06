@@ -28,6 +28,9 @@
         <el-button type="primary" style="margin-left: 12px" :loading="loading" @click="loadUsers">查询</el-button>
         <el-button @click="resetFilter">重置</el-button>
       </div>
+      <div class="toolbar-right">
+        <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增用户</el-button>
+      </div>
     </div>
 
     <!-- 用户表格 -->
@@ -134,9 +137,88 @@
           />
         </el-form-item>
       </el-form>
+
+      <el-divider content-position="left">修改密码（需验证绑定手机号）</el-divider>
+      <el-form
+        ref="pwdFormRef"
+        :model="pwdForm"
+        :rules="pwdRules"
+        label-width="80px"
+        label-position="right"
+      >
+        <el-form-item label="验证手机号" prop="phone">
+          <el-input v-model="pwdForm.phone" placeholder="请输入该用户当前绑定的手机号" maxlength="20" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="至少8位，且包含字母和数字" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" maxlength="100" />
+        </el-form-item>
+      </el-form>
+      <div class="pwd-actions">
+        <el-button type="primary" plain :loading="pwdSubmitting" @click="submitResetPassword">修改密码</el-button>
+      </div>
+
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="submitForm">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 新增用户对话框 -->
+    <el-dialog
+      v-model="createVisible"
+      title="新增用户"
+      width="480px"
+      :close-on-click-modal="false"
+    >
+      <el-alert type="info" :closable="false" show-icon style="margin-bottom: 16px">
+        初始密码统一为 123456，建议用户首次登录后自助修改密码。
+      </el-alert>
+      <el-form
+        ref="createFormRef"
+        :model="createForm"
+        :rules="createRules"
+        label-width="80px"
+        label-position="right"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="createForm.username" placeholder="3-50位，登录用" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="真实姓名" prop="realName">
+          <el-input v-model="createForm.realName" placeholder="请输入真实姓名" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="createForm.phone" placeholder="请输入手机号" maxlength="20" />
+        </el-form-item>
+        <el-form-item label="角色" prop="role">
+          <el-select v-model="createForm.role" placeholder="请选择角色" style="width: 100%">
+            <el-option label="管理员" value="ADMIN" />
+            <el-option label="棚主" value="OWNER" />
+            <el-option label="员工" value="WORKER" />
+            <el-option label="专家" value="EXPERT" />
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="createForm.role === 'WORKER'" label="归属棚主" prop="ownerId">
+          <el-select
+            v-model="createForm.ownerId"
+            placeholder="请选择归属棚主"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="o in ownerOptions"
+              :key="o.id"
+              :label="o.realName ? `${o.realName}（${o.username}）` : o.username"
+              :value="o.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createVisible = false">取消</el-button>
+        <el-button type="primary" :loading="createSubmitting" @click="submitCreate">创建</el-button>
       </template>
     </el-dialog>
   </div>
@@ -144,9 +226,9 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUsers, updateUser, deleteUser } from '@/api/admin'
+import { getUsers, createUser, updateUser, deleteUser, adminResetPassword } from '@/api/admin'
 import RegionCascader from '@/components/RegionCascader.vue'
 
 // ===== 数据 =====
@@ -174,6 +256,64 @@ const formData = ref({
 
 const formRules = {
   role: [{ required: true, message: '请选择角色', trigger: 'change' }]
+}
+
+// ===== 新增用户 =====
+const createVisible = ref(false)
+const createSubmitting = ref(false)
+const createFormRef = ref(null)
+const ownerOptions = ref([])
+const createForm = ref({
+  username: '',
+  realName: '',
+  phone: '',
+  role: 'OWNER',
+  ownerId: null
+})
+
+const createRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 50, message: '用户名长度3-50位', trigger: 'blur' }
+  ],
+  phone: [{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }],
+  role: [{ required: true, message: '请选择角色', trigger: 'change' }],
+  ownerId: [{ required: true, message: '请选择归属棚主', trigger: 'change' }]
+}
+
+// ===== 修改密码（管理员重置，需验证绑定手机号） =====
+const pwdFormRef = ref(null)
+const pwdSubmitting = ref(false)
+const pwdForm = ref({
+  phone: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const pwdRules = {
+  phone: [{ required: true, message: '请输入绑定手机号', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 8, max: 100, message: '密码至少8位', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value && !/[a-zA-Z]/.test(value)) return callback(new Error('密码必须包含字母'))
+        if (value && !/[0-9]/.test(value)) return callback(new Error('密码必须包含数字'))
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== pwdForm.value.newPassword) return callback(new Error('两次输入的密码不一致'))
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
 }
 
 // ===== 计算属性（筛选由后端完成，前端仅分页） =====
@@ -238,7 +378,80 @@ function openEditDialog(row) {
     role: row.role,
     status: row.status
   }
+  resetPwdForm()
   dialogVisible.value = true
+}
+
+// ===== 新增用户方法 =====
+async function openCreateDialog() {
+  createForm.value = { username: '', realName: '', phone: '', role: 'OWNER', ownerId: null }
+  createVisible.value = true
+  await loadOwnerOptions()
+}
+
+async function loadOwnerOptions() {
+  try {
+    const res = await getUsers({ role: 'OWNER' })
+    ownerOptions.value = res.data || []
+  } catch {
+    ownerOptions.value = []
+  }
+}
+
+async function submitCreate() {
+  try {
+    await createFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  createSubmitting.value = true
+  try {
+    const payload = {
+      username: createForm.value.username,
+      realName: createForm.value.realName || null,
+      phone: createForm.value.phone || null,
+      role: createForm.value.role,
+      ownerId: createForm.value.role === 'WORKER' ? createForm.value.ownerId : null
+    }
+    await createUser(payload)
+    ElMessage.success('用户创建成功，初始密码为 123456')
+    createVisible.value = false
+    await loadUsers()
+  } catch {
+    // handled by interceptor
+  } finally {
+    createSubmitting.value = false
+  }
+}
+
+// ===== 管理员重置密码方法 =====
+function resetPwdForm() {
+  pwdForm.value = { phone: '', newPassword: '', confirmPassword: '' }
+  pwdFormRef.value?.clearValidate()
+}
+
+async function submitResetPassword() {
+  if (!editingId.value) return
+  try {
+    await pwdFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  pwdSubmitting.value = true
+  try {
+    await adminResetPassword(editingId.value, {
+      phone: pwdForm.value.phone,
+      newPassword: pwdForm.value.newPassword
+    })
+    ElMessage.success('密码修改成功')
+    resetPwdForm()
+  } catch {
+    // handled by interceptor
+  } finally {
+    pwdSubmitting.value = false
+  }
 }
 
 async function submitForm() {
@@ -321,6 +534,16 @@ onMounted(() => {
 .toolbar-left {
   display: flex;
   align-items: center;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.pwd-actions {
+  margin-top: 8px;
+  text-align: right;
 }
 
 .pagination-wrapper {

@@ -25,6 +25,7 @@
 - POST /register — 注册
 - POST /login — 登录（返回 JWT token）
 - GET /profile — 获取当前用户信息
+- PUT /password — 修改密码（R16：旧密码验证+复杂度校验，Web/App 全端通用）
 
 ### 2. greenhouse — 大棚管理 (/api/v1/greenhouses)
 - GET / — 大棚列表（按角色过滤）
@@ -117,7 +118,7 @@
 - 会话列表角色前缀 Bug 修复（R9：getCurrentUserRole 去 ROLE_ 前缀，专家侧会话列表不再为空）
 
 ### 14. admin — 管理员功能 (/api/v1/admin)
-- /users — 用户 CRUD
+- /users — 用户 CRUD（R16：POST 新增用户，初始密码123456，ADMIN上限3个；PUT /users/{id}/password 管理员改密，需验证绑定手机号）
 - /roles — 角色统计
 - /alerts — 预警规则 CRUD + 阈值管理
 - /corpus — 语料 CRUD + 方言类型
@@ -187,7 +188,7 @@
 | 专家列表 | ExpertListActivity | 专家浏览 |
 | 专家聊天 | ChatActivity | 实时聊天 |
 | 授权管理 | AuthorizationActivity | 数据授权 |
-| 个人中心 | ProfileFragment | 个人信息 |
+| 个人中心 | ProfileFragment | 个人信息（R16：新增修改密码入口） |
 
 ---
 
@@ -198,7 +199,7 @@
 | /login | Login.vue | 登录 |
 | /dashboard | DashboardPage.vue | 数据总览（管理员地区总览 AdminDashboard.vue / 农户端传感器卡片+预警+图表+健康） |
 | /devices | DevicePage.vue | 设备管理与分组 |
-| /users | UserPage.vue | 用户管理与角色概览 |
+| /users | UserPage.vue | 用户管理与角色概览（R16：新增用户/编辑改密/顶栏改密） |
 | /knowledge | KnowledgePage.vue | 知识库文档管理（上传/分类管理/ID复用/编辑标记信息/向量化/问答测试） |
 | /alerts | AlertRulePage.vue | 预警规则配置 |
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |

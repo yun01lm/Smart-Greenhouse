@@ -1,9 +1,12 @@
 package com.greenhouse.module.admin.service;
 
 import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.PasswordPolicy;
 import com.greenhouse.common.ErrorCode;
 import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.User;
+import com.greenhouse.module.admin.dto.AdminResetPasswordRequest;
+import com.greenhouse.module.admin.dto.CreateUserRequest;
 import com.greenhouse.module.admin.dto.RoleCountResponse;
 import com.greenhouse.module.admin.dto.UpdateUserRequest;
 import com.greenhouse.module.admin.dto.UserSummaryResponse;
@@ -12,6 +15,7 @@ import com.greenhouse.repository.GreenhouseRepository;
 import com.greenhouse.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +44,10 @@ public class AdminService {
     private final UserRepository userRepository;
     private final RegionService regionService;
     private final GreenhouseRepository greenhouseRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /** 管理员账号数量上限（R16） */
+    private static final int ADMIN_MAX_COUNT = 3;
 
     // ===== 用户管理 =====
 
@@ -206,7 +214,8 @@ public class AdminService {
             });
             user.setPhone(request.getPhone());
         }
-        if (request.getRole() != null) {
+        if (request.getRole() != null && request.getRole() != user.getRole()) {
+            ensureAdminLimit(request.getRole());
             user.setRole(request.getRole());
         }
         if (request.getStatus() != null) {
@@ -233,6 +242,86 @@ public class AdminService {
 
         userRepository.delete(user);
         log.info("管理员删除用户: userId={}, username={}", userId, user.getUsername());
+    }
+
+    /**
+     * 新增用户（R16）
+     * <p>
+     * 仅 ADMIN 可调用。初始密码统一为 123456（PasswordPolicy.INITIAL_PASSWORD），
+     * 创建后建议用户登录后自助改密。ADMIN 角色最多存在 3 个。
+     * </p>
+     */
+    @Transactional
+    public UserSummaryResponse createUser(CreateUserRequest request) {
+        User.Role role = request.getRoleEnum();
+        ensureAdminLimit(role);
+
+        // 用户名唯一
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new BusinessException(ErrorCode.USERNAME_EXISTS);
+        }
+        // 手机号唯一
+        if (request.getPhone() != null && userRepository.existsByPhone(request.getPhone())) {
+            throw new BusinessException(ErrorCode.PHONE_EXISTS);
+        }
+        // 员工必须指定归属棚主
+        if (role == User.Role.WORKER && request.getOwnerId() == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "员工必须指定归属棚主");
+        }
+        // 归属棚主必须存在
+        if (request.getOwnerId() != null) {
+            userRepository.findById(request.getOwnerId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "归属棚主不存在"));
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(PasswordPolicy.INITIAL_PASSWORD))
+                .phone(request.getPhone())
+                .realName(request.getRealName())
+                .role(role)
+                .ownerId(request.getOwnerId())
+                .expertStatus(role == User.Role.EXPERT ? User.ExpertStatus.OFFLINE : null)
+                .status(true)
+                .build();
+
+        user = userRepository.save(user);
+        log.info("管理员创建用户: userId={}, username={}, role={}", user.getId(), user.getUsername(), user.getRole());
+        return UserSummaryResponse.fromEntity(user);
+    }
+
+    /**
+     * 管理员重置用户密码（R16）
+     * <p>
+     * 需验证该用户当前绑定的手机号，一致才允许修改。
+     * </p>
+     */
+    @Transactional
+    public void resetUserPassword(Long userId, AdminResetPasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "用户不存在"));
+
+        if (user.getPhone() == null || user.getPhone().isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "该用户未绑定手机号，无法进行手机号验证");
+        }
+        if (!user.getPhone().equals(request.getPhone())) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "手机号验证失败，与绑定手机号不一致");
+        }
+
+        PasswordPolicy.validate(request.getNewPassword());
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("管理员重置用户密码: userId={}, username={}", userId, user.getUsername());
+    }
+
+    /**
+     * 校验目标角色为 ADMIN 时数量是否达到上限（创建与编辑统一走此校验）
+     */
+    private void ensureAdminLimit(User.Role targetRole) {
+        if (targetRole == User.Role.ADMIN
+                && userRepository.countByRole(User.Role.ADMIN) >= ADMIN_MAX_COUNT) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "管理员账号最多只能创建3个");
+        }
     }
 
     // ===== 角色统计 =====

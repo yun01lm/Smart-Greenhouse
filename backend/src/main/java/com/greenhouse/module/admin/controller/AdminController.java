@@ -2,6 +2,8 @@ package com.greenhouse.module.admin.controller;
 
 import com.greenhouse.common.ApiResponse;
 import com.greenhouse.entity.User;
+import com.greenhouse.module.admin.dto.AdminResetPasswordRequest;
+import com.greenhouse.module.admin.dto.CreateUserRequest;
 import com.greenhouse.module.admin.dto.RoleCountResponse;
 import com.greenhouse.module.admin.dto.UpdateUserRequest;
 import com.greenhouse.module.admin.dto.UserSummaryResponse;
@@ -58,6 +60,16 @@ public class AdminController {
     }
 
     /**
+     * 新增用户（R16）
+     * POST /api/v1/admin/users
+     * <p>初始密码统一为 123456，ADMIN 角色最多 3 个，员工必须指定归属棚主。</p>
+     */
+    @PostMapping("/users")
+    public ApiResponse<UserSummaryResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ApiResponse.success("用户创建成功", adminService.createUser(request));
+    }
+
+    /**
      * 更新用户（角色/状态/基本信息）
      * PUT /api/v1/admin/users/{userId}
      */
@@ -78,6 +90,18 @@ public class AdminController {
         Long currentUserId = getCurrentUserId();
         adminService.deleteUser(currentUserId, userId);
         return ApiResponse.success("用户已删除", null);
+    }
+
+    /**
+     * 管理员重置用户密码（R16，需验证绑定手机号）
+     * PUT /api/v1/admin/users/{userId}/password
+     */
+    @PutMapping("/users/{userId}/password")
+    public ApiResponse<Void> resetUserPassword(
+            @PathVariable Long userId,
+            @Valid @RequestBody AdminResetPasswordRequest request) {
+        adminService.resetUserPassword(userId, request);
+        return ApiResponse.success("密码修改成功", null);
     }
 
     /**

@@ -1,4 +1,4 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.ApiResponse;
 import com.greenhouse.app.data.model.LoginRequest;
@@ -38,6 +38,22 @@ public class AuthRepository extends BaseRepository {
                         apiService.getCurrentUser().execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void changePassword(String oldPassword, String newPassword, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response =
+                        apiService.changePassword(new ChangePasswordRequest(oldPassword, newPassword)).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
                 } else {
                     postError(callback, parseError(response));
                 }

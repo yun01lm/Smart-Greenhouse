@@ -26,8 +26,18 @@
             :value="gh.id"
           />
         </el-select>
-        <span class="user-info">{{ authStore.user?.realName || authStore.user?.username }}</span>
-        <el-button type="danger" text @click="authStore.logout">退出</el-button>
+        <el-dropdown trigger="click" @command="onUserCommand">
+          <span class="user-info user-dropdown">
+            {{ authStore.user?.realName || authStore.user?.username }}
+            <el-icon style="margin-left: 4px"><ArrowDown /></el-icon>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="password">修改密码</el-dropdown-item>
+              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </el-header>
 
@@ -52,6 +62,25 @@
         <router-view :greenhouse-id="displayGreenhouseId" />
       </el-main>
     </el-container>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog v-model="pwdVisible" title="修改密码" width="420px" :close-on-click-modal="false">
+      <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="80px" label-position="right">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入原密码" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="至少8位，且包含字母和数字" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" maxlength="100" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdVisible = false">取消</el-button>
+        <el-button type="primary" :loading="pwdSubmitting" @click="submitPwd">确认修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -59,11 +88,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { changeMyPassword } from '@/api/auth'
 import { useViewModeStore } from '@/stores/viewMode'
 import { getGreenhouses } from '@/api/greenhouse'
+import { ElMessage } from 'element-plus'
 import {
   ChatDotRound, DataAnalysis, Cpu, UserFilled, Document, WarningFilled,
-  Download, Microphone, Avatar, HomeFilled
+  Download, Microphone, Avatar, HomeFilled, ArrowDown
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -128,6 +159,71 @@ const selectGreenhouseId = computed({
   }
 })
 
+// ===== 修改密码 =====
+const pwdVisible = ref(false)
+const pwdSubmitting = ref(false)
+const pwdFormRef = ref(null)
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const pwdRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 8, max: 100, message: '密码至少8位', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value && !/[a-zA-Z]/.test(value)) return callback(new Error('密码必须包含字母'))
+        if (value && !/[0-9]/.test(value)) return callback(new Error('密码必须包含数字'))
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== pwdForm.value.newPassword) return callback(new Error('两次输入的密码不一致'))
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+/** 顶栏用户下拉命令 */
+function onUserCommand(command) {
+  if (command === 'password') {
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+    pwdFormRef.value?.clearValidate()
+    pwdVisible.value = true
+  } else if (command === 'logout') {
+    authStore.logout()
+  }
+}
+
+async function submitPwd() {
+  try {
+    await pwdFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  pwdSubmitting.value = true
+  try {
+    await changeMyPassword({
+      oldPassword: pwdForm.value.oldPassword,
+      newPassword: pwdForm.value.newPassword
+    })
+    ElMessage.success('密码修改成功')
+    pwdVisible.value = false
+  } catch {
+    // handled by interceptor
+  } finally {
+    pwdSubmitting.value = false
+  }
+}
+
 /** 返回管理员视角（R10） */
 function backToAdmin() {
   viewStore.exitOwnerView()
@@ -177,6 +273,17 @@ onMounted(async () => {
 .user-info {
   margin-right: 16px;
   color: #ffffffa6;
+}
+
+.user-dropdown {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+}
+
+.user-dropdown:hover {
+  color: #fff;
 }
 
 .view-banner {

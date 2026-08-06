@@ -30,3 +30,13 @@ export function deleteUser(userId) {
 export function getRoleStats() {
   return request.get('/admin/roles')
 }
+
+/** 新增用户（R16，初始密码统一 123456） */
+export function createUser(data) {
+  return request.post('/admin/users', data)
+}
+
+/** 管理员重置用户密码（R16，需验证绑定手机号） */
+export function adminResetPassword(userId, data) {
+  return request.put(`/admin/users/${userId}/password`, data)
+}

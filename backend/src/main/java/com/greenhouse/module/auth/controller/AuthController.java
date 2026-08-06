@@ -2,6 +2,7 @@ package com.greenhouse.module.auth.controller;
 
 import com.greenhouse.common.ApiResponse;
 import com.greenhouse.entity.User;
+import com.greenhouse.module.auth.dto.ChangePasswordRequest;
 import com.greenhouse.module.auth.dto.LoginRequest;
 import com.greenhouse.module.auth.dto.LoginResponse;
 import com.greenhouse.module.auth.dto.RegisterRequest;
@@ -44,6 +45,18 @@ public class AuthController {
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ApiResponse.success("登录成功", response);
+    }
+
+    /**
+     * 用户自助修改密码（R16，全端通用）
+     * PUT /api/v1/auth/password
+     */
+    @PutMapping("/password")
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        authService.changePassword(userId, request);
+        return ApiResponse.success("密码修改成功", null);
     }
 
     /**
