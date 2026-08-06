@@ -27,6 +27,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -238,9 +242,15 @@ public class KnowledgeService {
         log.info("开始向量化处理: id={}, title={}", doc.getId(), doc.getTitle());
 
         try {
-            // 1. 读取文件内容
+            // 0. 幂等处理：若已向量化，先清理旧向量，避免重复写入
+            if (Boolean.TRUE.equals(doc.getVectorIndexed())) {
+                deleteFromChroma(doc.getId());
+                log.info("重新向量化前已清理旧向量: doc_id={}", doc.getId());
+            }
+
+            // 1. 读取文件内容（自动识别 UTF-8 / GBK 编码）
             Path filePath = uploadDir.resolve(doc.getFilePath());
-            String content = Files.readString(filePath, StandardCharsets.UTF_8);
+            String content = readFileContent(filePath);
 
             // 2. 文本切片
             List<String> chunks = splitText(content);
@@ -338,6 +348,28 @@ public class KnowledgeService {
      * 以空行（连续两个换行）为段落分割点。
      * </p>
      */
+    /**
+     * 读取知识库文件文本内容
+     * <p>
+     * 优先按 UTF-8 严格解码；失败（如 Windows 记事本默认保存的 GBK/ANSI 文件）
+     * 回退到 GBK 解码，避免 MalformedInputException 导致向量化失败。
+     * </p>
+     */
+    private String readFileContent(Path filePath) throws IOException {
+        byte[] bytes = Files.readAllBytes(filePath);
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes))
+                    .toString();
+        } catch (CharacterCodingException e) {
+            log.info("UTF-8 解码失败，回退 GBK: file={}, error={}",
+                    filePath.getFileName(), e.getMessage());
+            return new String(bytes, Charset.forName("GBK"));
+        }
+    }
+
     List<String> splitText(String content) {
         if (content == null || content.isBlank()) {
             return Collections.emptyList();
@@ -387,79 +419,83 @@ public class KnowledgeService {
      * 使用 Chroma REST API：POST /api/v1/collections/{name}/add
      * </p>
      */
+    /**
+     * 将切片和向量写入 Chroma
+     * <p>
+     * 使用 Chroma REST API：POST /api/v1/collections/{name}/add
+     * 分批写入（每批 200 条），避免大文档单次请求体过大导致失败。
+     * </p>
+     */
     private void writeToChroma(KnowledgeDocument doc, List<String> chunks, List<List<Double>> embeddings) {
-        try {
-            ObjectNode requestBody = objectMapper.createObjectNode();
-
-            // ids: 每个 chunk 的唯一标识
-            ArrayNode ids = objectMapper.createArrayNode();
-            for (int i = 0; i < chunks.size(); i++) {
-                ids.add("doc_" + doc.getId() + "_chunk_" + i);
-            }
-            requestBody.set("ids", ids);
-
-            // embeddings: 向量数组
-            ArrayNode embeddingsArray = objectMapper.createArrayNode();
-            for (List<Double> embedding : embeddings) {
-                ArrayNode vec = objectMapper.createArrayNode();
-                for (Double v : embedding) {
-                    vec.add(v);
-                }
-                embeddingsArray.add(vec);
-            }
-            requestBody.set("embeddings", embeddingsArray);
-
-            // documents: 文本内容
-            ArrayNode documents = objectMapper.createArrayNode();
-            for (String chunk : chunks) {
-                documents.add(chunk);
-            }
-            requestBody.set("documents", documents);
-
-            // metadatas: 每个 chunk 的元数据
-            ArrayNode metadatas = objectMapper.createArrayNode();
-            for (int i = 0; i < chunks.size(); i++) {
-                ObjectNode meta = objectMapper.createObjectNode();
-                meta.put("doc_id", doc.getId());
-                meta.put("title", doc.getTitle());
-                meta.put("category", doc.getCategory() != null ? doc.getCategory() : "");
-                meta.put("chunk_index", i);
-                meta.put("source_file", doc.getFilePath());
-                metadatas.add(meta);
-            }
-            requestBody.set("metadatas", metadatas);
-
-            String collectionPath = chromaInitializer.getCollectionPath();
-            if (collectionPath == null) {
-                throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
-                        "ChromaDB collection 未初始化，无法写入向量");
-            }
-            String url = chromaUrl + collectionPath + "/add";
-
-            Request request = new Request.Builder()
-                    .url(url)
-                    .post(RequestBody.create(
-                            objectMapper.writeValueAsString(requestBody),
-                            MediaType.parse("application/json")))
-                    .addHeader("Content-Type", "application/json")
-                    .build();
-
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
-                    log.error("Chroma 写入失败: HTTP {} body={}", response.code(), errorBody);
-                    throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
-                            "向量写入 Chroma 失败: HTTP " + response.code());
-                }
-                log.info("Chroma 写入成功: doc_id={}, chunks={}", doc.getId(), chunks.size());
-            }
-        } catch (BusinessException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Chroma 写入异常: {}", e.getMessage(), e);
+        int batchSize = 200;
+        String collectionPath = chromaInitializer.getCollectionPath();
+        if (collectionPath == null) {
             throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
-                    "向量写入 Chroma 失败: " + e.getMessage());
+                    "ChromaDB collection 未初始化，无法写入向量");
         }
+        String url = chromaUrl + collectionPath + "/add";
+
+        int total = chunks.size();
+        for (int start = 0; start < total; start += batchSize) {
+            int end = Math.min(start + batchSize, total);
+            try {
+                ObjectNode requestBody = objectMapper.createObjectNode();
+
+                ArrayNode ids = objectMapper.createArrayNode();
+                ArrayNode embeddingsArray = objectMapper.createArrayNode();
+                ArrayNode documents = objectMapper.createArrayNode();
+                ArrayNode metadatas = objectMapper.createArrayNode();
+
+                for (int i = start; i < end; i++) {
+                    ids.add("doc_" + doc.getId() + "_chunk_" + i);
+
+                    ArrayNode vec = objectMapper.createArrayNode();
+                    for (Double v : embeddings.get(i)) {
+                        vec.add(v);
+                    }
+                    embeddingsArray.add(vec);
+
+                    documents.add(chunks.get(i));
+
+                    ObjectNode meta = objectMapper.createObjectNode();
+                    meta.put("doc_id", doc.getId());
+                    meta.put("title", doc.getTitle());
+                    meta.put("category", doc.getCategory() != null ? doc.getCategory() : "");
+                    meta.put("chunk_index", i);
+                    meta.put("source_file", doc.getFilePath());
+                    metadatas.add(meta);
+                }
+                requestBody.set("ids", ids);
+                requestBody.set("embeddings", embeddingsArray);
+                requestBody.set("documents", documents);
+                requestBody.set("metadatas", metadatas);
+
+                Request request = new Request.Builder()
+                        .url(url)
+                        .post(RequestBody.create(
+                                objectMapper.writeValueAsString(requestBody),
+                                MediaType.parse("application/json")))
+                        .addHeader("Content-Type", "application/json")
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful()) {
+                        String errorBody = response.body() != null ? response.body().string() : "";
+                        log.error("Chroma 写入失败: HTTP {} body={}", response.code(), errorBody);
+                        throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
+                                "向量写入 Chroma 失败: HTTP " + response.code());
+                    }
+                }
+                log.info("Chroma 写入进度: doc_id={}, batch=[{}-{})", doc.getId(), start, end);
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                log.error("Chroma 写入异常: {}", e.getMessage(), e);
+                throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
+                        "向量写入 Chroma 失败: " + e.getMessage());
+            }
+        }
+        log.info("Chroma 写入完成: doc_id={}, chunks={}", doc.getId(), total);
     }
 
     /**

@@ -61,7 +61,17 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
 
     @Override
     public List<float[]> embedBatch(List<String> texts) throws Exception {
-        return callApi(texts);
+        // 分批调用（每批 32 条）：避免单次请求体过大，同时批次间留间隔防 429 限流
+        List<float[]> results = new ArrayList<>();
+        int batchSize = 32;
+        for (int i = 0; i < texts.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, texts.size());
+            results.addAll(callApi(texts.subList(i, end)));
+            if (end < texts.size()) {
+                Thread.sleep(500L);
+            }
+        }
+        return results;
     }
 
     @Override
@@ -90,12 +100,28 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
                 .addHeader("Content-Type", "application/json")
                 .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
+        int maxRetry = 3;
+        for (int attempt = 0; ; attempt++) {
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (response.isSuccessful()) {
+                    return parseEmbeddings(response);
+                }
+                if (response.code() == 429 && attempt < maxRetry) {
+                    long waitMs = 2000L * (attempt + 1); // 2s / 4s / 6s 退避
+                    log.warn("SiliconFlow 限流(429)，{}ms 后重试 ({}/{})",
+                            waitMs, attempt + 1, maxRetry);
+                    Thread.sleep(waitMs);
+                    continue;
+                }
                 log.error("SiliconFlow API 请求失败: HTTP {}", response.code());
                 throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
             }
+        }
+    }
 
+    /** 解析 embeddings 响应（data[].embedding） */
+    private List<float[]> parseEmbeddings(Response response) throws Exception {
+        try {
             String body = response.body() != null ? response.body().string() : "";
             JsonNode root = objectMapper.readTree(body);
             JsonNode data = root.get("data");
@@ -113,6 +139,8 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
                 result.add(vec);
             }
             return result;
+        } finally {
+            response.close();
         }
     }
 }

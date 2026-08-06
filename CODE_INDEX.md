@@ -78,6 +78,7 @@
 - POST /ask/voice — 语音问答
 - GET /records — 问答记录
 - 服务: RagQaService, EmbeddingService, ChromaRetrievalService, VoiceQaService
+- Embedding: EmbeddingProvider 策略接口 → SiliconFlowEmbeddingProvider（真实，bge-m3 1024维，分批32条+429退避重试）/ MockEmbeddingProvider（默认兜底）；provider 由 .env.local 的 AI_EMBEDDING_PROVIDER 控制（mock|siliconflow）
 
 ### 11. knowledge — 知识库 (/api/v1/knowledge)
 - GET /documents — 文档列表
@@ -192,7 +193,7 @@
 | /dashboard | DashboardPage.vue | 数据总览（传感器卡片+预警+图表+健康） |
 | /devices | DevicePage.vue | 设备管理与分组 |
 | /users | UserPage.vue | 用户管理与角色概览 |
-| /knowledge | KnowledgePage.vue | 知识库文档管理 |
+| /knowledge | KnowledgePage.vue | 知识库文档管理（上传/向量化/问答测试） |
 | /alerts | AlertRulePage.vue | 预警规则配置 |
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |
