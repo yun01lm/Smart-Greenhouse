@@ -56,7 +56,7 @@
 
     <!-- 环境聚合 + 预警总览 -->
     <div class="row-gap">
-      <el-row :gutter="16">
+      <el-row :gutter="16" class="equal-row">
         <el-col :span="12">
           <el-card class="section-card" shadow="never">
             <template #header>
@@ -112,7 +112,7 @@
 
     <!-- 最新预警 + 天气 -->
     <div class="row-gap">
-      <el-row :gutter="16">
+      <el-row :gutter="16" class="equal-row">
         <el-col :span="15">
           <el-card class="section-card" shadow="never">
             <template #header>
@@ -347,9 +347,12 @@ loadOverview()
 /* ===== 地区选择 ===== */
 .region-card {
   margin-bottom: 16px;
-  border: none;
+  border: 1px solid #ebeef5;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
+}
+.region-card :deep(.el-card__body) {
+  padding: 14px 18px;
 }
 .region-row {
   display: flex;
@@ -398,6 +401,7 @@ loadOverview()
   align-items: center;
   gap: 14px;
   background: #fff;
+  border: 1px solid #ebeef5;
   border-radius: 12px;
   padding: 18px 20px;
   box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
@@ -439,10 +443,39 @@ loadOverview()
 /* ===== 通用区块卡片 ===== */
 .row-gap { margin-bottom: 16px; }
 .section-card {
-  border: none;
+  border: 1px solid #ebeef5;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
   margin-bottom: 16px;
+}
+
+/* ===== 同行卡片等高对齐 ===== */
+.equal-row .el-col {
+  display: flex;
+}
+.equal-row .section-card {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.equal-row .section-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.equal-row .el-table {
+  flex: 1;
+}
+.env-grid {
+  flex: 1;
+  align-content: center;
+}
+.alert-overview {
+  flex: 1;
+}
+.weather-card :deep(.el-card__body) {
+  justify-content: center;
 }
 .section-card :deep(.el-card__header) {
   padding: 14px 18px;
