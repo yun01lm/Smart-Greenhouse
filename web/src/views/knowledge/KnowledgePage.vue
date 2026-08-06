@@ -53,7 +53,11 @@
             style="width: 100%; margin-top: 16px"
             empty-text="暂无知识库文档"
           >
-            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="docNo" label="编号" width="110">
+              <template #default="{ row }">
+                <span class="doc-no">{{ row.docNo || ('DOC-' + String(row.id).padStart(4, '0')) }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="title" label="文档标题" min-width="200">
               <template #default="{ row }">
                 <span class="doc-title">{{ row.title }}</span>
@@ -65,6 +69,13 @@
                   {{ row.category }}
                 </el-tag>
                 <span v-else style="color: #999">未分类</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column prop="description" label="简介" min-width="180" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span v-if="row.description" class="doc-desc">{{ row.description }}</span>
+                <span v-else style="color: #999">-</span>
               </template>
             </el-table-column>
             <el-table-column prop="fileType" label="格式" width="70">
@@ -100,8 +111,9 @@
                 {{ formatTime(row.createdAt) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="100" fixed="right">
+            <el-table-column label="操作" width="150" fixed="right">
               <template #default="{ row }">
+                <el-button type="primary" size="small" link @click="openEditDialog(row)">编辑</el-button>
                 <el-popconfirm
                   title="删除后向量数据也将被清理，确认删除？"
                   @confirm="handleDelete(row.id)"
@@ -254,6 +266,63 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 编辑对话框 -->
+    <el-dialog
+      v-model="showEditDialog"
+      title="编辑文档信息"
+      width="540px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="editForm" label-width="80px">
+        <el-form-item label="系统ID">
+          <el-input :model-value="editForm.id" disabled />
+        </el-form-item>
+        <el-form-item label="文档编号">
+          <el-input
+            v-model="editForm.docNo"
+            placeholder="如 DOC-0001 或自定义编号（唯一）"
+            maxlength="64"
+          />
+        </el-form-item>
+        <el-form-item label="文档标题">
+          <el-input v-model="editForm.title" placeholder="文档标题" maxlength="200" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select
+            v-model="editForm.category"
+            placeholder="选择或输入分类"
+            clearable
+            filterable
+            allow-create
+            style="width: 100%"
+          >
+            <el-option
+              v-for="cat in categories"
+              :key="cat"
+              :label="cat"
+              :value="cat"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input
+            v-model="editForm.description"
+            type="textarea"
+            :rows="4"
+            maxlength="2000"
+            show-word-limit
+            placeholder="文档内容简介/摘要（可选）"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showEditDialog = false">取消</el-button>
+        <el-button type="primary" :loading="editing" @click="handleEditSave">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -267,6 +336,7 @@ import {
   uploadDocument,
   indexDocument,
   deleteDocument,
+  updateDocument,
   testQa
 } from '@/api/knowledge'
 
@@ -382,6 +452,51 @@ async function handleDelete(id) {
   }
 }
 
+// ===== 编辑 =====
+
+const showEditDialog = ref(false)
+const editing = ref(false)
+const editForm = ref({ id: null, docNo: '', title: '', category: '', description: '' })
+
+function openEditDialog(row) {
+  editForm.value = {
+    id: row.id,
+    docNo: row.docNo || '',
+    title: row.title || '',
+    category: row.category || '',
+    description: row.description || ''
+  }
+  showEditDialog.value = true
+}
+
+async function handleEditSave() {
+  if (!editForm.value.docNo.trim()) {
+    ElMessage.warning('请填写文档编号')
+    return
+  }
+  if (!editForm.value.title.trim()) {
+    ElMessage.warning('请填写文档标题')
+    return
+  }
+  editing.value = true
+  try {
+    await updateDocument(editForm.value.id, {
+      docNo: editForm.value.docNo.trim(),
+      title: editForm.value.title.trim(),
+      category: editForm.value.category || '',
+      description: editForm.value.description || ''
+    })
+    ElMessage.success('文档信息已更新')
+    showEditDialog.value = false
+    loadDocuments()
+    loadCategories()
+  } catch (e) {
+    // 拦截器已处理
+  } finally {
+    editing.value = false
+  }
+}
+
 // ===== 问答测试 =====
 
 const testing = ref(false)
@@ -465,6 +580,15 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.doc-no {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.doc-desc {
+  color: #606266;
 }
 
 /* 问答测试 */

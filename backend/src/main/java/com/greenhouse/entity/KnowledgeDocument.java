@@ -51,6 +51,14 @@ public class KnowledgeDocument {
     @Column(length = 100)
     private String category;
 
+    /** 文档编号（用户可编辑的业务编号，唯一，默认 DOC-xxxx） */
+    @Column(name = "doc_no", length = 64, unique = true)
+    private String docNo;
+
+    /** 文档简介/内容摘要 */
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
     /** 文件存储路径 */
     @Column(name = "file_path", length = 500)
     private String filePath;

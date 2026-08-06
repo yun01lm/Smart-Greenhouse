@@ -18,8 +18,10 @@ import java.time.LocalDateTime;
 public class KnowledgeDocumentResponse {
 
     private Long id;
+    private String docNo;
     private String title;
     private String category;
+    private String description;
     private String filePath;
     private String fileType;
     private Long fileSize;
@@ -34,8 +36,10 @@ public class KnowledgeDocumentResponse {
     public static KnowledgeDocumentResponse fromEntity(KnowledgeDocument doc) {
         return KnowledgeDocumentResponse.builder()
                 .id(doc.getId())
+                .docNo(doc.getDocNo())
                 .title(doc.getTitle())
                 .category(doc.getCategory())
+                .description(doc.getDescription())
                 .filePath(doc.getFilePath())
                 .fileType(doc.getFileType())
                 .fileSize(doc.getFileSize())

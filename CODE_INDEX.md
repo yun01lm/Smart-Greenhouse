@@ -85,6 +85,7 @@
 - GET /categories — 分类列表
 - POST /documents — 上传文档
 - POST /index — 触发向量化索引
+- PUT /documents/{id} — 更新文档标记信息（编号/标题/分类/简介）
 - DELETE /documents/{id} — 删除文档
 - POST /test — 问答测试
 
@@ -193,7 +194,7 @@
 | /dashboard | DashboardPage.vue | 数据总览（传感器卡片+预警+图表+健康） |
 | /devices | DevicePage.vue | 设备管理与分组 |
 | /users | UserPage.vue | 用户管理与角色概览 |
-| /knowledge | KnowledgePage.vue | 知识库文档管理（上传/向量化/问答测试） |
+| /knowledge | KnowledgePage.vue | 知识库文档管理（上传/编辑标记信息/向量化/问答测试） |
 | /alerts | AlertRulePage.vue | 预警规则配置 |
 | /export | ReportPage.vue | 多类型数据导出（OWNER/WORKER） |
 | /monitor | MonitorPage.vue | 系统监控 |

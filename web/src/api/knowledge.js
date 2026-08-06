@@ -34,6 +34,11 @@ export function deleteDocument(id) {
   return request.delete(`/knowledge/documents/${id}`)
 }
 
+/** 更新文档标记信息（编号/标题/分类/简介） */
+export function updateDocument(id, data) {
+  return request.put(`/knowledge/documents/${id}`, data)
+}
+
 /** 问答测试 */
 export function testQa(data) {
   return request.post('/knowledge/test', data)

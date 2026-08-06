@@ -112,6 +112,11 @@ public class KnowledgeSeeder {
                 .vectorIndexed(false)
                 .build();
         doc = documentRepository.save(doc);
+        // 生成默认文档编号（与上传逻辑一致）
+        if (doc.getDocNo() == null || doc.getDocNo().isBlank()) {
+            doc.setDocNo("DOC-" + String.format("%04d", doc.getId()));
+            doc = documentRepository.save(doc);
+        }
         log.info("知识文档元数据已创建: id={}, title={}, category={}", doc.getId(), seed.title, seed.category);
 
         // 4. 向量化索引

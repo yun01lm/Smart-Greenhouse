@@ -5,6 +5,7 @@ import com.greenhouse.common.PageResult;
 import com.greenhouse.module.knowledge.dto.KnowledgeDocumentResponse;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestRequest;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestResponse;
+import com.greenhouse.module.knowledge.dto.KnowledgeUpdateRequest;
 import com.greenhouse.module.knowledge.service.KnowledgeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +91,18 @@ public class KnowledgeController {
     public ApiResponse<Void> deleteDocument(@PathVariable Long id) {
         knowledgeService.deleteDocument(id);
         return ApiResponse.success("文档已删除", null);
+    }
+
+    /**
+     * 更新文档标记信息（编号/标题/分类/简介）
+     * PUT /api/v1/knowledge/documents/{id}
+     */
+    @PutMapping("/documents/{id}")
+    public ApiResponse<KnowledgeDocumentResponse> updateDocument(
+            @PathVariable Long id,
+            @RequestBody KnowledgeUpdateRequest request) {
+        KnowledgeDocumentResponse doc = knowledgeService.updateDocument(id, request);
+        return ApiResponse.success("文档信息已更新", doc);
     }
 
     /**

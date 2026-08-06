@@ -9,6 +9,7 @@ import com.greenhouse.entity.KnowledgeDocument;
 import com.greenhouse.module.knowledge.dto.KnowledgeDocumentResponse;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestRequest;
 import com.greenhouse.module.knowledge.dto.KnowledgeTestResponse;
+import com.greenhouse.module.knowledge.dto.KnowledgeUpdateRequest;
 import com.greenhouse.module.qa.service.ChromaRetrievalService;
 import com.greenhouse.module.qa.service.ChromaInitializer;
 import com.greenhouse.module.qa.service.EmbeddingService;
@@ -168,6 +169,93 @@ public class KnowledgeService {
     }
 
     /**
+     * 更新文档标记信息（编号/标题/分类/简介）
+     * <p>
+     * 仅更新元数据；已向量化的文档会同步更新 Chroma 中对应切片的
+     * 元数据（标题/分类/简介），保证 AI 问答引用来源与列表一致。
+     * </p>
+     *
+     * @param documentId 文档ID（系统主键，不可修改）
+     * @param request    待更新的标记信息
+     * @return 更新后的文档信息
+     */
+    @Transactional
+    public KnowledgeDocumentResponse updateDocument(Long documentId, KnowledgeUpdateRequest request) {
+        KnowledgeDocument doc = documentRepository.findById(documentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR, "文档不存在"));
+
+        // 1. 文档编号（唯一校验，排除自身）
+        if (request.getDocNo() != null) {
+            String docNo = request.getDocNo().trim();
+            if (docNo.length() > 64) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "文档编号长度不能超过 64 字符");
+            }
+            if (docNo.isEmpty()) {
+                // 清空时回退为默认编号
+                docNo = defaultDocNo(documentId);
+            }
+            if (documentRepository.existsByDocNoAndIdNot(docNo, documentId)) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "文档编号已被占用：" + docNo);
+            }
+            doc.setDocNo(docNo);
+        }
+
+        // 2. 标题
+        if (request.getTitle() != null) {
+            String title = request.getTitle().trim();
+            if (title.isEmpty()) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "文档标题不能为空");
+            }
+            if (title.length() > 200) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "文档标题长度不能超过 200 字符");
+            }
+            doc.setTitle(title);
+        }
+
+        // 3. 分类
+        if (request.getCategory() != null) {
+            String category = request.getCategory().trim();
+            if (category.length() > 100) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "分类长度不能超过 100 字符");
+            }
+            doc.setCategory(category.isEmpty() ? null : category);
+        }
+
+        // 4. 简介
+        if (request.getDescription() != null) {
+            String description = request.getDescription().trim();
+            if (description.length() > 2000) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "简介长度不能超过 2000 字符");
+            }
+            doc.setDescription(description.isEmpty() ? null : description);
+        }
+
+        doc = documentRepository.save(doc);
+
+        // 5. 已向量化：同步 Chroma 元数据（失败不阻塞编辑保存）
+        if (Boolean.TRUE.equals(doc.getVectorIndexed())
+                && doc.getChunkCount() != null && doc.getChunkCount() > 0) {
+            try {
+                updateChromaMetadata(doc);
+            } catch (Exception e) {
+                log.warn("Chroma 元数据同步失败（编辑已保存，问答引用可能滞后）: id={}, error={}",
+                        doc.getId(), e.getMessage());
+            }
+        }
+
+        log.info("知识库文档已更新: id={}, docNo={}, title={}, category={}",
+                doc.getId(), doc.getDocNo(), doc.getTitle(), doc.getCategory());
+        return KnowledgeDocumentResponse.fromEntity(doc);
+    }
+
+    /**
+     * 生成默认文档编号（如 DOC-0001）
+     */
+    private String defaultDocNo(Long id) {
+        return "DOC-" + String.format("%04d", id);
+    }
+
+    /**
      * 上传文档（自动触发处理管道）
      *
      * @param file     文档文件
@@ -229,6 +317,12 @@ public class KnowledgeService {
                 .vectorIndexed(false)
                 .build();
         doc = documentRepository.save(doc);
+
+        // 生成默认文档编号（DOC-xxxx），用户可在编辑功能中修改
+        if (doc.getDocNo() == null || doc.getDocNo().isBlank()) {
+            doc.setDocNo(defaultDocNo(doc.getId()));
+            doc = documentRepository.save(doc);
+        }
 
         log.info("知识库文档已上传: id={}, title={}, category={}", doc.getId(), docTitle, category);
 
@@ -530,6 +624,57 @@ public class KnowledgeService {
             }
         }
         log.info("Chroma 写入完成: doc_id={}, chunks={}", doc.getId(), total);
+    }
+
+    /**
+     * 更新 Chroma 中某文档全部切片的元数据（标题/分类/简介）
+     * <p>
+     * Chroma v2 /update 接口需按向量 ID 精确更新（不支持 where 过滤），
+     * 因此按 doc_{id}_chunk_{0..chunkCount-1} 拼接全部向量 ID 一次性提交。
+     * </p>
+     */
+    private void updateChromaMetadata(KnowledgeDocument doc) throws Exception {
+        String collectionPath = chromaInitializer.getCollectionPath();
+        if (collectionPath == null) {
+            log.warn("ChromaDB collection 未初始化，跳过元数据同步: doc_id={}", doc.getId());
+            return;
+        }
+        String url = chromaUrl + collectionPath + "/update";
+
+        int total = doc.getChunkCount();
+        ObjectNode body = objectMapper.createObjectNode();
+        ArrayNode ids = objectMapper.createArrayNode();
+        ArrayNode metadatas = objectMapper.createArrayNode();
+        for (int i = 0; i < total; i++) {
+            ids.add("doc_" + doc.getId() + "_chunk_" + i);
+            ObjectNode meta = objectMapper.createObjectNode();
+            meta.put("doc_id", doc.getId());
+            meta.put("title", doc.getTitle());
+            meta.put("category", doc.getCategory() != null ? doc.getCategory() : "");
+            meta.put("description", doc.getDescription() != null ? doc.getDescription() : "");
+            meta.put("chunk_index", i);
+            meta.put("source_file", doc.getFilePath());
+            metadatas.add(meta);
+        }
+        body.set("ids", ids);
+        body.set("metadatas", metadatas);
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(RequestBody.create(
+                        objectMapper.writeValueAsString(body),
+                        MediaType.parse("application/json")))
+                .addHeader("Content-Type", "application/json")
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String errorBody = response.body() != null ? response.body().string() : "";
+                throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED,
+                        "Chroma 元数据更新失败: HTTP " + response.code() + " body=" + errorBody);
+            }
+        }
+        log.info("Chroma 元数据已同步: doc_id={}, chunks={}", doc.getId(), total);
     }
 
     /**

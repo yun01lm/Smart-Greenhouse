@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 知识库文档 Repository
@@ -39,4 +40,10 @@ public interface KnowledgeDocumentRepository extends JpaRepository<KnowledgeDocu
 
     /** 按分类统计文档数量 */
     long countByCategory(String category);
+
+    /** 检查文档编号是否已被占用（排除自身） */
+    boolean existsByDocNoAndIdNot(String docNo, Long id);
+
+    /** 按文档编号查询 */
+    Optional<KnowledgeDocument> findByDocNo(String docNo);
 }
