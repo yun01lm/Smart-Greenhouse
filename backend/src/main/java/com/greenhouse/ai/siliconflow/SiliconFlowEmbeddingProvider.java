@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,6 +36,9 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
     private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final int dimension;
+
+    /** 全局串行信号量：限制 Embedding API 并发，避免触发 429 限流 */
+    private static final Semaphore API_LOCK = new Semaphore(1);
 
     public SiliconFlowEmbeddingProvider(
             @Value("${siliconflow.api-key}") String apiKey,
@@ -68,7 +72,7 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
             int end = Math.min(i + batchSize, texts.size());
             results.addAll(callApi(texts.subList(i, end)));
             if (end < texts.size()) {
-                Thread.sleep(500L);
+                Thread.sleep(2000L);
             }
         }
         return results;
@@ -100,22 +104,32 @@ public class SiliconFlowEmbeddingProvider implements EmbeddingProvider {
                 .addHeader("Content-Type", "application/json")
                 .build();
 
-        int maxRetry = 3;
+        // SiliconFlow 免费额度为 TPM（token/分钟）限流：429 时需等待约 60s 窗口后重试
+        int maxRetry = 5;
         for (int attempt = 0; ; attempt++) {
-            try (Response response = httpClient.newCall(request).execute()) {
-                if (response.isSuccessful()) {
-                    return parseEmbeddings(response);
+            int statusCode = -1;
+            String errorBody = "";
+            API_LOCK.acquire();
+            try {
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        return parseEmbeddings(response);
+                    }
+                    statusCode = response.code();
+                    errorBody = response.body() != null ? response.body().string() : "";
                 }
-                if (response.code() == 429 && attempt < maxRetry) {
-                    long waitMs = 2000L * (attempt + 1); // 2s / 4s / 6s 退避
-                    log.warn("SiliconFlow 限流(429)，{}ms 后重试 ({}/{})",
-                            waitMs, attempt + 1, maxRetry);
-                    Thread.sleep(waitMs);
-                    continue;
-                }
-                log.error("SiliconFlow API 请求失败: HTTP {}", response.code());
-                throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
+            } finally {
+                API_LOCK.release();
             }
+            if (statusCode == 429 && attempt < maxRetry) {
+                long waitMs = 60_000L + attempt * 30_000L; // 60s/90s/120s/150s/180s
+                log.warn("SiliconFlow TPM 限流(429): {}，{}ms 后重试 ({}/{})",
+                        errorBody, waitMs, attempt + 1, maxRetry);
+                Thread.sleep(waitMs);
+                continue;
+            }
+            log.error("SiliconFlow API 请求失败: HTTP {} body={}", statusCode, errorBody);
+            throw new BusinessException(ErrorCode.AI_EMBEDDING_FAILED);
         }
     }
 

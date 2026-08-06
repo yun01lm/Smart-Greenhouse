@@ -69,8 +69,7 @@ public class KnowledgeController {
             @RequestParam(required = false) String category) {
 
         KnowledgeDocumentResponse doc = knowledgeService.uploadDocument(file, title, category);
-        return ApiResponse.success("文档上传成功" +
-                (doc.getVectorIndexed() ? "，向量化已完成" : ""), doc);
+        return ApiResponse.success("文档上传成功，向量化处理中（可在列表中查看状态或稍后手动重新向量化）", doc);
     }
 
     /**

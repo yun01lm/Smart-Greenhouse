@@ -339,7 +339,7 @@ async function handleUpload() {
     if (uploadForm.value.category) formData.append('category', uploadForm.value.category)
 
     await uploadDocument(formData)
-    ElMessage.success('文档上传成功，向量化处理已完成')
+    ElMessage.success('文档上传成功，向量化处理中')
     showUploadDialog.value = false
     uploadFile.value = null
     uploadForm.value = { title: '', category: '' }

@@ -19,10 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,6 +42,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -87,6 +92,18 @@ public class KnowledgeService {
 
     private final Path uploadDir;
     private final OkHttpClient httpClient;
+
+    /** 自引用代理：异步向量化时确保事务/代理生效 */
+    @Autowired
+    @Lazy
+    private KnowledgeService self;
+
+    /** 向量化后台执行线程池（单线程串行，避免并发触发 Embedding API 限流） */
+    private final ExecutorService vectorizeExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "knowledge-vectorize");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Autowired
     public KnowledgeService(
@@ -215,14 +232,31 @@ public class KnowledgeService {
 
         log.info("知识库文档已上传: id={}, title={}, category={}", doc.getId(), docTitle, category);
 
-        // 4. 异步触发向量化处理（在当前线程中同步执行，确保即时反馈）
+        // 4. 事务提交后异步触发向量化处理（后台线程池执行，上传立即返回，前端无需等待）
+        final Long docId = doc.getId();
+        Runnable vectorizeTask = () -> {
+            try {
+                self.indexDocument(docId);
+            } catch (Exception e) {
+                log.error("后台向量化失败: id={}, error={}", docId, e.getMessage(), e);
+            }
+        };
         try {
-            indexDocument(doc.getId());
-            // 重新加载以获取更新后的状态
-            doc = documentRepository.findById(doc.getId()).orElse(doc);
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        vectorizeExecutor.submit(vectorizeTask);
+                        log.info("知识库向量化已提交后台执行: id={}", docId);
+                    }
+                });
+            } else {
+                vectorizeExecutor.submit(vectorizeTask);
+                log.info("知识库向量化已提交后台执行: id={}", docId);
+            }
         } catch (Exception e) {
-            log.error("文档向量化失败: id={}, error={}", doc.getId(), e.getMessage(), e);
-            // 向量化失败不阻塞上传响应，文档保持"待处理"状态
+            log.error("向量化任务提交失败: id={}, error={}", docId, e.getMessage(), e);
+            // 任务提交失败不阻塞上传响应，文档保持"待向量化"状态，可手动重试
         }
 
         return KnowledgeDocumentResponse.fromEntity(doc);
