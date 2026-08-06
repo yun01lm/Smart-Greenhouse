@@ -196,7 +196,7 @@
 | 路由 | 页面 | 功能 |
 |------|------|------|
 | /login | Login.vue | 登录 |
-| /dashboard | DashboardPage.vue | 数据总览（传感器卡片+预警+图表+健康） |
+| /dashboard | DashboardPage.vue | 数据总览（管理员地区总览 AdminDashboard.vue / 农户端传感器卡片+预警+图表+健康） |
 | /devices | DevicePage.vue | 设备管理与分组 |
 | /users | UserPage.vue | 用户管理与角色概览 |
 | /knowledge | KnowledgePage.vue | 知识库文档管理（上传/分类管理/ID复用/编辑标记信息/向量化/问答测试） |
