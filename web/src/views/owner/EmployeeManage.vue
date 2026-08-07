@@ -40,6 +40,12 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="分配大棚" min-width="180">
+        <template #default="{ row }">
+          <span v-if="row.greenhouseNames && row.greenhouseNames.length">{{ row.greenhouseNames.join('、') }}</span>
+          <span v-else class="text-muted">未分配</span>
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" width="170" align="center">
         <template #default="{ row }">
           <span>{{ formatTime(row.createdAt) }}</span>
@@ -127,7 +133,7 @@
           </el-form-item>
         </template>
       </el-form>
-      <el-empty v-else description="该员工暂无权限记录，请先在大棚管理中添加" />
+      <el-empty v-else description="暂无大棚，请先创建大棚" />
       <template #footer>
         <el-button @click="permVisible = false">取消</el-button>
         <el-button type="primary" :loading="permSubmitting" :disabled="!permList.length" @click="submitPerm">保存权限</el-button>
@@ -278,8 +284,28 @@ async function openPermDialog(row) {
   permList.value = []
   permVisible.value = true
   try {
+    // 棚主所有大棚 + 员工已有权限合并（R26.1：无权限记录的大棚按角色默认值初始化）
+    if (!greenhouses.value.length) {
+      const ghRes = await getGreenhouses()
+      greenhouses.value = ghRes.data || []
+    }
     const res = await getEmployeePermissions(row.id)
-    permList.value = res.data || []
+    const existing = res.data || []
+    const isTech = row.role === 'TECHNICIAN'
+    permList.value = greenhouses.value.map(gh => {
+      const found = existing.find(p => p.greenhouseId === gh.id)
+      if (found) return found
+      return {
+        greenhouseId: gh.id,
+        greenhouseName: gh.name,
+        canViewData: true,
+        canControlDevice: true,
+        canDiagnose: isTech,
+        canAskExpert: isTech,
+        canViewAlerts: true,
+        canViewHistory: isTech
+      }
+    })
   } catch {
     // handled by interceptor
   }

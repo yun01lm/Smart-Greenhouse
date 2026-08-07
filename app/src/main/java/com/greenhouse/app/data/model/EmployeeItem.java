@@ -2,6 +2,8 @@ package com.greenhouse.app.data.model;
 
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
+
 /**
  * 员工信息模型（棚主端，R26）
  * <p>对应后端 EmployeeResponse：id/username/realName/phone/role/createdAt。</p>
@@ -19,6 +21,9 @@ public class EmployeeItem {
     /** WORKER（普通员工）/ TECHNICIAN（技术员） */
     private String role;
 
+    /** 员工被授权的大棚名称列表（R26.1） */
+    private List<String> greenhouseNames;
+
     @SerializedName("createdAt")
     private String createdAt;
 
@@ -30,4 +35,5 @@ public class EmployeeItem {
     public String getCreatedAt() { return createdAt; }
 
     public boolean isTechnician() { return "TECHNICIAN".equals(role); }
+    public List<String> getGreenhouseNames() { return greenhouseNames; }
 }

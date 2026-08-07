@@ -1,5 +1,6 @@
 package com.greenhouse.app.adapter;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -68,6 +69,11 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.ViewHo
         holder.tvPhone.setText(item.getPhone() != null && !item.getPhone().isEmpty()
                 ? item.getPhone() : "未绑定手机号");
 
+        List<String> ghNames = item.getGreenhouseNames();
+        holder.tvGreenhouses.setText(ghNames == null || ghNames.isEmpty()
+                ? "未分配大棚"
+                : "大棚：" + TextUtils.join("、", ghNames));
+
         EmployeeItem current = item;
         holder.btnPermission.setOnClickListener(v -> {
             if (listener != null) listener.onEditPermission(current);
@@ -88,6 +94,7 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.ViewHo
         final TextView tvUsername;
         final TextView tvRole;
         final TextView tvPhone;
+        final TextView tvGreenhouses;
         final TextView btnPermission;
         final TextView btnResetPwd;
         final TextView btnRemove;
@@ -98,6 +105,7 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.ViewHo
             tvUsername = itemView.findViewById(R.id.tv_emp_username);
             tvRole = itemView.findViewById(R.id.tv_emp_role);
             tvPhone = itemView.findViewById(R.id.tv_emp_phone);
+            tvGreenhouses = itemView.findViewById(R.id.tv_emp_greenhouses);
             btnPermission = itemView.findViewById(R.id.btn_emp_permission);
             btnResetPwd = itemView.findViewById(R.id.btn_emp_reset_pwd);
             btnRemove = itemView.findViewById(R.id.btn_emp_remove);

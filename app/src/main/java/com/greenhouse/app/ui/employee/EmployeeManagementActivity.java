@@ -254,13 +254,36 @@ public class EmployeeManagementActivity extends AppCompatActivity {
             int pad = dp(16);
             root.setPadding(pad, pad, pad, pad);
 
-            if (permissions == null || permissions.isEmpty()) {
+            // R26.1：合并棚主所有大棚 + 员工已有权限；无权限记录的大棚按角色默认值初始化
+            List<EmployeePermissionItem> merged = new ArrayList<>();
+            List<EmployeePermissionItem> existing = permissions != null ? permissions : new ArrayList<>();
+            boolean isTech = item.isTechnician();
+            for (Greenhouse gh : greenhouses) {
+                EmployeePermissionItem found = null;
+                for (EmployeePermissionItem p : existing) {
+                    if (p.getGreenhouseId() == gh.getId()) { found = p; break; }
+                }
+                if (found == null) {
+                    found = new EmployeePermissionItem();
+                    found.setGreenhouseId(gh.getId());
+                    found.setGreenhouseName(gh.getName());
+                    found.setCanViewData(true);
+                    found.setCanControlDevice(true);
+                    found.setCanDiagnose(isTech);
+                    found.setCanAskExpert(isTech);
+                    found.setCanViewAlerts(true);
+                    found.setCanViewHistory(isTech);
+                }
+                merged.add(found);
+            }
+
+            if (merged.isEmpty()) {
                 TextView tv = new TextView(this);
-                tv.setText("该员工暂无权限记录");
+                tv.setText("暂无大棚，请先创建大棚");
                 tv.setTextColor(getColor(R.color.text_secondary));
                 root.addView(tv);
             } else {
-                for (EmployeePermissionItem p : permissions) {
+                for (EmployeePermissionItem p : merged) {
                     TextView tvTitle = new TextView(this);
                     tvTitle.setText("大棚：" + p.getGreenhouseName());
                     tvTitle.setTextColor(getColor(R.color.on_surface));
@@ -314,8 +337,8 @@ public class EmployeeManagementActivity extends AppCompatActivity {
 
             builder.setView(root);
             builder.setPositiveButton("保存", (dialog, which) -> {
-                if (permissions != null && !permissions.isEmpty()) {
-                    viewModel.savePermissions(item.getId(), permissions);
+                if (!merged.isEmpty()) {
+                    viewModel.savePermissions(item.getId(), merged);
                 }
             });
             builder.show();

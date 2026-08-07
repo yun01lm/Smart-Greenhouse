@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -193,7 +194,22 @@ public class PermissionService {
         employees.addAll(userRepository.findByRoleAndOwnerId(User.Role.WORKER, ownerId));
         employees.addAll(userRepository.findByRoleAndOwnerId(User.Role.TECHNICIAN, ownerId));
         return employees.stream()
-                .map(EmployeeResponse::fromUser)
+                .map(emp -> {
+                    EmployeeResponse resp = EmployeeResponse.fromUser(emp);
+                    resp.setGreenhouseNames(greenhouseNamesOf(emp.getId()));
+                    return resp;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 员工被授权的大棚名称列表
+     */
+    private List<String> greenhouseNamesOf(Long employeeId) {
+        return permissionRepository.findByEmployeeId(employeeId).stream()
+                .map(p -> greenhouseRepository.findById(p.getGreenhouseId())
+                        .map(Greenhouse::getName)
+                        .orElse("未知大棚"))
                 .collect(Collectors.toList());
     }
 
@@ -231,11 +247,31 @@ public class PermissionService {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
 
-        // 查找权限记录
-        EmployeePermission permission = permissionRepository
-                .findByEmployeeIdAndGreenhouseId(employeeId, request.getGreenhouseId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR,
-                        "该员工没有此大棚的权限记录"));
+        // 查找权限记录（R26.1 无记录时按角色默认值新建，支持棚主为所有大棚分配权限）
+        Optional<EmployeePermission> existing = permissionRepository
+                .findByEmployeeIdAndGreenhouseId(employeeId, request.getGreenhouseId());
+        EmployeePermission permission;
+        if (existing.isPresent()) {
+            permission = existing.get();
+        } else {
+            Greenhouse gh = greenhouseRepository.findById(request.getGreenhouseId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
+            if (!gh.getOwnerId().equals(ownerId)) {
+                throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+            }
+            User.Role role = employee.getRole();
+            permission = EmployeePermission.builder()
+                    .employeeId(employeeId)
+                    .ownerId(ownerId)
+                    .greenhouseId(request.getGreenhouseId())
+                    .canViewData(permOrDefault(request.getCanViewData(), true, role))
+                    .canControlDevice(permOrDefault(request.getCanControlDevice(), true, role))
+                    .canDiagnose(permOrDefault(request.getCanDiagnose(), false, role))
+                    .canAskExpert(permOrDefault(request.getCanAskExpert(), false, role))
+                    .canViewAlerts(permOrDefault(request.getCanViewAlerts(), true, role))
+                    .canViewHistory(permOrDefault(request.getCanViewHistory(), false, role))
+                    .build();
+        }
 
         // 更新非空字段
         if (request.getCanViewData() != null) {
