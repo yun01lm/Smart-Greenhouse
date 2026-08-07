@@ -54,6 +54,22 @@ public class SensorController {
     }
 
     /**
+     * 环境参数短期预测（统计外推）
+     * GET /api/v1/sensors/forecast?greenhouseId=1&sensorType=TEMPERATURE&steps=4&intervalMinutes=30
+     */
+    @GetMapping("/forecast")
+    public ApiResponse<ForecastResponse> forecast(
+            @RequestParam Long greenhouseId,
+            @RequestParam String sensorType,
+            @RequestParam(defaultValue = "4") int steps,
+            @RequestParam(defaultValue = "30") int intervalMinutes) {
+        steps = Math.min(Math.max(steps, 1), 12);
+        intervalMinutes = Math.min(Math.max(intervalMinutes, 5), 60);
+        ForecastResponse data = sensorDataService.getForecast(greenhouseId, sensorType, steps, intervalMinutes);
+        return ApiResponse.success(data);
+    }
+
+    /**
      * 多组数据对比
      * POST /api/v1/sensors/compare
      */

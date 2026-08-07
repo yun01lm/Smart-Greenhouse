@@ -35,6 +35,7 @@ public class SensorDataService {
     private final QueryApi queryApi;
     private final DeviceRepository deviceRepository;
     private final InfluxDbConfigHelper configHelper;
+    private final TrendPredictor trendPredictor;
 
     /**
      * 写入传感器数据到 InfluxDB
@@ -173,6 +174,28 @@ public class SensorDataService {
         // 按时间排序
         result.sort(Comparator.comparing(SensorDataPoint::getTimestamp));
         return result;
+    }
+
+    /**
+     * 环境参数短期预测（第一阶段统计方法，后续可替换 LSTM Provider）
+     */
+    public ForecastResponse getForecast(Long greenhouseId, String sensorType, int steps, int intervalMinutes) {
+        long end = System.currentTimeMillis();
+        long start = end - 24L * 3600 * 1000;
+        SensorHistoryRequest request = SensorHistoryRequest.builder()
+                .sensorType(sensorType)
+                .startTime(start)
+                .endTime(end)
+                .interval("1h")
+                .build();
+        List<SensorDataPoint> history = getHistoryData(greenhouseId, request);
+        List<ForecastPoint> points = trendPredictor.predict(sensorType, history, steps, intervalMinutes * 60000L);
+        return ForecastResponse.builder()
+                .greenhouseId(greenhouseId)
+                .sensorType(sensorType)
+                .intervalMinutes(intervalMinutes)
+                .points(points)
+                .build();
     }
 
     /**

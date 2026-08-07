@@ -11,7 +11,7 @@
       <!-- 中部：趋势图 + 健康评分 -->
       <div class="middle-row">
         <div class="chart-area">
-          <TrendChart :history-data="historyData" />
+          <TrendChart :history-data="historyData" :forecast-data="forecastData" />
         </div>
         <div class="score-area">
           <HealthScore :data="healthData" />
@@ -55,7 +55,7 @@ import SensorCards from './SensorCards.vue'
 import TrendChart from './TrendChart.vue'
 import HealthScore from './HealthScore.vue'
 import AlertList from './AlertList.vue'
-import { getRealtimeData, getSensorHistory } from '@/api/sensor'
+import { getRealtimeData, getSensorHistory, getSensorForecast } from '@/api/sensor'
 import { getHealthScore } from '@/api/health'
 import { getAlerts, getUnreadAlertCount } from '@/api/alert'
 import { getCurrentWeather } from '@/api/weather'
@@ -73,6 +73,7 @@ const isAdmin = computed(() => authStore.isAdmin() && !viewStore.active)
 
 const realtimeData = ref({})
 const historyData = ref([])
+const forecastData = ref([])
 const healthData = ref(null)
 const alerts = ref([])
 const unreadCount = ref(0)
@@ -124,20 +125,41 @@ function buildHistory(tempPoints, humPoints) {
   return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
 }
 
+/** 合并温度/湿度预测点为 [{ time, temperature, humidity }]（保留分钟粒度） */
+function buildForecast(tempPoints, humPoints) {
+  const map = new Map()
+  const fmt = (ts) => {
+    const d = new Date(ts)
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }
+  for (const p of tempPoints || []) {
+    const k = fmt(p.timestamp)
+    map.set(k, { time: k, temperature: p.value, humidity: null })
+  }
+  for (const p of humPoints || []) {
+    const k = fmt(p.timestamp)
+    if (map.has(k)) map.get(k).humidity = p.value
+    else map.set(k, { time: k, temperature: null, humidity: p.value })
+  }
+  return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
+}
+
 let refreshTimer = null
 
 async function loadAll() {
   try {
     const endTime = Date.now()
     const startTime = endTime - 24 * 3600 * 1000
-    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, tempHistRes, humHistRes] = await Promise.allSettled([
+    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, tempHistRes, humHistRes, tempForecastRes, humForecastRes] = await Promise.allSettled([
       getRealtimeData(props.greenhouseId),
       getHealthScore(props.greenhouseId),
       getAlerts(props.greenhouseId, 1, 5),
       getUnreadAlertCount(props.greenhouseId),
       getCurrentWeather({ greenhouseId: props.greenhouseId }),
       getSensorHistory(props.greenhouseId, { sensorType: 'TEMPERATURE', startTime, endTime, interval: '1h' }),
-      getSensorHistory(props.greenhouseId, { sensorType: 'HUMIDITY', startTime, endTime, interval: '1h' })
+      getSensorHistory(props.greenhouseId, { sensorType: 'HUMIDITY', startTime, endTime, interval: '1h' }),
+      getSensorForecast(props.greenhouseId, 'TEMPERATURE', 4, 30),
+      getSensorForecast(props.greenhouseId, 'HUMIDITY', 4, 30)
     ])
 
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
@@ -162,6 +184,11 @@ async function loadAll() {
       const temps = tempHistRes.status === 'fulfilled' ? tempHistRes.value?.data || [] : []
       const hums = humHistRes.status === 'fulfilled' ? humHistRes.value?.data || [] : []
       historyData.value = buildHistory(temps, hums)
+    }
+    if (tempForecastRes.status === 'fulfilled' || humForecastRes.status === 'fulfilled') {
+      const fTemps = tempForecastRes.status === 'fulfilled' ? tempForecastRes.value?.data?.points || [] : []
+      const fHums = humForecastRes.status === 'fulfilled' ? humForecastRes.value?.data?.points || [] : []
+      forecastData.value = buildForecast(fTemps, fHums)
     }
   } catch (e) {
     // 静默处理
