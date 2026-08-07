@@ -68,6 +68,11 @@ public class Alert {
     @Builder.Default
     private Boolean readStatus = false;
 
+    /** 是否已处理 */
+    @Column(name = "handled", nullable = false)
+    @Builder.Default
+    private Boolean handled = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

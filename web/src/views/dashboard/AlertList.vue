@@ -13,7 +13,7 @@
         v-for="alert in alerts"
         :key="alert.id"
         class="alert-item"
-        :class="'alert-' + alert.level"
+        :class="['alert-' + alert.level, { 'is-handled': alert.handled }]"
       >
         <div class="alert-level-tag">
           <el-tag
@@ -28,18 +28,54 @@
           <div class="alert-message">{{ alert.message || alert.title }}</div>
           <div class="alert-time">{{ formatTime(alert.createdAt || alert.createTime) }}</div>
         </div>
+        <div class="alert-action">
+          <template v-if="alert.handled">
+            <el-tag type="success" size="small" effect="plain">已处理</el-tag>
+          </template>
+          <template v-else>
+            <el-tag type="warning" size="small" effect="plain">未处理</el-tag>
+            <el-button
+              size="small"
+              type="primary"
+              plain
+              :loading="handlingId === alert.id"
+              @click="handleAlert(alert)"
+            >处理</el-button>
+          </template>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { SuccessFilled } from '@element-plus/icons-vue'
+import { markAlertHandled } from '@/api/alert'
 
 const props = defineProps({
   alerts: { type: Array, default: () => [] },
   unreadCount: { type: Number, default: 0 }
 })
+
+// 正在处理的预警ID（按钮 loading）
+const handlingId = ref(null)
+
+/** 标记预警为已处理 */
+async function handleAlert(alert) {
+  if (handlingId.value) return
+  handlingId.value = alert.id
+  try {
+    await markAlertHandled(alert.id)
+    alert.handled = true
+    ElMessage.success('已标记为已处理')
+  } catch (e) {
+    ElMessage.error('操作失败，请重试')
+  } finally {
+    handlingId.value = null
+  }
+}
 
 function levelTagType(level) {
   const map = { CRITICAL: 'danger', WARNING: 'warning', INFO: 'info' }
@@ -113,6 +149,18 @@ function formatTime(time) {
   font-size: 14px;
   color: #e0e6ed;
   margin-bottom: 2px;
+}
+
+.alert-action {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.alert-item.is-handled {
+  opacity: 0.6;
 }
 
 .alert-time {

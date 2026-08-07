@@ -65,6 +65,21 @@ public class AlertService {
     }
 
     /**
+     * 标记告警为已处理（同时置为已读）
+     *
+     * @param alertId 告警ID
+     * @return 更新后的告警实体
+     */
+    @Transactional
+    public Alert markAsHandled(Long alertId) {
+        Alert alert = alertRepository.findById(alertId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR, "告警记录不存在"));
+        alert.setHandled(true);
+        alert.setReadStatus(true);
+        return alertRepository.save(alert);
+    }
+
+    /**
      * 获取大棚名称
      */
     public String getGreenhouseName(Long greenhouseId) {

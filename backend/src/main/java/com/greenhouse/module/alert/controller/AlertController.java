@@ -80,6 +80,16 @@ public class AlertController {
     }
 
     /**
+     * 标记告警已处理
+     * PUT /api/v1/alerts/{id}/handle
+     */
+    @PutMapping("/{id}/handle")
+    public ApiResponse<Void> markHandled(@PathVariable Long id) {
+        alertService.markAsHandled(id);
+        return ApiResponse.success("已标记为已处理", null);
+    }
+
+    /**
      * 获取未读告警数量
      * GET /api/v1/alerts/unread-count?greenhouseId=1
      */

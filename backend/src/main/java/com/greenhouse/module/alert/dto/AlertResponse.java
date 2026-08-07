@@ -28,6 +28,7 @@ public class AlertResponse {
     private Double sensorValue;
     private String sensorType;
     private Boolean readStatus;
+    private Boolean handled;
     private LocalDateTime createdAt;
 
     public static AlertResponse fromEntity(Alert alert, String greenhouseName) {
@@ -43,6 +44,7 @@ public class AlertResponse {
                 .sensorValue(alert.getSensorValue())
                 .sensorType(alert.getSensorType())
                 .readStatus(alert.getReadStatus())
+                .handled(alert.getHandled())
                 .createdAt(alert.getCreatedAt())
                 .build();
     }

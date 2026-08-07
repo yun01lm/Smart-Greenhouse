@@ -151,7 +151,9 @@ async function loadAll() {
       alerts.value = d.records || d.list || []
     }
     if (unreadRes.status === 'fulfilled' && unreadRes.value?.data != null) {
-      unreadCount.value = unreadRes.value.data
+      // 后端返回 { count: N }，兼容纯数字两种形态
+      const uc = unreadRes.value.data
+      unreadCount.value = typeof uc === 'number' ? uc : (uc && uc.count) || 0
     }
     if (weatherRes.status === 'fulfilled' && weatherRes.value?.data) {
       weatherData.value = weatherRes.value.data
