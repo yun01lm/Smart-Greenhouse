@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +143,12 @@ public class AdminDashboardService {
                 double avg = values.stream().mapToDouble(Double::doubleValue).average().orElse(0);
                 env.put(e.getKey(), Map.of("label", e.getValue(), "avg", round1(avg), "count", values.size()));
             } else {
-                env.put(e.getKey(), Map.of("label", e.getValue(), "avg", null, "count", 0));
+                // Map.of 不允许 null 值，使用 LinkedHashMap 保留 avg=null（无数据）
+                Map<String, Object> empty = new LinkedHashMap<>();
+                empty.put("label", e.getValue());
+                empty.put("avg", null);
+                empty.put("count", 0);
+                env.put(e.getKey(), empty);
             }
         }
         env.put("sampledGreenhouseCount", sampled);
@@ -235,12 +241,16 @@ public class AdminDashboardService {
         return result;
     }
 
-    // ===== 6. 当前天气（地区级，取最深一级地区名） =====
+    // ===== 6. 当前天气（跟随所选地区城市；全部地区时跟随大棚最集中的城市） =====
 
     private Object buildWeather(String province, String city, String district, String town, String village) {
-        String location = pick(village, town, district, city, province);
+        String location = pick(city, province);
         if (location == null) {
-            location = "北京";
+            // 全部地区：跟随大棚数量最多的城市（避免默认北京），无大棚时兜底北京
+            location = dominantGreenhouseCity();
+            if (location == null) {
+                location = "北京";
+            }
         }
         try {
             WeatherCurrentResponse weather = weatherService.getCurrentWeather(location);
@@ -249,6 +259,29 @@ public class AdminDashboardService {
             log.warn("地区天气查询失败 location={}: {}", location, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 大棚数量最多的城市（用于“全部地区”天气跟随），同数时取最早登记的大棚所在城市；无大棚时返回 null
+     */
+    private String dominantGreenhouseCity() {
+        Map<String, long[]> cityStats = new LinkedHashMap<>(); // city -> [count, minGreenhouseId]
+        regionService.getGreenhousesByRegion(null, null, null, null, null).forEach(gh -> {
+            String c = gh.getCity();
+            if (c == null || c.isBlank()) {
+                return;
+            }
+            long[] s = cityStats.computeIfAbsent(c, k -> new long[]{0, Long.MAX_VALUE});
+            s[0]++;
+            s[1] = Math.min(s[1], gh.getId());
+        });
+        return cityStats.entrySet().stream()
+                .sorted(Comparator
+                        .<Map.Entry<String, long[]>>comparingLong(e -> e.getValue()[0]).reversed()
+                        .thenComparingLong(e -> e.getValue()[1]))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
     }
 
     // ===== 工具 =====
