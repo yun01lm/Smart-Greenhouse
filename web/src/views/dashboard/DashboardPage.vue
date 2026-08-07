@@ -55,7 +55,7 @@ import SensorCards from './SensorCards.vue'
 import TrendChart from './TrendChart.vue'
 import HealthScore from './HealthScore.vue'
 import AlertList from './AlertList.vue'
-import { getRealtimeData } from '@/api/sensor'
+import { getRealtimeData, getSensorHistory } from '@/api/sensor'
 import { getHealthScore } from '@/api/health'
 import { getAlerts, getUnreadAlertCount } from '@/api/alert'
 import { getCurrentWeather } from '@/api/weather'
@@ -78,32 +78,88 @@ const alerts = ref([])
 const unreadCount = ref(0)
 const weatherData = ref(null)
 
+// 后端传感器类型 → 前端卡片字段（SensorCards 期望扁平结构）
+const TYPE_TO_KEY = {
+  TEMPERATURE: 'temperature',
+  HUMIDITY: 'humidity',
+  CO2: 'co2',
+  LIGHT: 'light',
+  SOIL_TEMP: 'soilTemperature',
+  SOIL_MOISTURE: 'soilHumidity'
+}
+
+/** 把后端 dataByType 嵌套结构拍平为 SensorCards 需要的扁平字段 */
+function flattenRealtime(data) {
+  if (!data) return {}
+  const flat = { greenhouseId: data.greenhouseId, greenhouseName: data.greenhouseName }
+  const byType = data.dataByType || {}
+  for (const [type, points] of Object.entries(byType)) {
+    const key = TYPE_TO_KEY[type]
+    if (key && points && points.length > 0 && points[0].value != null) {
+      flat[key] = points[0].value
+    }
+  }
+  return flat
+}
+
+/** 合并温度/湿度历史点为趋势图需要的 [{ time, temperature, humidity }] */
+function buildHistory(tempPoints, humPoints) {
+  const map = new Map()
+  const hour = (ts) => {
+    const d = new Date(ts)
+    return `${String(d.getHours()).padStart(2, '0')}:00`
+  }
+  for (const p of tempPoints || []) {
+    const k = hour(p.timestamp)
+    map.set(k, { time: k, temperature: p.value, humidity: null })
+  }
+  for (const p of humPoints || []) {
+    const k = hour(p.timestamp)
+    if (map.has(k)) {
+      map.get(k).humidity = p.value
+    } else {
+      map.set(k, { time: k, temperature: null, humidity: p.value })
+    }
+  }
+  return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
+}
+
 let refreshTimer = null
 
 async function loadAll() {
   try {
-    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes] = await Promise.allSettled([
+    const endTime = Date.now()
+    const startTime = endTime - 24 * 3600 * 1000
+    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, tempHistRes, humHistRes] = await Promise.allSettled([
       getRealtimeData(props.greenhouseId),
       getHealthScore(props.greenhouseId),
       getAlerts(props.greenhouseId, 1, 5),
       getUnreadAlertCount(props.greenhouseId),
-      getCurrentWeather({ greenhouseId: props.greenhouseId })
+      getCurrentWeather({ greenhouseId: props.greenhouseId }),
+      getSensorHistory(props.greenhouseId, { sensorType: 'TEMPERATURE', startTime, endTime, interval: '1h' }),
+      getSensorHistory(props.greenhouseId, { sensorType: 'HUMIDITY', startTime, endTime, interval: '1h' })
     ])
 
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
-      realtimeData.value = sensorRes.value.data
+      realtimeData.value = flattenRealtime(sensorRes.value.data)
     }
     if (healthRes.status === 'fulfilled' && healthRes.value?.data) {
       healthData.value = healthRes.value.data
     }
     if (alertRes.status === 'fulfilled' && alertRes.value?.data) {
-      alerts.value = alertRes.value.data.records || alertRes.value.data || []
+      const d = alertRes.value.data
+      alerts.value = d.records || d.list || []
     }
     if (unreadRes.status === 'fulfilled' && unreadRes.value?.data != null) {
       unreadCount.value = unreadRes.value.data
     }
     if (weatherRes.status === 'fulfilled' && weatherRes.value?.data) {
       weatherData.value = weatherRes.value.data
+    }
+    if (tempHistRes.status === 'fulfilled' || humHistRes.status === 'fulfilled') {
+      const temps = tempHistRes.status === 'fulfilled' ? tempHistRes.value?.data || [] : []
+      const hums = humHistRes.status === 'fulfilled' ? humHistRes.value?.data || [] : []
+      historyData.value = buildHistory(temps, hums)
     }
   } catch (e) {
     // 静默处理
@@ -115,8 +171,11 @@ function setupWebSocket() {
   realtimeClient.disconnect()
   realtimeClient.connect(props.greenhouseId)
   realtimeClient.onMessage(`/topic/greenhouse/${props.greenhouseId}/realtime`, (data) => {
-    if (data) {
-      realtimeData.value = { ...realtimeData.value, ...data }
+    if (data && data.sensorType) {
+      const key = TYPE_TO_KEY[data.sensorType]
+      if (key && data.value != null) {
+        realtimeData.value = { ...realtimeData.value, [key]: data.value }
+      }
     }
   })
 }
