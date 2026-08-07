@@ -37,6 +37,11 @@ public interface DataAuthorizationRepository extends JpaRepository<DataAuthoriza
     List<DataAuthorization> findByExpertIdAndStatusOrderByApprovedAtDesc(Long expertId, DataAuthorization.AuthorizationStatus status);
 
     /**
+     * 查询专家的全部申请记录（按时间倒序，R28）
+     */
+    List<DataAuthorization> findByExpertIdOrderByRequestedAtDesc(Long expertId);
+
+    /**
      * 查询用户的授权历史
      */
     List<DataAuthorization> findByUserIdOrderByRequestedAtDesc(Long userId);

@@ -4,6 +4,7 @@ import com.greenhouse.entity.ChatMessage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -58,6 +59,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     /**
      * 将对话中的消息标记为已读
      */
+    @Modifying
     @Query("UPDATE ChatMessage m SET m.readStatus = 1 WHERE m.conversationId = :conversationId AND m.senderType = :senderType AND m.readStatus = 0")
-    void markAsRead(@Param("conversationId") Long conversationId, @Param("senderType") String senderType);
+    void markAsRead(@Param("conversationId") Long conversationId, @Param("senderType") ChatMessage.SenderType senderType);
 }

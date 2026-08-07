@@ -71,13 +71,25 @@ public class ExpertService {
      */
     @Transactional
     public AuthorizationResponse requestAuthorization(Long expertId, Long userId, Long greenhouseId, String reason) {
-        // 检查是否已有有效授权
-        Optional<DataAuthorization> existing = authorizationRepository
+        // 检查是否已有有效授权（已同意或待审批均不可重复申请）
+        Optional<DataAuthorization> existingApproved = authorizationRepository
                 .findTopByExpertIdAndUserIdAndGreenhouseIdAndStatusOrderByRequestedAtDesc(
                         expertId, userId, greenhouseId, DataAuthorization.AuthorizationStatus.APPROVED);
-
-        if (existing.isPresent()) {
+        if (existingApproved.isPresent()) {
             throw new BusinessException(ErrorCode.AUTHORIZATION_ALREADY_EXISTS);
+        }
+        Optional<DataAuthorization> existingPending = authorizationRepository
+                .findTopByExpertIdAndUserIdAndGreenhouseIdAndStatusOrderByRequestedAtDesc(
+                        expertId, userId, greenhouseId, DataAuthorization.AuthorizationStatus.PENDING);
+        if (existingPending.isPresent()) {
+            throw new BusinessException(ErrorCode.AUTHORIZATION_ALREADY_EXISTS, "已有待审批的申请，请等待棚主处理");
+        }
+
+        // R28：校验大棚归属——目标用户必须是大棚所有者
+        Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
+        if (!greenhouse.getOwnerId().equals(userId)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "该大棚不属于所选用户");
         }
 
         DataAuthorization auth = DataAuthorization.builder()
@@ -92,9 +104,8 @@ public class ExpertService {
         log.info("授权请求已发起: expert={}, user={}, greenhouse={}", expertId, userId, greenhouseId);
 
         User expert = userRepository.findById(expertId).orElse(null);
-        Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId).orElse(null);
-
         return AuthorizationResponse.fromEntity(auth,
+
                 expert != null ? expert.getUsername() : "未知",
                 greenhouse != null ? greenhouse.getName() : "未知");
     }
@@ -228,5 +239,66 @@ public class ExpertService {
         availabilityRepository.save(availability);
 
         log.info("专家在线状态已更新: expertId={}, online={}", expertId, isOnline);
+    }
+
+    /**
+     * 专家可申请授权的大棚列表（R28）
+     * <p>返回全部大棚及棚主信息，附带当前专家对该大棚的授权状态：NONE / PENDING / APPROVED。</p>
+     */
+    public List<Map<String, Object>> getAvailableGreenhouses(Long expertId) {
+        List<Greenhouse> all = greenhouseRepository.findAll();
+        // 当前专家全部申请记录（按时间倒序，取每个大棚最新一条）
+        List<DataAuthorization> auths = authorizationRepository.findByExpertIdOrderByRequestedAtDesc(expertId);
+        Map<Long, DataAuthorization> latestByGh = new java.util.HashMap<>();
+        for (DataAuthorization a : auths) {
+            if (a.getGreenhouseId() != null && !latestByGh.containsKey(a.getGreenhouseId())) {
+                latestByGh.put(a.getGreenhouseId(), a);
+            }
+        }
+        LocalDateTime now = LocalDateTime.now();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Greenhouse gh : all) {
+            String status = "NONE";
+            DataAuthorization latest = latestByGh.get(gh.getId());
+            if (latest != null) {
+                if (latest.getStatus() == DataAuthorization.AuthorizationStatus.PENDING) {
+                    status = "PENDING";
+                } else if (latest.getStatus() == DataAuthorization.AuthorizationStatus.APPROVED
+                        && latest.getExpiresAt() != null && latest.getExpiresAt().isAfter(now)) {
+                    status = "APPROVED";
+                }
+                // 已拒绝/已撤销/已过期 → NONE，可重新申请
+            }
+            User owner = userRepository.findById(gh.getOwnerId()).orElse(null);
+            Map<String, Object> item = new java.util.LinkedHashMap<>();
+            item.put("greenhouseId", gh.getId());
+            item.put("greenhouseName", gh.getName());
+            item.put("ownerId", gh.getOwnerId());
+            item.put("ownerName", owner != null ? owner.getRealName() : "");
+            item.put("province", gh.getProvince());
+            item.put("city", gh.getCity());
+            item.put("district", gh.getDistrict());
+            item.put("town", gh.getTown());
+            item.put("village", gh.getVillage());
+            item.put("status", status);
+            result.add(item);
+        }
+        return result;
+    }
+
+    /**
+     * 专家自己的授权申请记录（R28）
+     */
+    public List<AuthorizationResponse> getMyAuthorizations(Long expertId) {
+        List<DataAuthorization> auths = authorizationRepository.findByExpertIdOrderByRequestedAtDesc(expertId);
+        return auths.stream()
+                .map(auth -> {
+                    User expert = userRepository.findById(auth.getExpertId()).orElse(null);
+                    Greenhouse greenhouse = greenhouseRepository.findById(auth.getGreenhouseId()).orElse(null);
+                    return AuthorizationResponse.fromEntity(auth,
+                            expert != null ? expert.getUsername() : "未知",
+                            greenhouse != null ? greenhouse.getName() : "未知");
+                })
+                .toList();
     }
 }

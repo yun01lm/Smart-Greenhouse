@@ -42,3 +42,46 @@ export function exportConversations(params) {
     timeout: 60000
   })
 }
+
+
+// ===== 专家授权申请 / 棚主审批（R28） =====
+
+/** 专家：可申请授权的大棚列表（含授权状态） */
+export function getApplyAvailable() {
+  return request.get('/expert/authorize/available')
+}
+
+/** 专家：发起授权申请 */
+export function requestAuthorization(data) {
+  return request.post('/expert/authorize/request', data)
+}
+
+/** 专家：我的授权申请记录 */
+export function getMyAuthorizations() {
+  return request.get('/expert/authorize/my')
+}
+
+/** 棚主：待处理的授权申请 */
+export function getPendingAuthorizations() {
+  return request.get('/expert/authorize/pending')
+}
+
+/** 棚主：同意授权 */
+export function approveAuthorization(id) {
+  return request.put(`/expert/authorize/${id}/approve`)
+}
+
+/** 棚主：拒绝授权 */
+export function rejectAuthorization(id) {
+  return request.put(`/expert/authorize/${id}/reject`)
+}
+
+/** 棚主：有效授权列表 */
+export function getActiveAuthorizations() {
+  return request.get('/expert/authorize/active')
+}
+
+/** 棚主：撤销授权 */
+export function revokeAuthorization(id) {
+  return request.put(`/expert/authorize/${id}/revoke`)
+}

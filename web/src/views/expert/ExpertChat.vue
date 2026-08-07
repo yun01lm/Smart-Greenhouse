@@ -218,6 +218,9 @@ function onPageChange(page) {
 async function openConversation(conv) {
   currentConversation.value = conv
   await loadMessages(conv.id)
+  // R28：查看消息后后端已标记已读，刷新未读数与列表角标
+  loadUnread()
+  loadConversations()
 }
 
 async function loadMessages(id) {

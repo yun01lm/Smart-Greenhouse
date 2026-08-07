@@ -21,11 +21,39 @@
           />
           <span v-else-if="expertLoading" class="expert-loading-text">加载授权大棚中...</span>
         </div>
-        <span v-if="selectedGhName" class="expert-gh-name">当前：{{ selectedGhName }}</span>
+        <div class="expert-region-actions">
+          <span v-if="selectedGhName" class="expert-gh-name">当前：{{ selectedGhName }}</span>
+          <el-button size="small" type="primary" plain @click="openApplyDialog">申请大棚权限</el-button>
+          <el-button size="small" @click="openAuthList">我的申请</el-button>
+        </div>
       </div>
 
       <!-- 专家未授权：整页空白（无卡片、无模拟曲线） -->
-      <div v-if="isExpert && !expertLoading && expertGhOptions.length === 0" class="expert-blank"></div>
+      <div v-if="isExpert && !expertLoading && expertGhOptions.length === 0" class="expert-blank">
+        <div class="expert-blank-card">
+          <el-icon :size="44" color="#94a3b8"><Lock /></el-icon>
+          <p class="expert-blank-tip">您还没有被授权查看任何大棚数据</p>
+          <div class="expert-blank-actions">
+            <el-button type="primary" @click="openApplyDialog">申请大棚权限</el-button>
+            <el-button @click="openAuthList">我的申请</el-button>
+          </div>
+          <div v-if="myAuths.length" class="my-auth-box">
+            <div class="my-auth-title">我的申请记录</div>
+            <el-table :data="myAuths" size="small" class="my-auth-table">
+              <el-table-column prop="greenhouseName" label="大棚" min-width="140" />
+              <el-table-column prop="reason" label="申请理由" min-width="160" show-overflow-tooltip />
+              <el-table-column label="状态" width="90">
+                <template #default="{ row }">
+                  <el-tag :type="authStatusTag(row.status)" size="small">{{ authStatusLabel(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="申请时间" width="150">
+                <template #default="{ row }">{{ formatAuthTime(row.requestedAt) }}</template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
+      </div>
 
       <template v-else-if="!isExpert || expertGhOptions.length > 0">
       <!-- 传感器卡片 -->
@@ -77,6 +105,53 @@
       </template>
     </template>
   </div>
+
+    <!-- R28：专家申请大棚权限弹窗 -->
+    <el-dialog v-model="applyDialogVisible" title="申请大棚权限" width="520px">
+      <el-form label-width="80px">
+        <el-form-item label="选择大棚">
+          <el-select v-model="applyForm.greenhouseId" filterable placeholder="按名称或地区搜索大棚" style="width: 100%">
+            <el-option
+              v-for="g in applyGreenhouses"
+              :key="g.greenhouseId"
+              :label="g.greenhouseName + (g.ownerName ? '（' + g.ownerName + '）' : '') + ' [' + [g.province, g.city, g.district, g.town, g.village].filter(Boolean).join('-') + ']'"
+              :value="g.greenhouseId"
+              :disabled="g.status !== 'NONE'"
+            >
+              <span>{{ g.greenhouseName }}</span>
+              <el-tag v-if="g.status === 'PENDING'" size="small" type="warning" style="margin-left: 6px">待审批</el-tag>
+              <el-tag v-else-if="g.status === 'APPROVED'" size="small" type="success" style="margin-left: 6px">已授权</el-tag>
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="申请理由">
+          <el-input v-model="applyForm.reason" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="请简要说明申请查看该大棚数据的原因" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="applyDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="applySubmitting" @click="submitApply">提交申请</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- R28：我的申请记录弹窗 -->
+    <el-dialog v-model="authListDialogVisible" title="我的申请记录" width="720px">
+      <el-table :data="myAuths" v-loading="myAuthsLoading" size="small">
+        <el-table-column prop="greenhouseName" label="大棚" min-width="140" />
+        <el-table-column prop="reason" label="申请理由" min-width="160" show-overflow-tooltip />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="authStatusTag(row.status)" size="small">{{ authStatusLabel(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="申请时间" width="150">
+          <template #default="{ row }">{{ formatAuthTime(row.requestedAt) }}</template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="authListDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
 </template>
 
 <script setup>
@@ -93,8 +168,10 @@ import { getHealthScore } from '@/api/health'
 import { getAlerts, getUnreadAlertCount } from '@/api/alert'
 import { getCurrentWeather } from '@/api/weather'
 import { getGreenhouses } from '@/api/greenhouse'
+import { getApplyAvailable, requestAuthorization, getMyAuthorizations } from '@/api/expert'
+import { ElMessage } from 'element-plus'
 import realtimeClient from '@/utils/websocket'
-import { Cloudy, Location } from '@element-plus/icons-vue'
+import { Cloudy, Location, Lock } from '@element-plus/icons-vue'
 
 const props = defineProps({
   greenhouseId: { type: Number, default: 1 }
@@ -107,6 +184,75 @@ const isAdmin = computed(() => authStore.isAdmin() && !viewStore.active)
 const isExpert = computed(() => authStore.role() === 'EXPERT')
 
 // ===== 专家授权大棚（R27） =====
+// ===== R28：专家申请大棚权限 =====
+const applyDialogVisible = ref(false)
+const applySubmitting = ref(false)
+const applyGreenhouses = ref([])
+const applyForm = ref({ greenhouseId: null, reason: '' })
+const myAuths = ref([])
+const myAuthsLoading = ref(false)
+const authListDialogVisible = ref(false)
+
+function openApplyDialog() {
+  applyDialogVisible.value = true
+  applyForm.value = { greenhouseId: null, reason: '' }
+  loadApplyAvailable()
+}
+
+async function loadApplyAvailable() {
+  try {
+    const res = await getApplyAvailable()
+    applyGreenhouses.value = (res.data || []).filter(g => g.status !== 'APPROVED')
+  } catch (e) { /* 拦截器统一处理 */ }
+}
+
+async function submitApply() {
+  if (!applyForm.value.greenhouseId) { ElMessage.warning('请选择要申请的大棚'); return }
+  applySubmitting.value = true
+  try {
+    const gh = applyGreenhouses.value.find(g => g.greenhouseId === applyForm.value.greenhouseId)
+    await requestAuthorization({
+      userId: gh ? gh.ownerId : null,
+      greenhouseId: applyForm.value.greenhouseId,
+      reason: applyForm.value.reason || ''
+    })
+    ElMessage.success('申请已提交，等待棚主审批')
+    applyDialogVisible.value = false
+    loadMyAuths()
+    loadExpertGreenhouses()
+  } catch (e) { /* 拦截器统一处理 */ } finally { applySubmitting.value = false }
+}
+
+function openAuthList() {
+  authListDialogVisible.value = true
+  loadMyAuths()
+}
+
+async function loadMyAuths() {
+  myAuthsLoading.value = true
+  try {
+    const res = await getMyAuthorizations()
+    myAuths.value = res.data || []
+  } catch (e) { /* 拦截器统一处理 */ } finally { myAuthsLoading.value = false }
+}
+
+function authStatusLabel(s) {
+  const m = { PENDING: '待审批', APPROVED: '已授权', REJECTED: '已拒绝', REVOKED: '已撤销', EXPIRED: '已过期' }
+  return m[s] || s
+}
+
+function authStatusTag(s) {
+  const m = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger', REVOKED: 'info', EXPIRED: 'info' }
+  return m[s] || 'info'
+}
+
+function formatAuthTime(t) {
+  if (!t) return ''
+  const d = new Date(t)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 const expertLoading = ref(false)
 const expertGreenhouses = ref([])
 const expertGhOptions = ref([])
@@ -345,6 +491,7 @@ watch(() => effectiveGreenhouseId.value, (newId) => {
 onMounted(async () => {
   if (isAdmin.value) return
   if (isExpert.value) {
+    loadMyAuths()
     await loadExpertGreenhouses()
     if (!selectedGhId.value) return // 未授权：空白
   }
@@ -398,8 +545,54 @@ onUnmounted(() => {
   color: #94a3b8;
 }
 
+.expert-region-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .expert-blank {
   min-height: 420px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+}
+
+.expert-blank-card {
+  width: 720px;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 32px 24px;
+  text-align: center;
+  color: #e0e6ed;
+}
+
+.expert-blank-tip {
+  margin: 12px 0 16px;
+  font-size: 15px;
+  color: #a0aec0;
+}
+
+.expert-blank-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.my-auth-box {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.my-auth-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e6ed;
+  margin-bottom: 8px;
 }
 
 .range-toolbar {

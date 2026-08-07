@@ -86,6 +86,12 @@ const routes = [
         meta: { title: '员工管理', roles: ['OWNER'] }
       },
       {
+        path: 'authorizations',
+        name: 'Authorizations',
+        component: () => import('@/views/owner/AuthorizationPage.vue'),
+        meta: { title: '授权审批', roles: ['OWNER'] }
+      },
+      {
         path: 'expert/chat',
         name: 'ExpertChat',
         component: () => import('@/views/expert/ExpertChat.vue'),

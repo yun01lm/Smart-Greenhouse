@@ -41,6 +41,26 @@ public class AuthorizationController {
      * 用户查看待处理请求
      * GET /api/v1/expert/authorize/pending
      */
+
+    /**
+     * 专家获取可申请授权的大棚列表
+     * GET /api/v1/expert/authorize/available
+     */
+    @GetMapping("/authorize/available")
+    public ApiResponse<List<Map<String, Object>>> availableGreenhouses() {
+        Long expertId = getCurrentUserId();
+        return ApiResponse.success(expertService.getAvailableGreenhouses(expertId));
+    }
+
+    /**
+     * 专家查看自己的授权申请记录
+     * GET /api/v1/expert/authorize/my
+     */
+    @GetMapping("/authorize/my")
+    public ApiResponse<List<AuthorizationResponse>> myAuthorizations() {
+        Long expertId = getCurrentUserId();
+        return ApiResponse.success(expertService.getMyAuthorizations(expertId));
+    }
     @GetMapping("/authorize/pending")
     public ApiResponse<List<AuthorizationResponse>> pendingAuthorizations() {
         Long userId = getCurrentUserId();

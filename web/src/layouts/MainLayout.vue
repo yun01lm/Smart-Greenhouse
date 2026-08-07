@@ -94,7 +94,7 @@ import { getGreenhouses } from '@/api/greenhouse'
 import { ElMessage } from 'element-plus'
 import {
   ChatDotRound, DataAnalysis, Cpu, UserFilled, Document, WarningFilled,
-  Download, Microphone, Avatar, HomeFilled, ArrowDown
+  Download, Microphone, Avatar, HomeFilled, ArrowDown, Lock
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -123,6 +123,7 @@ const MENU_CONFIG = {
     { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
     { path: '/devices', title: '设备管理', icon: Cpu },
     { path: '/employees', title: '员工管理', icon: UserFilled },
+    { path: '/authorizations', title: '授权审批', icon: Lock },
     { path: '/alerts', title: '预警配置', icon: WarningFilled },
     { path: '/export', title: '数据导出', icon: Download },
     { path: '/knowledge', title: '知识库', icon: Document },

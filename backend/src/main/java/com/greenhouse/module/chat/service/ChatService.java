@@ -117,6 +117,7 @@ public class ChatService {
     /**
      * 获取消息历史
      */
+    @Transactional
     public List<MessageResponse> getMessages(Long conversationId, Long userId, int page, int size) {
         // 校验参与者身份
         ChatConversation conversation = conversationRepository.findById(conversationId)
@@ -124,6 +125,12 @@ public class ChatService {
 
         if (!conversation.getUserId().equals(userId) && !conversation.getExpertId().equals(userId)) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+        // R28：查看消息后按身份标记对方消息已读（专家→用户消息已读；用户→专家消息已读）
+        if (conversation.getExpertId().equals(userId)) {
+            messageRepository.markAsRead(conversationId, ChatMessage.SenderType.USER);
+        } else {
+            messageRepository.markAsRead(conversationId, ChatMessage.SenderType.EXPERT);
         }
 
         Page<ChatMessage> messages = messageRepository
@@ -267,7 +274,8 @@ public class ChatService {
         log.info("对话已重新开启: id={}", conversationId);
     }
 
-        /**
+        /**
+
      * 获取未读消息数
      */
     public long getUnreadCount(Long userId, String role) {
