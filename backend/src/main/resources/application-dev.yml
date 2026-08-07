@@ -114,7 +114,7 @@ ai:
 
 # 天气服务
 weather:
-  provider: mock                # mock | qweather
+  provider: ${WEATHER_PROVIDER:mock}   # mock | qweather（.env.local 注入 WEATHER_PROVIDER）
 
 # 多模态融合配置（论文对比实验：修改权重无需重新编译）
 greenhouse:

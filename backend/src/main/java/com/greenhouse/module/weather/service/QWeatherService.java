@@ -15,13 +15,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,6 +52,9 @@ public class QWeatherService {
 
     /** 缓存有效期：3 小时 */
     private static final long CACHE_DURATION_HOURS = 3;
+
+    /** 中文地名 → 和风 LocationID 内存缓存（避免重复调用 GeoAPI） */
+    private final Map<String, String> locationIdCache = new ConcurrentHashMap<>();
 
     /** 天气数据提供者：mock（本地模拟）或 qweather（和风天气 API） */
     @Value("${weather.provider:mock}")
@@ -144,11 +150,76 @@ public class QWeatherService {
     }
 
     /**
+     * 解析 API 可用 location（LocationID / 经纬度 / 中文地名→GeoAPI 查询）
+     * <p>
+     * 和风 v7 天气 API 的 location 参数仅支持 LocationID、经纬度或拼音，不支持中文地名。
+     * 这里通过 GeoAPI（/geo/v2/city/lookup）将中文地名转换为 LocationID，结果内存缓存；
+     * 已为 LocationID（纯数字）或经纬度（含逗号）时直接使用。
+     * 转换失败时降级返回原值（交由 API 错误处理兜底）。
+     * </p>
+     */
+    private String resolveApiLocation(String location) {
+        if (location == null || location.isBlank()) {
+            return location;
+        }
+        String trimmed = location.trim();
+        // 已是 LocationID（纯数字）或经纬度（含逗号）→ 直接使用
+        if (trimmed.matches("\\d+") || trimmed.contains(",")) {
+            return trimmed;
+        }
+        // 内存缓存命中
+        String cached = locationIdCache.get(trimmed);
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            String id = lookupLocationId(trimmed);
+            if (id != null && !id.isBlank()) {
+                locationIdCache.put(trimmed, id);
+                log.info("中文地名已转换: {} → LocationID={}", trimmed, id);
+                return id;
+            }
+        } catch (Exception e) {
+            log.warn("地理编码失败，降级使用原 location: {}, error={}", trimmed, e.getMessage());
+        }
+        return trimmed;
+    }
+
+    /**
+     * 调用和风 GeoAPI 查询中文地名的 LocationID
+     * GET {baseUrl}/geo/v2/city/lookup?location=北京&number=1&key=xxx
+     */
+    private String lookupLocationId(String name) throws Exception {
+        String url = baseUrl + "/geo/v2/city/lookup?location="
+                + URLEncoder.encode(name, "UTF-8") + "&number=1&key=" + apiKey;
+        Request request = new Request.Builder().url(url).get().build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                log.warn("GeoAPI 请求失败: HTTP {} location={}", response.code(), name);
+                return null;
+            }
+            String body = response.body() != null ? response.body().string() : "";
+            JsonNode root = objectMapper.readTree(body);
+            if (!"200".equals(root.get("code").asText())) {
+                log.warn("GeoAPI 返回错误: code={} location={}", root.get("code").asText(), name);
+                return null;
+            }
+            JsonNode locationArray = root.get("location");
+            if (locationArray == null || !locationArray.isArray() || locationArray.isEmpty()) {
+                log.warn("GeoAPI 未找到匹配: location={}", name);
+                return null;
+            }
+            JsonNode first = locationArray.get(0);
+            return first.has("id") ? first.get("id").asText() : null;
+        }
+    }
+
+    /**
      * 调用和风天气 API 获取当前天气
      */
     private WeatherCurrentResponse fetchCurrentWeather(String location) {
         try {
-            String url = baseUrl + "/v7/weather/now?location=" + location + "&key=" + apiKey;
+            String url = baseUrl + "/v7/weather/now?location=" + resolveApiLocation(location) + "&key=" + apiKey;
 
             Request request = new Request.Builder().url(url).get().build();
 
@@ -210,7 +281,7 @@ public class QWeatherService {
     private WeatherForecastResponse fetchForecast(String location, int days) {
         try {
             String apiPath = days <= 3 ? "/v7/weather/3d" : "/v7/weather/7d";
-            String url = baseUrl + apiPath + "?location=" + location + "&key=" + apiKey;
+            String url = baseUrl + apiPath + "?location=" + resolveApiLocation(location) + "&key=" + apiKey;
 
             Request request = new Request.Builder().url(url).get().build();
 
