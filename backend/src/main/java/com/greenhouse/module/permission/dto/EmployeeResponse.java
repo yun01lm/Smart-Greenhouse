@@ -22,6 +22,7 @@ public class EmployeeResponse {
     private String username;
     private String realName;
     private String phone;
+    private User.Role role;
     private LocalDateTime createdAt;
 
     /** 从 User 实体构建（不含权限信息） */
@@ -31,6 +32,7 @@ public class EmployeeResponse {
                 .username(user.getUsername())
                 .realName(user.getRealName())
                 .phone(user.getPhone())
+                .role(user.getRole())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

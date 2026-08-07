@@ -59,8 +59,8 @@ public class AuthService {
         }
 
         // 员工必须指定归属棚主
-        if (request.getRoleEnum() == User.Role.WORKER && request.getOwnerId() == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "员工注册必须指定归属棚主");
+        if ((request.getRoleEnum() == User.Role.WORKER || request.getRoleEnum() == User.Role.TECHNICIAN) && request.getOwnerId() == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "员工（普通员工/技术员）注册必须指定归属棚主");
         }
 
         // 构建用户实体

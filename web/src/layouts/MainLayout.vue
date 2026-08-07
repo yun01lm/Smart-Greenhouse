@@ -122,11 +122,12 @@ const MENU_CONFIG = {
   OWNER: [
     { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
     { path: '/devices', title: '设备管理', icon: Cpu },
+    { path: '/employees', title: '员工管理', icon: UserFilled },
     { path: '/alerts', title: '预警配置', icon: WarningFilled },
     { path: '/export', title: '数据导出', icon: Download },
     { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
   ],
-  WORKER: [
+  TECHNICIAN: [
     { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
     { path: '/devices', title: '设备管理', icon: Cpu },
     { path: '/alerts', title: '预警配置', icon: WarningFilled },

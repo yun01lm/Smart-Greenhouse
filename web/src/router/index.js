@@ -9,6 +9,12 @@ const routes = [
     meta: { title: '登录' }
   },
   {
+    path: '/blocked',
+    name: 'Blocked',
+    component: () => import('@/views/Blocked.vue'),
+    meta: { title: '请使用APP登录' }
+  },
+  {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
     redirect: '/dashboard',
@@ -17,13 +23,13 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('@/views/dashboard/DashboardPage.vue'),
-        meta: { title: '数据总览', roles: ['ADMIN', 'OWNER', 'WORKER', 'EXPERT'] }
+        meta: { title: '数据总览', roles: ['ADMIN', 'OWNER', 'TECHNICIAN', 'EXPERT'] }
       },
       {
         path: 'devices',
         name: 'Devices',
         component: () => import('@/views/devices/DevicePage.vue'),
-        meta: { title: '设备管理', roles: ['ADMIN', 'OWNER', 'WORKER'] }
+        meta: { title: '设备管理', roles: ['ADMIN', 'OWNER', 'TECHNICIAN'] }
       },
       {
         path: 'users',
@@ -41,13 +47,13 @@ const routes = [
         path: 'alerts',
         name: 'Alerts',
         component: () => import('@/views/alerts/AlertRulePage.vue'),
-        meta: { title: '预警配置', roles: ['OWNER', 'WORKER'] }
+        meta: { title: '预警配置', roles: ['OWNER', 'TECHNICIAN'] }
       },
       {
         path: 'export',
         name: 'Export',
         component: () => import('@/views/export/ReportPage.vue'),
-        meta: { title: '数据导出', roles: ['OWNER', 'WORKER'] }
+        meta: { title: '数据导出', roles: ['OWNER', 'TECHNICIAN'] }
       },
       {
         path: 'monitor',
@@ -74,10 +80,16 @@ const routes = [
         meta: { title: '棚主管理', roles: ['ADMIN'] }
       },
       {
+        path: 'employees',
+        name: 'Employees',
+        component: () => import('@/views/owner/EmployeeManage.vue'),
+        meta: { title: '员工管理', roles: ['OWNER'] }
+      },
+      {
         path: 'qa',
         name: 'Qa',
         component: () => import('@/views/qa/QaPage.vue'),
-        meta: { title: 'AI 问答', roles: ['ADMIN', 'OWNER', 'WORKER', 'EXPERT'] }
+        meta: { title: 'AI 问答', roles: ['ADMIN', 'OWNER', 'TECHNICIAN', 'EXPERT'] }
       }
     ]
   }
@@ -99,8 +111,13 @@ router.beforeEach((to, from, next) => {
     next('/dashboard')
     return
   }
-  // 角色权限校验（R10：棚主视角下有效角色为 OWNER，放行棚主页面）
+  // 普通员工不登录 Web 端（R23）：一律进入提示页
   const user = JSON.parse(localStorage.getItem('user') || 'null')
+  if (user?.role === 'WORKER' && to.path !== '/blocked') {
+    next('/blocked')
+    return
+  }
+  // 角色权限校验（R10：棚主视角下有效角色为 OWNER，放行棚主页面）
   const viewStore = useViewModeStore()
   const role = viewStore.active ? 'OWNER' : (user?.role || '')
   const allowed = to.meta?.roles

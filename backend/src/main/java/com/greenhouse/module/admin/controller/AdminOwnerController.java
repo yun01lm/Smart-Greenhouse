@@ -63,7 +63,8 @@ public class AdminOwnerController {
             if (!matchRegion(ghs, province, city, district, town, village)) continue;
 
             long greenhouseCount = ghs.size();
-            long employeeCount = userRepository.countByRoleAndOwnerId(User.Role.WORKER, owner.getId());
+            long employeeCount = userRepository.countByRoleAndOwnerId(User.Role.WORKER, owner.getId())
+                    + userRepository.countByRoleAndOwnerId(User.Role.TECHNICIAN, owner.getId());
 
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", owner.getId());

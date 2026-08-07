@@ -228,6 +228,12 @@ public class DeviceService {
                     throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
                 }
                 return;
+            case TECHNICIAN:
+                // 技术员与普通员工同走权限表校验（默认权限全开，可被棚主收紧）
+                if (permissionRepository.findByEmployeeIdAndGreenhouseId(userId, greenhouse.getId()).isEmpty()) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
+                return;
             default:
                 throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }

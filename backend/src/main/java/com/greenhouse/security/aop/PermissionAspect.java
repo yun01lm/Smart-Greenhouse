@@ -104,6 +104,17 @@ public class PermissionAspect {
                     throw new BusinessException(ErrorCode.FUNCTION_DENIED);
                 }
             }
+            case TECHNICIAN -> {
+                // 技术员与普通员工同走权限表校验（默认权限全开，可被棚主收紧）
+                Optional<EmployeePermission> techPerm = permissionRepository
+                        .findByEmployeeIdAndGreenhouseId(userId, greenhouseId);
+                if (techPerm.isEmpty()) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
+                if (!techPerm.get().getCanViewData()) {
+                    throw new BusinessException(ErrorCode.FUNCTION_DENIED);
+                }
+            }
             case EXPERT -> {
                 // 检查是否有有效的数据授权（APPROVED + 未过期）
                 java.time.LocalDateTime now = java.time.LocalDateTime.now();
@@ -145,8 +156,8 @@ public class PermissionAspect {
             return; // 专家权限已由 checkGreenhouseAccess 校验
         }
 
-        // 仅 WORKER 需要校验
-        if (role == User.Role.WORKER) {
+        // 仅员工层级（WORKER/TECHNICIAN）需要校验权限位
+        if (role == User.Role.WORKER || role == User.Role.TECHNICIAN) {
             Long greenhouseId = extractGreenhouseId(joinPoint);
             if (greenhouseId == null) {
                 log.warn("@RequireFunction 无法从方法参数中提取 greenhouseId: {}",

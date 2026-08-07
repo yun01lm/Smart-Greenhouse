@@ -106,6 +106,19 @@ public class GreenhouseService {
                     greenhouses = greenhouseRepository.findAllById(authorizedIds);
                 }
                 break;
+            case TECHNICIAN:
+                // 技术员与普通员工同走权限表（默认权限全开，可被棚主收紧）
+                List<Long> techIds = permissionRepository.findByEmployeeId(userId)
+                        .stream()
+                        .map(p -> p.getGreenhouseId())
+                        .distinct()
+                        .toList();
+                if (techIds.isEmpty()) {
+                    greenhouses = List.of();
+                } else {
+                    greenhouses = greenhouseRepository.findAllById(techIds);
+                }
+                break;
             default:
                 greenhouses = List.of();
         }

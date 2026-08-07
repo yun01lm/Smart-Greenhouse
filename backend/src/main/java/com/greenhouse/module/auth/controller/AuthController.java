@@ -28,13 +28,16 @@ public class AuthController {
     private final UserRepository userRepository;
 
     /**
-     * 用户注册
+     * 用户注册（R23 已关闭）
      * POST /api/v1/auth/register
+     * <p>
+     * 账号只能由管理员（创建棚主/专家/所有账号）或棚主（创建员工账号）创建，
+     * 不再开放公开自助注册。此端点保留仅为返回明确提示，不执行任何注册逻辑。
+     * </p>
      */
     @PostMapping("/register")
-    public ApiResponse<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        LoginResponse response = authService.register(request);
-        return ApiResponse.success("注册成功", response);
+    public ApiResponse<Void> register(@Valid @RequestBody RegisterRequest request) {
+        return ApiResponse.error("注册功能已关闭，账号请联系管理员或棚主创建");
     }
 
     /**

@@ -56,6 +56,7 @@ public class ProfileFragment extends Fragment {
         switch (role) {
             case "OWNER": roleText = "棚主"; break;
             case "WORKER": roleText = "员工"; break;
+            case "TECHNICIAN": roleText = "技术员"; break;
             case "EXPERT": roleText = "专家"; break;
             case "ADMIN": roleText = "管理员"; break;
             default: roleText = role;

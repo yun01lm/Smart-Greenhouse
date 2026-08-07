@@ -7,7 +7,9 @@ import com.greenhouse.module.qa.dto.QaHistoryItem;
 import com.greenhouse.module.qa.dto.QaResponse;
 import com.greenhouse.module.qa.service.RagQaService;
 import com.greenhouse.module.qa.service.VoiceQaService;
+import com.greenhouse.entity.User;
 import com.greenhouse.repository.QaRecordRepository;
+import com.greenhouse.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -44,6 +46,7 @@ public class QaController {
     private final RagQaService ragQaService;
     private final VoiceQaService voiceQaService;
     private final QaRecordRepository recordRepository;
+    private final UserRepository userRepository;
 
     /**
      * 文字问答
@@ -54,6 +57,7 @@ public class QaController {
             @Valid @RequestBody QaAskRequest request) {
 
         Long userId = getCurrentUserId();
+        assertNotWorker(userId);
         QaResponse result = ragQaService.askText(
                 userId, request.getQuestion(), request.getGreenhouseId());
 
@@ -73,6 +77,7 @@ public class QaController {
             @RequestParam(required = false) Long greenhouseId) {
 
         Long userId = getCurrentUserId();
+        assertNotWorker(userId);
         QaResponse result = voiceQaService.askVoice(userId, greenhouseId, audioFile);
 
         return ApiResponse.success("语音识别完成", result);
@@ -93,6 +98,7 @@ public class QaController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
         Long userId = getCurrentUserId();
+        assertNotWorker(userId);
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.min(Math.max(size, 1), 100));
 
         Page<QaHistoryItem> items;
@@ -112,6 +118,18 @@ public class QaController {
     }
 
     // ===== 辅助方法 =====
+
+    /**
+     * R23：普通员工（WORKER）无 AI 问答/专家咨询权限，直接拒绝
+     */
+    private void assertNotWorker(Long userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            if (user.getRole() == User.Role.WORKER) {
+                throw new com.greenhouse.common.BusinessException(
+                        com.greenhouse.common.ErrorCode.FUNCTION_DENIED, "普通员工无 AI 问答权限");
+            }
+        });
+    }
 
     private Long getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

@@ -126,6 +126,7 @@ public class AdminService {
         return switch (u.getRole()) {
             case OWNER -> u.getId();
             case WORKER -> u.getOwnerId();
+            case TECHNICIAN -> u.getOwnerId();
             default -> null;
         };
     }
@@ -265,8 +266,8 @@ public class AdminService {
             throw new BusinessException(ErrorCode.PHONE_EXISTS);
         }
         // 员工必须指定归属棚主
-        if (role == User.Role.WORKER && request.getOwnerId() == null) {
-            throw new BusinessException(ErrorCode.PARAM_ERROR, "员工必须指定归属棚主");
+        if ((role == User.Role.WORKER || role == User.Role.TECHNICIAN) && request.getOwnerId() == null) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "员工（普通员工/技术员）必须指定归属棚主");
         }
         // 归属棚主必须存在
         if (request.getOwnerId() != null) {
@@ -349,6 +350,7 @@ public class AdminService {
             case ADMIN -> "管理员";
             case OWNER -> "棚主";
             case WORKER -> "员工";
+            case TECHNICIAN -> "技术员";
             case EXPERT -> "专家";
         };
     }

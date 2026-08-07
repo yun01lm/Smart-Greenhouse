@@ -39,7 +39,7 @@ public class ReportAccessService {
         Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
         boolean allowed = (user.getRole() == User.Role.OWNER && greenhouse.getOwnerId().equals(userId))
-                || (user.getRole() == User.Role.WORKER
+                || ((user.getRole() == User.Role.WORKER || user.getRole() == User.Role.TECHNICIAN)
                     && permissionRepository.existsByEmployeeIdAndGreenhouseId(userId, greenhouseId));
         if (!allowed) {
             throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);

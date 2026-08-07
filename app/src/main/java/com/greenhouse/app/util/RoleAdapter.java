@@ -31,6 +31,7 @@ public class RoleAdapter {
 
     public static final String ROLE_OWNER = "OWNER";
     public static final String ROLE_WORKER = "WORKER";
+    public static final String ROLE_TECHNICIAN = "TECHNICIAN";
 
     // 员工权限 Key（与后端 employee_permissions 表字段对应）
     public static final String PERM_VIEW_DATA = "can_view_data";
@@ -50,10 +51,17 @@ public class RoleAdapter {
     }
 
     /**
-     * 当前用户是否为员工
+     * 当前用户是否为普通员工
      */
     public static boolean isWorker() {
         return ROLE_WORKER.equals(TokenManager.getRole());
+    }
+
+    /**
+     * 当前用户是否为技术员（R23：默认拥有全部权限，可被棚主收紧）
+     */
+    public static boolean isTechnician() {
+        return ROLE_TECHNICIAN.equals(TokenManager.getRole());
     }
 
     /**
@@ -76,8 +84,8 @@ public class RoleAdapter {
      * @return true 表示有权限
      */
     public static boolean hasPermission(String permission) {
-        // 棚主拥有所有权限
-        if (isOwner()) return true;
+        // 棚主/技术员默认拥有所有权限（技术员权限可被棚主收紧，后端强制校验）
+        if (isOwner() || isTechnician()) return true;
 
         // 员工：检查缓存的权限位
         return TokenManager.getBoolean(permission, false);

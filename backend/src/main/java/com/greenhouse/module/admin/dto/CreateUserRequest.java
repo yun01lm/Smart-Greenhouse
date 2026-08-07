@@ -25,11 +25,11 @@ public class CreateUserRequest {
     @Size(max = 50, message = "真实姓名最长50字")
     private String realName;
 
-    /** 角色：ADMIN/OWNER/WORKER/EXPERT */
+    /** 角色：ADMIN/OWNER/WORKER/TECHNICIAN/EXPERT（R23 新增技术员） */
     @NotBlank(message = "角色不能为空")
     private String role;
 
-    /** 员工归属棚主ID（仅WORKER角色必填） */
+    /** 员工归属棚主ID（WORKER/TECHNICIAN 角色必填，R23） */
     private Long ownerId;
 
     public User.Role getRoleEnum() {

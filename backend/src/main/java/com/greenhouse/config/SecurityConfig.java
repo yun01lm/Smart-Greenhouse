@@ -55,7 +55,7 @@ public class SecurityConfig {
                 // 路径权限配置
                 .authorizeHttpRequests(auth -> auth
                         // === 白名单（无需认证） ===
-                        .requestMatchers("/api/v1/auth/register").permitAll()
+                        // R23：公开注册已关闭，账号仅由管理员/棚主创建，不再放行 /api/v1/auth/register
                         .requestMatchers("/api/v1/auth/login").permitAll()
                         // WebSocket 握手
                         .requestMatchers("/ws/**").permitAll()

@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 员工管理 API（棚主端）
+ * 员工管理 API（棚主端，R23 支持技术员）
  * <p>
- * 棚主管理自己的员工及其权限。
+ * 棚主管理自己的员工（普通员工 WORKER / 技术员 TECHNICIAN）及其权限。
  * 路径前缀：/api/v1/owner/employees
  * </p>
  */
@@ -47,6 +47,19 @@ public class PermissionController {
     }
 
     /**
+     * 重置员工密码（R23：棚主初始化自己名下员工的账号密码）
+     * PUT /api/v1/owner/employees/{employeeId}/password
+     */
+    @PutMapping("/{employeeId}/password")
+    public ApiResponse<Void> resetEmployeePassword(
+            @PathVariable Long employeeId,
+            @Valid @RequestBody ResetEmployeePasswordRequest request) {
+        Long ownerId = getCurrentUserId();
+        permissionService.resetEmployeePassword(ownerId, employeeId, request.getNewPassword());
+        return ApiResponse.success("密码重置成功", null);
+    }
+
+    /**
      * 查看员工权限
      * GET /api/v1/owner/employees/{employeeId}/permissions
      */
@@ -68,10 +81,6 @@ public class PermissionController {
         PermissionResponse response = permissionService.updatePermission(ownerId, employeeId, request);
         return ApiResponse.success("权限更新成功", response);
     }
-
-    /**
-     * 删除员工
-     * DELETE /api/v1/owner/employees/{employeeId}
 
     /**
      * 更新员工基本信息

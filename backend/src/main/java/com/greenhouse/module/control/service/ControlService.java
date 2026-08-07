@@ -178,6 +178,12 @@ public class ControlService {
                     throw new BusinessException(ErrorCode.FUNCTION_DENIED);
                 }
                 return;
+            case TECHNICIAN:
+                var techPerm = permissionRepository.findByEmployeeIdAndGreenhouseId(userId, greenhouse.getId());
+                if (techPerm.isEmpty() || !techPerm.get().getCanControlDevice()) {
+                    throw new BusinessException(ErrorCode.FUNCTION_DENIED);
+                }
+                return;
             default:
                 throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }

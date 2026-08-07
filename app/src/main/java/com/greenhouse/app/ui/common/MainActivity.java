@@ -69,7 +69,8 @@ public class MainActivity extends AppCompatActivity {
      * </p>
      */
     private void applyRoleTabFilter() {
-        if (RoleAdapter.isOwner()) return;
+        // 棚主/技术员：全部 Tab 可见（R23）
+        if (RoleAdapter.isOwner() || RoleAdapter.isTechnician()) return;
 
         // 员工：AI 助手 Tab 可见性
         if (!RoleAdapter.isAiAssistantVisible()) {

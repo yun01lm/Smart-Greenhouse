@@ -101,10 +101,11 @@ public class User {
     // ===== 角色枚举 =====
 
     public enum Role {
-        ADMIN,   // 管理员（仅Web端）
-        OWNER,   // 棚主（APP+Web端）
-        WORKER,  // 员工（仅APP端）
-        EXPERT   // 专家（仅Web端）
+        ADMIN,       // 管理员（仅Web端）
+        OWNER,       // 棚主（APP+Web端）
+        WORKER,      // 普通员工（仅APP端）
+        TECHNICIAN,  // 技术员（APP+Web端，员工层级，默认权限高于普通员工）
+        EXPERT       // 专家（仅Web端）
     }
 
     public enum ExpertStatus {

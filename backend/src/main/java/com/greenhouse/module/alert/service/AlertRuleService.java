@@ -91,7 +91,7 @@ public class AlertRuleService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         boolean allowed = (user.getRole() == User.Role.OWNER && greenhouse.getOwnerId().equals(userId))
-                || (user.getRole() == User.Role.WORKER
+                || ((user.getRole() == User.Role.WORKER || user.getRole() == User.Role.TECHNICIAN)
                     && permissionRepository.existsByEmployeeIdAndGreenhouseId(userId, greenhouseId));
         if (!allowed) {
             throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
@@ -109,7 +109,7 @@ public class AlertRuleService {
                     .map(Greenhouse::getId)
                     .toList();
         }
-        if (user.getRole() == User.Role.WORKER) {
+        if (user.getRole() == User.Role.WORKER || user.getRole() == User.Role.TECHNICIAN) {
             return permissionRepository.findByEmployeeId(userId).stream()
                     .map(EmployeePermission::getGreenhouseId)
                     .distinct()
