@@ -12,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
@@ -106,6 +109,15 @@ public class KnowledgeController {
     }
 
     /**
+     * 文档内容预览（阅读权限：ADMIN/OWNER/TECHNICIAN/EXPERT）
+     * GET /api/v1/knowledge/documents/{id}/content
+     */
+    @GetMapping("/documents/{id}/content")
+    public ResponseEntity<byte[]> getDocumentContent(@PathVariable Long id) {
+        return knowledgeService.getDocumentContent(id);
+    }
+
+        /**
      * 问答测试
      * POST /api/v1/knowledge/test
      */

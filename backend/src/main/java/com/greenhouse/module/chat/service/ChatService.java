@@ -10,6 +10,7 @@ import com.greenhouse.module.chat.dto.MessageResponse;
 import com.greenhouse.module.chat.dto.SendMessageRequest;
 import com.greenhouse.module.sensor.service.SensorDataService;
 import com.greenhouse.repository.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ public class ChatService {
     private final GreenhouseRepository greenhouseRepository;
     private final SensorDataService sensorDataService;
     private final ObjectMapper objectMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * 创建对话（发起求助）
@@ -180,7 +182,11 @@ public class ChatService {
         log.info("消息已发送: convId={}, sender={}, type={}",
                 message.getConversationId(), senderType, messageType);
 
-        return MessageResponse.fromEntity(message);
+        // R27：WebSocket 实时推送给对话双方（用户 + 专家）
+        MessageResponse response = MessageResponse.fromEntity(message);
+        pushChatMessage(conversation.getUserId(), conversation.getExpertId(), response);
+
+        return response;
     }
 
     /**
@@ -248,7 +254,26 @@ public class ChatService {
         }
     }
 
-    // ===== 私有方法 =====
+    /**
+     * WebSocket 推送聊天消息到对话双方（R27）
+     * <p>客户端订阅 /user/queue/chat 接收；STOMP Principal 使用 username。</p>
+     */
+    private void pushChatMessage(Long userId, Long expertId, MessageResponse payload) {
+        try {
+            String user = userRepository.findById(userId).map(User::getUsername).orElse(null);
+            String expert = userRepository.findById(expertId).map(User::getUsername).orElse(null);
+            if (user != null) {
+                messagingTemplate.convertAndSendToUser(user, "/queue/chat", payload);
+            }
+            if (expert != null) {
+                messagingTemplate.convertAndSendToUser(expert, "/queue/chat", payload);
+            }
+        } catch (Exception e) {
+            log.warn("聊天消息 WebSocket 推送失败: convId={}, error={}", payload.getConversationId(), e.getMessage());
+        }
+    }
+
+        // ===== 私有方法 =====
 
     /**
      * 获取最后一条消息的预览文本

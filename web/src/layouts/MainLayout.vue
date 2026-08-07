@@ -14,7 +14,7 @@
         </div>
         <!-- 大棚选择器（棚主视角下显示该棚主的大棚） -->
         <el-select
-          v-if="!authStore.isAdmin() || viewStore.active"
+          v-if="(!authStore.isAdmin() && authStore.role() !== 'EXPERT') || viewStore.active"
           v-model="selectGreenhouseId"
           placeholder="选择大棚"
           style="width: 200px; margin-right: 16px"
@@ -125,6 +125,7 @@ const MENU_CONFIG = {
     { path: '/employees', title: '员工管理', icon: UserFilled },
     { path: '/alerts', title: '预警配置', icon: WarningFilled },
     { path: '/export', title: '数据导出', icon: Download },
+    { path: '/knowledge', title: '知识库', icon: Document },
     { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
   ],
   TECHNICIAN: [
@@ -132,10 +133,13 @@ const MENU_CONFIG = {
     { path: '/devices', title: '设备管理', icon: Cpu },
     { path: '/alerts', title: '预警配置', icon: WarningFilled },
     { path: '/export', title: '数据导出', icon: Download },
+    { path: '/knowledge', title: '知识库', icon: Document },
     { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
   ],
   EXPERT: [
     { path: '/dashboard', title: '数据总览', icon: DataAnalysis },
+    { path: '/expert/chat', title: '咨询会话', icon: ChatDotRound },
+    { path: '/knowledge', title: '知识库', icon: Document },
     { path: '/qa', title: 'AI 问答', icon: ChatDotRound }
   ]
 }

@@ -22,6 +22,7 @@ public class GreenhouseResponse {
     private String location;
     private String cropType;
     private Long ownerId;
+    private String ownerName;
     private String province;
     private String city;
     private String district;

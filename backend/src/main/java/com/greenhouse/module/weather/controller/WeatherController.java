@@ -6,6 +6,7 @@ import com.greenhouse.module.weather.dto.WeatherCurrentResponse;
 import com.greenhouse.module.weather.dto.WeatherForecastResponse;
 import com.greenhouse.module.weather.service.QWeatherService;
 import com.greenhouse.repository.GreenhouseRepository;
+import com.greenhouse.security.annotations.RequireGreenhouseAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,7 @@ public class WeatherController {
      * @param greenhouseId 大棚ID，可选；未传 location 时按大棚登记的 city 查询
      */
     @GetMapping("/current")
+    @RequireGreenhouseAccess
     public ApiResponse<WeatherCurrentResponse> current(
             @RequestParam(required = false) String location,
             @RequestParam(required = false) Long greenhouseId) {

@@ -13,6 +13,7 @@ import com.greenhouse.module.alert.dto.AlertRuleResponse;
 import com.greenhouse.module.alert.dto.ThresholdRequest;
 import com.greenhouse.module.alert.dto.ThresholdResponse;
 import com.greenhouse.module.alert.service.AlertRuleService;
+import com.greenhouse.security.annotations.RequireGreenhouseAccess;
 import com.greenhouse.module.alert.service.AlertService;
 import com.greenhouse.module.alert.service.AlertThresholdService;
 import jakarta.validation.Valid;
@@ -50,6 +51,7 @@ public class AlertController {
      * GET /api/v1/alerts?greenhouseId=1&page=0&size=20&level=WARNING
      */
     @GetMapping
+    @RequireGreenhouseAccess
     public ApiResponse<PageResult<AlertResponse>> list(
             @RequestParam Long greenhouseId,
             @RequestParam(defaultValue = "0") int page,
@@ -94,6 +96,7 @@ public class AlertController {
      * GET /api/v1/alerts/unread-count?greenhouseId=1
      */
     @GetMapping("/unread-count")
+    @RequireGreenhouseAccess
     public ApiResponse<Map<String, Object>> unreadCount(@RequestParam Long greenhouseId) {
         return ApiResponse.success(alertService.getUnreadCount(greenhouseId));
     }

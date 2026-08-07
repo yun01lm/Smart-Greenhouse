@@ -556,6 +556,34 @@ public class KnowledgeService {
     }
 
     /**
+     * 文档内容预览（只读角色可调用，返回原文件内容）
+     */
+    public org.springframework.http.ResponseEntity<byte[]> getDocumentContent(Long id) {
+        KnowledgeDocument doc = documentRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "文档不存在"));
+        if (doc.getFilePath() == null || doc.getFilePath().isBlank()) {
+            return org.springframework.http.ResponseEntity.ok("（无文件内容）".getBytes(StandardCharsets.UTF_8));
+        }
+        try {
+            Path filePath = uploadDir.resolve(doc.getFilePath());
+            byte[] bytes = Files.readAllBytes(filePath);
+            org.springframework.http.MediaType mediaType = "pdf".equalsIgnoreCase(doc.getFileType())
+                    ? org.springframework.http.MediaType.APPLICATION_PDF
+                    : org.springframework.http.MediaType.parseMediaType("text/plain;charset=UTF-8");
+            String filename = java.net.URLEncoder.encode(
+                    (doc.getTitle() == null ? "document" : doc.getTitle()) + "." + doc.getFileType(),
+                    StandardCharsets.UTF_8);
+            return org.springframework.http.ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .header("Content-Disposition", "inline; filename*=UTF-8''" + filename)
+                    .body(bytes);
+        } catch (IOException e) {
+            log.error("读取文档内容失败: id={}, filePath={}", id, doc.getFilePath(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "文档内容读取失败");
+        }
+    }
+
+        /**
      * 问答测试
      */
     public KnowledgeTestResponse testQa(KnowledgeTestRequest request) {

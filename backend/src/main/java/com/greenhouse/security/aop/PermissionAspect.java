@@ -79,6 +79,10 @@ public class PermissionAspect {
         // 提取 greenhouseId
         Long greenhouseId = extractGreenhouseId(joinPoint);
         if (greenhouseId == null) {
+            // greenhouseId 参数显式为空（如天气接口仅按 location 查询）时跳过校验
+            if (hasNullGreenhouseIdParam(joinPoint)) {
+                return;
+            }
             log.warn("@RequireGreenhouseAccess 无法从方法参数中提取 greenhouseId: {}",
                     joinPoint.getSignature().toShortString());
             throw new BusinessException(ErrorCode.PARAM_ERROR, "无法确定大棚ID");
@@ -201,7 +205,23 @@ public class PermissionAspect {
      * 3. 支持 @PathVariable 和 @RequestParam 注解
      * </p>
      */
-    private Long extractGreenhouseId(JoinPoint joinPoint) {
+    /**
+     * 方法是否存在显式 greenhouseId 参数但值为 null（用于天气等可选大棚场景）
+     */
+    private boolean hasNullGreenhouseIdParam(JoinPoint joinPoint) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        Method method = signature.getMethod();
+        Parameter[] parameters = method.getParameters();
+        Object[] args = joinPoint.getArgs();
+        for (int i = 0; i < parameters.length; i++) {
+            if ("greenhouseId".equals(getParameterName(parameters[i])) && args[i] == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+        private Long extractGreenhouseId(JoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         Parameter[] parameters = method.getParameters();

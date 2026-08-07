@@ -2,7 +2,9 @@ package com.greenhouse.module.greenhouse.service;
 
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.entity.DataAuthorization;
 import com.greenhouse.entity.Greenhouse;
+import com.greenhouse.repository.DataAuthorizationRepository;
 import com.greenhouse.entity.User;
 import com.greenhouse.module.greenhouse.dto.GreenhouseRequest;
 import com.greenhouse.module.greenhouse.dto.GreenhouseResponse;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 /**
  * 大棚管理服务
@@ -30,6 +33,7 @@ public class GreenhouseService {
     private final GreenhouseRepository greenhouseRepository;
     private final UserRepository userRepository;
     private final EmployeePermissionRepository permissionRepository;
+    private final DataAuthorizationRepository dataAuthorizationRepository;
 
     /** 每个棚主最多创建的大棚数量 */
     private static final long MAX_GREENHOUSES_PER_OWNER = 10;
@@ -119,12 +123,29 @@ public class GreenhouseService {
                     greenhouses = greenhouseRepository.findAllById(techIds);
                 }
                 break;
+            case EXPERT:
+                // 专家：仅返回已授权（APPROVED 且未过期）的大棚
+                List<Long> authIds = dataAuthorizationRepository
+                        .findByExpertIdAndStatusOrderByApprovedAtDesc(userId, DataAuthorization.AuthorizationStatus.APPROVED)
+                        .stream()
+                        .filter(a -> a.getExpiresAt() != null && a.getExpiresAt().isAfter(LocalDateTime.now()))
+                        .map(DataAuthorization::getGreenhouseId)
+                        .distinct()
+                        .toList();
+                greenhouses = authIds.isEmpty() ? List.of() : greenhouseRepository.findAllById(authIds);
+                break;
             default:
                 greenhouses = List.of();
         }
 
         return greenhouses.stream()
-                .map(GreenhouseResponse::fromEntity)
+                .map(gh -> {
+                    GreenhouseResponse resp = GreenhouseResponse.fromEntity(gh);
+                    resp.setOwnerName(userRepository.findById(gh.getOwnerId())
+                            .map(User::getRealName)
+                            .orElse(""));
+                    return resp;
+                })
                 .collect(Collectors.toList());
     }
 

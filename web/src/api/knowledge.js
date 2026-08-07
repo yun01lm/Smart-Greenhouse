@@ -63,3 +63,11 @@ export function updateCategory(id, data) {
 export function deleteCategory(id) {
   return request.delete(`/knowledge/categories/managed/${id}`)
 }
+
+/** 文档内容预览（只读角色；返回 blob） */
+export function getDocumentContent(id) {
+  return request.get(`/knowledge/documents/${id}/content`, {
+    responseType: 'blob',
+    timeout: 60000
+  })
+}

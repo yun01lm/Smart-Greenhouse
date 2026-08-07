@@ -41,7 +41,7 @@ const routes = [
         path: 'knowledge',
         name: 'Knowledge',
         component: () => import('@/views/knowledge/KnowledgePage.vue'),
-        meta: { title: '知识库管理', roles: ['ADMIN'] }
+        meta: { title: '知识库', roles: ['ADMIN', 'OWNER', 'TECHNICIAN', 'EXPERT'] }
       },
       {
         path: 'alerts',
@@ -84,6 +84,12 @@ const routes = [
         name: 'Employees',
         component: () => import('@/views/owner/EmployeeManage.vue'),
         meta: { title: '员工管理', roles: ['OWNER'] }
+      },
+      {
+        path: 'expert/chat',
+        name: 'ExpertChat',
+        component: () => import('@/views/expert/ExpertChat.vue'),
+        meta: { title: '咨询会话', roles: ['EXPERT'] }
       },
       {
         path: 'qa',

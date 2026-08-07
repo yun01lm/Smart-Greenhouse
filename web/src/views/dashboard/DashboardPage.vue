@@ -5,13 +5,45 @@
 
     <!-- 农户/员工/专家：按大棚的数据总览 -->
     <template v-else>
+      <!-- 专家（R27）：授权大棚地区级联选择 -->
+      <div v-if="isExpert" class="expert-region-row">
+        <div class="expert-region-inner">
+          <el-icon :size="16"><Location /></el-icon>
+          <span class="expert-region-label">查看大棚</span>
+          <el-cascader
+            v-if="expertGhOptions.length"
+            v-model="expertGhPath"
+            :options="expertGhOptions"
+            placeholder="选择已授权大棚（按地区分类）"
+            clearable
+            style="width: 420px"
+            @change="onExpertGhChange"
+          />
+          <span v-else-if="expertLoading" class="expert-loading-text">加载授权大棚中...</span>
+        </div>
+        <span v-if="selectedGhName" class="expert-gh-name">当前：{{ selectedGhName }}</span>
+      </div>
+
+      <!-- 专家未授权：整页空白（无卡片、无模拟曲线） -->
+      <div v-if="isExpert && !expertLoading && expertGhOptions.length === 0" class="expert-blank"></div>
+
+      <template v-else-if="!isExpert || expertGhOptions.length > 0">
       <!-- 传感器卡片 -->
       <SensorCards :data="realtimeData" />
+
+      <!-- 历史数据时间范围（R27） -->
+      <div v-if="!isAdmin" class="range-toolbar">
+        <el-radio-group v-model="historyRange" size="small" @change="onRangeChange">
+          <el-radio-button value="24h">近24小时</el-radio-button>
+          <el-radio-button value="7d">近7天</el-radio-button>
+          <el-radio-button value="30d">近30天</el-radio-button>
+        </el-radio-group>
+      </div>
 
       <!-- 中部：趋势图 + 健康评分 -->
       <div class="middle-row">
         <div class="chart-area">
-          <TrendChart :history-data="historyData" :forecast-data="forecastData" />
+          <TrendChart :history-data="historyData" :forecast-data="forecastData" :allow-mock="!isExpert" />
         </div>
         <div class="score-area">
           <HealthScore :data="healthData" />
@@ -42,6 +74,7 @@
           </div>
         </div>
       </div>
+      </template>
     </template>
   </div>
 </template>
@@ -59,8 +92,9 @@ import { getRealtimeData, getSensorHistory, getSensorForecast } from '@/api/sens
 import { getHealthScore } from '@/api/health'
 import { getAlerts, getUnreadAlertCount } from '@/api/alert'
 import { getCurrentWeather } from '@/api/weather'
+import { getGreenhouses } from '@/api/greenhouse'
 import realtimeClient from '@/utils/websocket'
-import { Cloudy } from '@element-plus/icons-vue'
+import { Cloudy, Location } from '@element-plus/icons-vue'
 
 const props = defineProps({
   greenhouseId: { type: Number, default: 1 }
@@ -70,6 +104,26 @@ const authStore = useAuthStore()
 const viewStore = useViewModeStore()
 // R10：管理员进入棚主视角后按棚主版数据总览展示
 const isAdmin = computed(() => authStore.isAdmin() && !viewStore.active)
+const isExpert = computed(() => authStore.role() === 'EXPERT')
+
+// ===== 专家授权大棚（R27） =====
+const expertLoading = ref(false)
+const expertGreenhouses = ref([])
+const expertGhOptions = ref([])
+const expertGhPath = ref([])
+const selectedGhId = ref(null)
+const selectedGhName = ref('')
+
+// 历史数据时间范围（R27）
+const historyRange = ref('24h')
+const RANGE_CONFIG = {
+  '24h': { ms: 24 * 3600 * 1000, interval: '1h' },
+  '7d': { ms: 7 * 24 * 3600 * 1000, interval: '6h' },
+  '30d': { ms: 30 * 24 * 3600 * 1000, interval: '1d' }
+}
+
+/** 生效中的大棚ID：专家用自选授权大棚，其他角色用全局选择器 */
+const effectiveGreenhouseId = computed(() => (isExpert.value ? selectedGhId.value : props.greenhouseId))
 
 const realtimeData = ref({})
 const historyData = ref([])
@@ -144,22 +198,92 @@ function buildForecast(tempPoints, humPoints) {
   return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
 }
 
+function findOrCreate(children, value, label) {
+  let node = children.find(n => n.value === value)
+  if (!node) {
+    node = { value, label, children: [] }
+    children.push(node)
+  }
+  return node
+}
+
+/** 把授权大棚按 省→市→县→乡镇→村→棚主→大棚 构建级联选项 */
+function buildExpertOptions(list) {
+  const root = []
+  for (const gh of list) {
+    const p = findOrCreate(root, gh.province || '未知省份', gh.province || '未知省份')
+    const c1 = findOrCreate(p.children, p.value + '|' + (gh.city || '未知城市'), gh.city || '未知城市')
+    const d = findOrCreate(c1.children, c1.value + '|' + (gh.district || '未知区县'), gh.district || '未知区县')
+    const t = findOrCreate(d.children, d.value + '|' + (gh.town || '未知乡镇'), gh.town || '未知乡镇')
+    const v = findOrCreate(t.children, t.value + '|' + (gh.village || '未知村'), gh.village || '未知村')
+    const owner = findOrCreate(v.children, v.value + '|' + (gh.ownerName || '未知棚主'), gh.ownerName || '未知棚主')
+    owner.children.push({ value: gh.id, label: gh.name })
+  }
+  return root
+}
+
+/** 取第一个叶子节点的级联路径（默认选中） */
+function firstLeafPath(options) {
+  const path = []
+  let level = options
+  while (level && level.length) {
+    const first = level[0]
+    path.push(first.value)
+    level = first.children
+  }
+  return path
+}
+
+function onExpertGhChange(path) {
+  const ghId = path && path.length ? Number(path[path.length - 1]) : null
+  selectedGhId.value = ghId
+  selectedGhName.value = ghId
+    ? (expertGreenhouses.value.find(g => g.id === ghId)?.name || '')
+    : ''
+}
+
+async function loadExpertGreenhouses() {
+  expertLoading.value = true
+  try {
+    const res = await getGreenhouses()
+    expertGreenhouses.value = res.data || []
+    expertGhOptions.value = buildExpertOptions(expertGreenhouses.value)
+    if (expertGhOptions.value.length) {
+      expertGhPath.value = firstLeafPath(expertGhOptions.value)
+      const ghId = Number(expertGhPath.value[expertGhPath.value.length - 1])
+      selectedGhId.value = ghId
+      selectedGhName.value = expertGreenhouses.value.find(g => g.id === ghId)?.name || ''
+    }
+  } catch (e) {
+    // 拦截器统一处理
+  } finally {
+    expertLoading.value = false
+  }
+}
+
+function onRangeChange() {
+  loadAll()
+}
+
 let refreshTimer = null
 
 async function loadAll() {
   try {
+    const ghId = effectiveGreenhouseId.value
+    if (!ghId) return
     const endTime = Date.now()
-    const startTime = endTime - 24 * 3600 * 1000
+    const range = RANGE_CONFIG[historyRange.value] || RANGE_CONFIG['24h']
+    const startTime = endTime - range.ms
     const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, tempHistRes, humHistRes, tempForecastRes, humForecastRes] = await Promise.allSettled([
-      getRealtimeData(props.greenhouseId),
-      getHealthScore(props.greenhouseId),
-      getAlerts(props.greenhouseId, 1, 5),
-      getUnreadAlertCount(props.greenhouseId),
-      getCurrentWeather({ greenhouseId: props.greenhouseId }),
-      getSensorHistory(props.greenhouseId, { sensorType: 'TEMPERATURE', startTime, endTime, interval: '1h' }),
-      getSensorHistory(props.greenhouseId, { sensorType: 'HUMIDITY', startTime, endTime, interval: '1h' }),
-      getSensorForecast(props.greenhouseId, 'TEMPERATURE', 4, 30),
-      getSensorForecast(props.greenhouseId, 'HUMIDITY', 4, 30)
+      getRealtimeData(ghId),
+      getHealthScore(ghId),
+      getAlerts(ghId, 1, 5),
+      getUnreadAlertCount(ghId),
+      getCurrentWeather({ greenhouseId: ghId }),
+      getSensorHistory(ghId, { sensorType: 'TEMPERATURE', startTime, endTime, interval: range.interval }),
+      getSensorHistory(ghId, { sensorType: 'HUMIDITY', startTime, endTime, interval: range.interval }),
+      getSensorForecast(ghId, 'TEMPERATURE', 4, 30),
+      getSensorForecast(ghId, 'HUMIDITY', 4, 30)
     ])
 
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
@@ -197,9 +321,11 @@ async function loadAll() {
 
 // WebSocket 实时数据更新
 function setupWebSocket() {
+  const ghId = effectiveGreenhouseId.value
+  if (!ghId) return
   realtimeClient.disconnect()
-  realtimeClient.connect(props.greenhouseId)
-  realtimeClient.onMessage(`/topic/greenhouse/${props.greenhouseId}/realtime`, (data) => {
+  realtimeClient.connect(ghId)
+  realtimeClient.onMessage(`/topic/greenhouse/${ghId}/realtime`, (data) => {
     if (data && data.sensorType) {
       const key = TYPE_TO_KEY[data.sensorType]
       if (key && data.value != null) {
@@ -210,14 +336,18 @@ function setupWebSocket() {
 }
 
 // 大棚切换时重新加载
-watch(() => props.greenhouseId, (newId) => {
-  if (isAdmin.value) return
+watch(() => effectiveGreenhouseId.value, (newId) => {
+  if (isAdmin.value || !newId) return
   loadAll()
   setupWebSocket()
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (isAdmin.value) return
+  if (isExpert.value) {
+    await loadExpertGreenhouses()
+    if (!selectedGhId.value) return // 未授权：空白
+  }
   loadAll()
   setupWebSocket()
   // 30 秒轮询作为兜底
@@ -233,6 +363,49 @@ onUnmounted(() => {
 <style scoped>
 .dashboard-page {
   padding: 0;
+}
+
+.expert-region-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+
+.expert-region-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+}
+
+.expert-region-label {
+  font-size: 13px;
+  color: #e0e6ed;
+}
+
+.expert-loading-text {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.expert-gh-name {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.expert-blank {
+  min-height: 420px;
+}
+
+.range-toolbar {
+  margin: 16px 0 4px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .middle-row {

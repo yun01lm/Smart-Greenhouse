@@ -68,7 +68,8 @@ public class SecurityConfig {
                         // 数据导出接口（R8 仅 OWNER/WORKER；R10 放开为认证即可，细粒度校验在 ReportAccessService，
                         // ADMIN 可携带 ownerId 代查棚主视角导出，非 ADMIN 仍按 OWNER/WORKER 归属校验）
                         .requestMatchers("/api/v1/report/**").authenticated()
-                        // 知识库管理接口（仅 ADMIN 角色）
+                        // 知识库：阅读接口开放给 管理员/棚主/技术员/专家（R27），写操作仍仅 ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api/v1/knowledge/**").hasAnyRole("ADMIN", "OWNER", "TECHNICIAN", "EXPERT")
                         .requestMatchers("/api/v1/knowledge/**").hasRole("ADMIN")
                         // OPTIONS 预检请求
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

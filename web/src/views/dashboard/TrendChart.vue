@@ -14,7 +14,8 @@ import * as echarts from 'echarts'
 
 const props = defineProps({
   historyData: { type: Array, default: () => [] },
-  forecastData: { type: Array, default: () => [] }
+  forecastData: { type: Array, default: () => [] },
+  allowMock: { type: Boolean, default: true }
 })
 
 const chartRef = ref(null)
@@ -146,6 +147,15 @@ function updateChart(data, forecast) {
   const future = Array.isArray(forecast) ? forecast : []
 
   if (history.length === 0) {
+    if (!props.allowMock) {
+      // 无数据且不允许模拟（专家未授权场景）：保持空白
+      chart.setOption({
+        xAxis: { data: [] },
+        yAxis: [{ min: null, max: null }, { min: null, max: null }],
+        series: [{ data: [] }, { data: [] }, { data: [] }, { data: [] }]
+      })
+      return
+    }
     // 生成模拟历史数据
     const now = new Date()
     const times = []

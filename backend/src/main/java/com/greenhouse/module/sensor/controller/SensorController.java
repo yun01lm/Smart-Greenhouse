@@ -4,6 +4,7 @@ import com.greenhouse.common.ApiResponse;
 import com.greenhouse.module.sensor.dto.*;
 import com.greenhouse.module.sensor.service.SensorDataService;
 import com.greenhouse.repository.GreenhouseRepository;
+import com.greenhouse.security.annotations.RequireGreenhouseAccess;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +34,7 @@ public class SensorController {
      * GET /api/v1/sensors/realtime?greenhouseId=1
      */
     @GetMapping("/realtime")
+    @RequireGreenhouseAccess
     public ApiResponse<SensorRealtimeResponse> realtime(@RequestParam Long greenhouseId) {
         String greenhouseName = greenhouseRepository.findById(greenhouseId)
                 .map(gh -> gh.getName())
@@ -46,6 +48,7 @@ public class SensorController {
      * POST /api/v1/sensors/history?greenhouseId=1
      */
     @PostMapping("/history")
+    @RequireGreenhouseAccess
     public ApiResponse<List<SensorDataPoint>> history(
             @RequestParam Long greenhouseId,
             @Valid @RequestBody SensorHistoryRequest request) {
@@ -58,6 +61,7 @@ public class SensorController {
      * GET /api/v1/sensors/forecast?greenhouseId=1&sensorType=TEMPERATURE&steps=4&intervalMinutes=30
      */
     @GetMapping("/forecast")
+    @RequireGreenhouseAccess
     public ApiResponse<ForecastResponse> forecast(
             @RequestParam Long greenhouseId,
             @RequestParam String sensorType,
@@ -90,6 +94,7 @@ public class SensorController {
      * GET /api/v1/sensors/aggregate?greenhouseId=1&sensorType=TEMPERATURE&startTime=...&endTime=...
      */
     @GetMapping("/aggregate")
+    @RequireGreenhouseAccess
     public ApiResponse<SensorAggregateResponse> aggregate(
             @RequestParam Long greenhouseId,
             @RequestParam String sensorType,
@@ -105,6 +110,7 @@ public class SensorController {
      * GET /api/v1/sensors/export?greenhouseId=1&sensorType=TEMPERATURE&startTime=...&endTime=...
      */
     @GetMapping("/export")
+    @RequireGreenhouseAccess
     public ResponseEntity<byte[]> export(
             @RequestParam Long greenhouseId,
             @RequestParam String sensorType,

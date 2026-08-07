@@ -6,6 +6,7 @@ import com.greenhouse.entity.HealthAssessment;
 import com.greenhouse.module.health.dto.HealthHistoryResponse;
 import com.greenhouse.module.health.dto.HealthScoreResponse;
 import com.greenhouse.module.health.service.HealthAssessmentService;
+import com.greenhouse.security.annotations.RequireGreenhouseAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -38,6 +39,7 @@ public class HealthController {
      * @param greenhouseId 大棚ID（必填）
      */
     @GetMapping("/score")
+    @RequireGreenhouseAccess
     public ApiResponse<HealthScoreResponse> getCurrentScore(
             @RequestParam Long greenhouseId) {
         // 先检查缓存（30分钟内）
@@ -62,6 +64,7 @@ public class HealthController {
      * @param size         每页大小（默认10）
      */
     @GetMapping("/history")
+    @RequireGreenhouseAccess
     public ApiResponse<PageResult<HealthHistoryResponse>> getHistory(
             @RequestParam Long greenhouseId,
             @RequestParam(required = false)

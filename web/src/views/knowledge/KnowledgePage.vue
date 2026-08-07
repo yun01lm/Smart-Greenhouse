@@ -37,7 +37,7 @@
                 搜索
               </el-button>
             </div>
-            <div class="toolbar-right">
+            <div v-if="!readOnly" class="toolbar-right">
               <el-button @click="openCategoryDialog">
                 <el-icon><Collection /></el-icon>
                 分类管理
@@ -98,6 +98,7 @@
                 <el-tag v-else type="warning" size="small">
                   待处理
                   <el-button
+                    v-if="!readOnly"
                     type="warning"
                     size="small"
                     link
@@ -117,6 +118,10 @@
             </el-table-column>
             <el-table-column label="操作" width="150" fixed="right">
               <template #default="{ row }">
+                <template v-if="readOnly">
+                  <el-button type="primary" size="small" link @click="openPreview(row)">查看</el-button>
+                </template>
+                <template v-else>
                 <el-button type="primary" size="small" link @click="openEditDialog(row)">编辑</el-button>
                 <el-popconfirm
                   title="删除后向量数据也将被清理，确认删除？"
@@ -126,6 +131,7 @@
                     <el-button type="danger" size="small" link>删除</el-button>
                   </template>
                 </el-popconfirm>
+                </template>
               </template>
             </el-table-column>
           </el-table>
@@ -145,8 +151,8 @@
         </div>
       </el-tab-pane>
 
-      <!-- Tab 2: 问答测试 -->
-      <el-tab-pane label="问答测试" name="test">
+      <!-- Tab 2: 问答测试（仅管理员） -->
+      <el-tab-pane v-if="!readOnly" label="问答测试" name="test">
         <div class="tab-content test-tab">
           <div class="test-input-area">
             <el-input
@@ -208,6 +214,22 @@
         </div>
       </el-tab-pane>
     </el-tabs>
+    <!-- 文档内容预览（R27 只读） -->
+    <el-dialog
+      v-model="previewVisible"
+      :title="previewDoc ? previewDoc.title : '文档预览'"
+      width="720px"
+      top="6vh"
+    >
+      <div v-if="previewDoc" class="preview-meta">
+        <el-tag size="small" type="info">{{ previewDoc.docNo || ('DOC-' + String(previewDoc.id).padStart(4, '0')) }}</el-tag>
+        <el-tag v-if="previewDoc.category" size="small">{{ previewDoc.category }}</el-tag>
+        <span class="preview-desc">{{ previewDoc.description || '' }}</span>
+      </div>
+      <div v-loading="previewLoading" class="preview-body">
+        <pre class="preview-text">{{ previewText }}</pre>
+      </div>
+    </el-dialog>
 
     <!-- 上传对话框 -->
     <el-dialog
@@ -398,7 +420,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import { ElMessage } from 'element-plus'
 import { Search, Upload, UploadFilled, ChatDotRound, Collection } from '@element-plus/icons-vue'
 import {
@@ -409,6 +432,7 @@ import {
   deleteDocument,
   updateDocument,
   testQa,
+  getDocumentContent,
   getManagedCategories,
   createCategory,
   updateCategory,
@@ -426,6 +450,30 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const filterCategory = ref('')
 const keyword = ref('')
+const authStore = useAuthStore()
+// R27：非管理员为只读模式（查看文档内容），写操作按钮隐藏
+const readOnly = computed(() => !authStore.isAdmin())
+
+// ===== 文档内容预览（只读） =====
+const previewVisible = ref(false)
+const previewLoading = ref(false)
+const previewDoc = ref(null)
+const previewText = ref('')
+
+async function openPreview(row) {
+  previewDoc.value = row
+  previewVisible.value = true
+  previewLoading.value = true
+  previewText.value = ''
+  try {
+    const blob = await getDocumentContent(row.id)
+    previewText.value = await blob.text()
+  } catch (e) {
+    previewText.value = '文档内容读取失败或格式暂不支持预览'
+  } finally {
+    previewLoading.value = false
+  }
+}
 
 async function loadDocuments() {
   loading.value = true
@@ -813,5 +861,32 @@ onMounted(() => {
   font-size: 13px;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+.preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.preview-desc {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 4px;
+}
+.preview-body {
+  max-height: 60vh;
+  overflow: auto;
+  background: #f7f9fc;
+  border-radius: 8px;
+  padding: 16px;
+}
+.preview-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: #303133;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 </style>
