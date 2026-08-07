@@ -24,7 +24,12 @@ export function askVoice(audioFile, greenhouseId) {
   })
 }
 
-/** 问答历史 */
-export function getRecords(page = 0, size = 10) {
-  return request.get(`${BASE}/records`, { params: { page, size } })
+/**
+ * 问答历史
+ * @param {number} page 页码（从 1 开始）
+ * @param {number} size 每页条数
+ * @param {string} date 可选，按天查询（yyyy-MM-dd），空则查全部
+ */
+export function getRecords(page = 1, size = 30, date = '') {
+  return request.get(`${BASE}/records`, { params: { page, size, date } })
 }

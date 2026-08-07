@@ -77,7 +77,7 @@
 ### 10. qa — AI 智能问答 (/api/v1/qa)
 - POST /ask — 文本问答（RAG 检索增强）
 - POST /ask/voice — 语音问答
-- GET /records — 问答记录
+- GET /records — 问答历史（page从1开始/默认30条，可选 date=yyyy-MM-dd 按天查询，返回完整 answer+sources）
 - 服务: RagQaService, EmbeddingService, ChromaRetrievalService, VoiceQaService
 - Embedding: EmbeddingProvider 策略接口 → SiliconFlowEmbeddingProvider（真实，bge-m3 1024维，分批32条+429退避重试）/ MockEmbeddingProvider（默认兜底）；provider 由 .env.local 的 AI_EMBEDDING_PROVIDER 控制（mock|siliconflow）
 - 检索: ChromaRetrievalService 相似度阈值兜底（greenhouse.ai.rag.min-similarity，默认0.3，低于阈值过滤，全部过滤降级通用知识）

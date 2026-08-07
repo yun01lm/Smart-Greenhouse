@@ -12,11 +12,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -29,7 +33,7 @@ import java.util.List;
  * <ul>
  *   <li>POST /api/v1/qa/ask — 文字问答</li>
  *   <li>POST /api/v1/qa/ask/voice — 语音问答（multipart/form-data）</li>
- *   <li>GET /api/v1/qa/records — 问答历史（分页）</li>
+ *   <li>GET /api/v1/qa/records — 问答历史（分页，可按日期过滤）</li>
  * </ul>
  */
 @RestController
@@ -76,17 +80,33 @@ public class QaController {
 
     /**
      * 问答历史
-     * GET /api/v1/qa/records?page=0&size=10
+     * GET /api/v1/qa/records?page=1&size=30&date=2026-08-07
+     * <p>
+     * page 从 1 开始（默认 1）；size 默认 30，上限 100；
+     * date 可选（格式 yyyy-MM-dd）：按当天 00:00 ~ 次日 00:00 过滤，不传则查询全部。
+     * </p>
      */
     @GetMapping("/records")
     public ApiResponse<PageResult<QaHistoryItem>> records(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "30") int size,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
 
         Long userId = getCurrentUserId();
-        Page<QaHistoryItem> items = recordRepository
-                .findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(page, size))
-                .map(QaHistoryItem::fromEntity);
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), Math.min(Math.max(size, 1), 100));
+
+        Page<QaHistoryItem> items;
+        if (date != null) {
+            LocalDateTime start = date.atStartOfDay();
+            LocalDateTime end = start.plusDays(1);
+            items = recordRepository
+                    .findByUserIdAndCreatedAtBetweenOrderByCreatedAtDesc(userId, start, end, pageable)
+                    .map(QaHistoryItem::fromEntity);
+        } else {
+            items = recordRepository
+                    .findByUserIdOrderByCreatedAtDesc(userId, pageable)
+                    .map(QaHistoryItem::fromEntity);
+        }
 
         return ApiResponse.success(PageResult.of(items));
     }
