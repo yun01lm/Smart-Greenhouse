@@ -70,6 +70,16 @@
                   {{ convStatusLabel(currentConversation.status) }}
                 </el-tag>
                 <el-button
+                  v-if="currentConversation.status === 'CLOSED'"
+                  size="small"
+                  type="primary"
+                  plain
+                  :loading="reopening"
+                  @click="doReopenConversation"
+                >
+                  重新开启
+                </el-button>
+                <el-button
                   v-if="currentConversation.status !== 'CLOSED'"
                   size="small"
                   type="warning"
@@ -148,6 +158,7 @@ import {
   getConversationMessages,
   sendMessage,
   closeConversation,
+  reopenConversation,
   getChatUnread
 } from '@/api/chat'
 import chatSocket from '@/utils/chatSocket'
@@ -170,6 +181,7 @@ const msgListRef = ref(null)
 const draft = ref('')
 const sending = ref(false)
 const closing = ref(false)
+const reopening = ref(false)
 
 let refreshTimer = null
 
@@ -254,6 +266,18 @@ async function doCloseConversation() {
     ElMessage.success('会话已关闭')
     loadConversations()
   } catch (e) { /* handled */ } finally { closing.value = false }
+}
+
+async function doReopenConversation() {
+  if (!currentConversation.value) return
+  reopening.value = true
+  try {
+    await reopenConversation(currentConversation.value.id)
+    currentConversation.value.status = 'ACTIVE'
+    ElMessage.success('会话已重新开启，可继续沟通')
+    loadConversations()
+    loadMessages(currentConversation.value.id)
+  } catch (e) { /* handled */ } finally { reopening.value = false }
 }
 
 // ===== WebSocket 实时消息 =====

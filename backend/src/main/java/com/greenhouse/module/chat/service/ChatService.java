@@ -244,6 +244,30 @@ public class ChatService {
     }
 
     /**
+     * 重新开启已关闭的对话（R27.1）
+     * <p>关闭后的会话仍可重新开启继续沟通，关闭时间清空。</p>
+     */
+    @Transactional
+    public void reopenConversation(Long conversationId, Long userId) {
+        ChatConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONVERSATION_NOT_FOUND));
+
+        if (!conversation.getUserId().equals(userId) && !conversation.getExpertId().equals(userId)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        if (conversation.getStatus() != ChatConversation.ConversationStatus.CLOSED) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "仅已关闭的会话可以重新开启");
+        }
+
+        conversation.setStatus(ChatConversation.ConversationStatus.ACTIVE);
+        conversation.setClosedAt(null);
+        conversationRepository.save(conversation);
+
+        log.info("对话已重新开启: id={}", conversationId);
+    }
+
+        /**
      * 获取未读消息数
      */
     public long getUnreadCount(Long userId, String role) {

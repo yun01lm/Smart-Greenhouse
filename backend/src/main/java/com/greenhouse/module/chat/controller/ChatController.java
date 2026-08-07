@@ -99,6 +99,17 @@ public class ChatController {
     }
 
     /**
+     * 重新开启会话
+     * PUT /api/v1/chat/conversations/{id}/reopen
+     */
+    @PutMapping("/conversations/{id}/reopen")
+    public ApiResponse<Void> reopenConversation(@PathVariable Long id) {
+        Long userId = getCurrentUserId();
+        chatService.reopenConversation(id, userId);
+        return ApiResponse.success();
+    }
+
+        /**
      * 未读消息数
      * GET /api/v1/chat/unread
      */

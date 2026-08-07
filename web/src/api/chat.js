@@ -29,3 +29,8 @@ export function closeConversation(id) {
 export function getChatUnread() {
   return request.get('/chat/unread')
 }
+
+/** 重新开启已关闭的会话（R27.1） */
+export function reopenConversation(id) {
+  return request.put(`/chat/conversations/${id}/reopen`)
+}
