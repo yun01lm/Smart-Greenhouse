@@ -246,7 +246,7 @@ async function doSend() {
       messageType: 'TEXT',
       content
     })
-    if (msg.data) {
+    if (msg.data && !messages.value.some(m => m.id === msg.data.id)) {
       messages.value.push(msg.data)
       scrollToBottom()
       draft.value = ''
