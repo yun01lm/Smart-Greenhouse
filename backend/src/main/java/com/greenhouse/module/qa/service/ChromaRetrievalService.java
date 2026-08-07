@@ -35,15 +35,26 @@ public class ChromaRetrievalService {
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
 
+    /**
+     * 相似度阈值（配置项 greenhouse.ai.rag.min-similarity，默认 0.3）
+     * <p>
+     * 兜底防污染：低于该相似度的检索结果视为不相关内容，不参与 RAG 上下文组装。
+     * 检索结果全部被过滤时，RagQaService 会降级为纯通用知识回答。
+     * </p>
+     */
+    private final double minSimilarity;
+
     public ChromaRetrievalService(
             @Value("${chroma.base-url:http://localhost:8000}") String chromaUrl,
             @Value("${chroma.collection:greenhouse_knowledge}") String collectionName,
             ChromaInitializer chromaInitializer,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            @Value("${greenhouse.ai.rag.min-similarity:0.3}") double minSimilarity) {
         this.chromaUrl = chromaUrl;
         this.collectionName = collectionName;
         this.chromaInitializer = chromaInitializer;
         this.objectMapper = objectMapper;
+        this.minSimilarity = minSimilarity;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS)
@@ -117,7 +128,7 @@ public class ChromaRetrievalService {
     }
 
     /**
-     * 解析 Chroma 查询响应
+     * 解析 Chroma 查询响应（含相似度阈值过滤）
      */
     private List<RetrievalResult> parseQueryResponse(String responseBody) throws Exception {
         JsonNode root = objectMapper.readTree(responseBody);
@@ -148,6 +159,7 @@ public class ChromaRetrievalService {
                 ? distances.get(0) : null;
 
         List<RetrievalResult> results = new ArrayList<>();
+        int filtered = 0;
         for (int i = 0; i < docsArr.size(); i++) {
             String docContent = docsArr.get(i).asText();
 
@@ -166,10 +178,23 @@ public class ChromaRetrievalService {
             // 距离转相似度：Chroma 默认用 L2 距离，相似度 = 1/(1+distance)
             double similarity = 1.0 / (1.0 + distance);
 
+            // 相似度阈值兜底：低于阈值视为不相关内容，防止低相关分块污染 LLM 上下文
+            if (similarity < minSimilarity) {
+                filtered++;
+                log.debug("Chroma 相似度阈值过滤: title={}, similarity={}, threshold={}",
+                        title, String.format("%.4f", similarity), minSimilarity);
+                continue;
+            }
+
             results.add(new RetrievalResult(docContent, title, category, similarity));
         }
 
-        log.debug("Chroma 检索完成: topK={}, actual_results={}", docsArr.size(), results.size());
+        if (filtered > 0) {
+            log.info("Chroma 检索完成: topK={}, raw={}, filtered={}, kept={}, threshold={}",
+                    docsArr.size(), docsArr.size(), filtered, results.size(), minSimilarity);
+        } else {
+            log.debug("Chroma 检索完成: topK={}, actual_results={}", docsArr.size(), results.size());
+        }
         return results;
     }
 

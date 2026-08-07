@@ -144,6 +144,9 @@ greenhouse:
       temperature: 0.7
       max-tokens: 2000
       top-k: 5
+      # RAG 相似度阈值（兜底防污染）：低于该值的检索结果不参与上下文组装
+      # 全部低于阈值时降级为通用农业知识回答（可按实际效果调整）
+      min-similarity: 0.3
   # 多模态融合权重
   fusion:
     env:

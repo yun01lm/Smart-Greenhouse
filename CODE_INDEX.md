@@ -80,6 +80,7 @@
 - GET /records — 问答记录
 - 服务: RagQaService, EmbeddingService, ChromaRetrievalService, VoiceQaService
 - Embedding: EmbeddingProvider 策略接口 → SiliconFlowEmbeddingProvider（真实，bge-m3 1024维，分批32条+429退避重试）/ MockEmbeddingProvider（默认兜底）；provider 由 .env.local 的 AI_EMBEDDING_PROVIDER 控制（mock|siliconflow）
+- 检索: ChromaRetrievalService 相似度阈值兜底（greenhouse.ai.rag.min-similarity，默认0.3，低于阈值过滤，全部过滤降级通用知识）
 
 ### 11. knowledge — 知识库 (/api/v1/knowledge)
 - GET /documents — 文档列表
