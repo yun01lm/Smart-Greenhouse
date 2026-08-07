@@ -46,6 +46,13 @@
             android:exported="false"
             android:theme="@style/Theme.SmartGreenhouse" />
 
+        <!-- 员工管理 (R26 棚主端) -->
+        <activity
+            android:name=".ui.employee.EmployeeManagementActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
         <!-- 预警详情 -->
         <activity
             android:name=".ui.alert.AlertDetailActivity"

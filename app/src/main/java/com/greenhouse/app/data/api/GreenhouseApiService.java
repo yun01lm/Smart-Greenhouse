@@ -264,4 +264,25 @@ public interface GreenhouseApiService {
 
     @GET("expert/authorize/active")
     Call<ApiResponse<List<AuthorizationInfo>>> getActiveAuthorizations();
+
+    // ===== R26 棚主员工管理 =====
+
+    @GET("owner/employees")
+    Call<ApiResponse<List<EmployeeItem>>> getEmployees();
+
+    @POST("owner/employees")
+    Call<ApiResponse<EmployeePermissionItem>> addEmployee(@Body AddEmployeeRequest request);
+
+    @PUT("owner/employees/{id}/password")
+    Call<ApiResponse<Void>> resetEmployeePassword(@Path("id") long employeeId, @Body ResetPasswordRequest request);
+
+    @GET("owner/employees/{id}/permissions")
+    Call<ApiResponse<List<EmployeePermissionItem>>> getEmployeePermissions(@Path("id") long employeeId);
+
+    @PUT("owner/employees/{id}/permissions")
+    Call<ApiResponse<EmployeePermissionItem>> updateEmployeePermission(
+            @Path("id") long employeeId, @Body UpdatePermissionRequest request);
+
+    @DELETE("owner/employees/{id}")
+    Call<ApiResponse<Void>> removeEmployee(@Path("id") long employeeId);
 }

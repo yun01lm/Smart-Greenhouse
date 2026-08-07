@@ -57,6 +57,19 @@
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- 员工管理入口 (R26 棚主专属) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_employee_management"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:text="员工管理"
+        android:textColor="@color/on_surface"
+        app:icon="@drawable/ic_profile"
+        app:iconGravity="start"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
     <!-- 专家咨询入口 (F10) -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_expert_consult"
