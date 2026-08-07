@@ -76,8 +76,9 @@ public class WeatherRiskCalculator {
      * @return WeatherRiskResult 包含修正因子和风险描述
      */
     public WeatherRiskResult calculate(String location) {
+        // 天气风险基于当前天气缓存（CURRENT 类型）
         Optional<WeatherCache> cacheOpt = weatherCacheRepository
-                .findTopByLocationOrderByUpdatedAtDesc(location);
+                .findTopByLocationAndCacheTypeOrderByUpdatedAtDesc(location, "CURRENT");
 
         if (cacheOpt.isEmpty()) {
             log.debug("无天气缓存数据，天气修正因子使用默认值 1.0");

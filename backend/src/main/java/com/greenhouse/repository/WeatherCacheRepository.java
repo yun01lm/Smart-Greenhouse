@@ -13,7 +13,8 @@ import java.util.Optional;
 public interface WeatherCacheRepository extends JpaRepository<WeatherCache, Long> {
 
     /**
-     * 查询某位置最新的天气缓存记录
+     * 查询某位置指定类型（CURRENT/FORECAST）最新的天气缓存记录
      */
-    Optional<WeatherCache> findTopByLocationOrderByUpdatedAtDesc(String location);
+    Optional<WeatherCache> findTopByLocationAndCacheTypeOrderByUpdatedAtDesc(
+            String location, String cacheType);
 }

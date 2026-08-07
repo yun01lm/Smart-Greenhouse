@@ -147,7 +147,7 @@
             <div v-if="weather" class="weather-info">
               <div class="weather-icon"><el-icon :size="34" color="#FF9800"><Sunny /></el-icon></div>
               <div class="weather-temp">{{ weather.temperature }}<span class="temp-unit">°C</span></div>
-              <div class="weather-desc">{{ weather.weather || weather.description }}</div>
+              <div class="weather-desc">{{ weather.weatherText }}</div>
               <div class="weather-details">
                 <span class="wd-item"><el-icon size="13"><Pouring /></el-icon>湿度 {{ weather.humidity }}%</span>
                 <span class="wd-item"><el-icon size="13"><WindPower /></el-icon>风速 {{ weather.windSpeed }}m/s</span>

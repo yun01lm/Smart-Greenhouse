@@ -53,6 +53,12 @@ public class QWeatherService {
     /** 缓存有效期：3 小时 */
     private static final long CACHE_DURATION_HOURS = 3;
 
+    /** 缓存类型：当前天气 */
+    private static final String CACHE_TYPE_CURRENT = "CURRENT";
+
+    /** 缓存类型：预报 */
+    private static final String CACHE_TYPE_FORECAST = "FORECAST";
+
     /** 中文地名 → 和风 LocationID 内存缓存（避免重复调用 GeoAPI） */
     private final Map<String, String> locationIdCache = new ConcurrentHashMap<>();
 
@@ -87,7 +93,7 @@ public class QWeatherService {
         }
 
         // 检查缓存
-        Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
+        Optional<WeatherCache> cached = cacheRepository.findTopByLocationAndCacheTypeOrderByUpdatedAtDesc(location, CACHE_TYPE_CURRENT);
         if (cached.isPresent()) {
             WeatherCache cache = cached.get();
             if (isCacheValid(cache)) {
@@ -113,7 +119,7 @@ public class QWeatherService {
         }
 
         // 检查缓存
-        Optional<WeatherCache> cached = cacheRepository.findTopByLocationOrderByUpdatedAtDesc(location);
+        Optional<WeatherCache> cached = cacheRepository.findTopByLocationAndCacheTypeOrderByUpdatedAtDesc(location, CACHE_TYPE_FORECAST);
         if (cached.isPresent()) {
             WeatherCache cache = cached.get();
             if (isCacheValid(cache) && cache.getForecastJson() != null) {
@@ -142,9 +148,14 @@ public class QWeatherService {
         return WeatherCurrentResponse.builder()
                 .location(cache.getLocation())
                 .temperature(cache.getTemperature())
+                .feelsLike(cache.getFeelsLike())
                 .humidity(cache.getHumidity())
                 .weatherCode(cache.getWeatherCode())
+                .weatherText(cache.getWeatherText())
+                .windDirection(cache.getWindDirection())
                 .windSpeed(cache.getWindSpeed())
+                .pressure(cache.getPressure())
+                .visibility(cache.getVisibility())
                 .updatedAt(cache.getUpdatedAt())
                 .build();
     }
@@ -251,7 +262,8 @@ public class QWeatherService {
                 BigDecimal visibility = new BigDecimal(now.get("vis").asText());
 
                 // 保存缓存
-                saveWeatherCache(location, temp, humidity, weatherCode, windSpeed, null);
+                saveWeatherCache(location, CACHE_TYPE_CURRENT, temp, feelsLike, humidity,
+                        weatherCode, weatherText, windDir, windSpeed, pressure, visibility, null);
 
                 return WeatherCurrentResponse.builder()
                         .location(location)
@@ -318,11 +330,15 @@ public class QWeatherService {
                 // 保存缓存（完整 JSON + 当前天气摘要）
                 String forecastJson = objectMapper.writeValueAsString(root);
                 JsonNode firstDay = dailyArray.get(0);
-                saveWeatherCache(location,
+                saveWeatherCache(location, CACHE_TYPE_FORECAST,
                         new BigDecimal(firstDay.get("tempMax").asText()),  // 用最高温近似
+                        null,
                         new BigDecimal(firstDay.get("humidity").asText()),
                         firstDay.get("iconDay").asText(),
+                        firstDay.get("textDay").asText(),
+                        firstDay.get("windDirDay").asText(),
                         new BigDecimal(firstDay.get("windSpeedDay").asText()),
+                        null, null,
                         forecastJson);
 
                 return WeatherForecastResponse.builder()
@@ -378,20 +394,30 @@ public class QWeatherService {
      * 保存天气数据到缓存
      */
     @Transactional
-    private void saveWeatherCache(String location, BigDecimal temperature, BigDecimal humidity,
-                                   String weatherCode, BigDecimal windSpeed, String forecastJson) {
+    private void saveWeatherCache(String location, String cacheType,
+                                   BigDecimal temperature, BigDecimal feelsLike,
+                                   BigDecimal humidity, String weatherCode, String weatherText,
+                                   String windDirection, BigDecimal windSpeed,
+                                   BigDecimal pressure, BigDecimal visibility,
+                                   String forecastJson) {
         WeatherCache cache = WeatherCache.builder()
                 .location(location)
+                .cacheType(cacheType)
                 .temperature(temperature)
+                .feelsLike(feelsLike)
                 .humidity(humidity)
                 .weatherCode(weatherCode)
+                .weatherText(weatherText)
+                .windDirection(windDirection)
                 .windSpeed(windSpeed)
+                .pressure(pressure)
+                .visibility(visibility)
                 .forecastJson(forecastJson)
                 .forecastTime(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
         cacheRepository.save(cache);
-        log.debug("天气缓存已更新: location={} temp={}", location, temperature);
+        log.debug("天气缓存已更新: location={} type={} temp={}", location, cacheType, temperature);
     }
 
     /**
