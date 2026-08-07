@@ -99,7 +99,7 @@ siliconflow:
 
 qweather:
   api-key: ${QWEATHER_API_KEY:dev-qweather-key}
-  base-url: https://devapi.qweather.com
+  base-url: ${QWEATHER_BASE_URL:https://devapi.qweather.com}   # 专属 Host 由 .env.local QWEATHER_BASE_URL 注入
 
 # AI引擎切换（RC验收默认使用 Mock 模式）
 ai:
