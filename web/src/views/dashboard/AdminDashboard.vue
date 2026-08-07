@@ -148,6 +148,7 @@
               <div class="weather-icon"><el-icon :size="34" color="#FF9800"><Sunny /></el-icon></div>
               <div class="weather-temp">{{ weather.temperature }}<span class="temp-unit">°C</span></div>
               <div class="weather-desc">{{ weather.weatherText }}</div>
+              <div class="weather-loc">📍 {{ weather.location }}</div>
               <div class="weather-details">
                 <span class="wd-item"><el-icon size="13"><Pouring /></el-icon>湿度 {{ weather.humidity }}%</span>
                 <span class="wd-item"><el-icon size="13"><WindPower /></el-icon>风速 {{ weather.windSpeed }}m/s</span>
@@ -594,7 +595,8 @@ loadOverview()
   font-variant-numeric: tabular-nums;
 }
 .temp-unit { font-size: 18px; font-weight: 500; color: #FFB74D; }
-.weather-desc { font-size: 15px; color: #606266; margin: 8px 0 10px; }
+.weather-desc { font-size: 15px; color: #606266; margin: 8px 0 4px; }
+.weather-loc { font-size: 12px; color: #909399; margin: 0 0 10px; }
 .weather-details {
   display: flex;
   justify-content: center;

@@ -28,7 +28,8 @@
             <h3>当前天气</h3>
             <div v-if="weatherData" class="weather-info">
               <div class="weather-temp">{{ weatherData.temperature }}°C</div>
-              <div class="weather-desc">{{ weatherData.weather || weatherData.description }}</div>
+              <div class="weather-desc">{{ weatherData.weatherText }}</div>
+              <div class="weather-loc">📍 {{ weatherData.location }}</div>
               <div class="weather-details">
                 <span>湿度 {{ weatherData.humidity }}%</span>
                 <span>风速 {{ weatherData.windSpeed }}m/s</span>
@@ -197,7 +198,13 @@ onUnmounted(() => {
 .weather-desc {
   font-size: 16px;
   color: #e0e6ed;
-  margin: 8px 0;
+  margin: 8px 0 2px;
+}
+
+.weather-loc {
+  font-size: 12px;
+  color: #a0aec0;
+  margin: 0 0 8px;
 }
 
 .weather-details {
