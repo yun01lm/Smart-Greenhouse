@@ -71,7 +71,6 @@ public class ApiClient {
                 .addInterceptor(authInterceptor)
                 .addInterceptor(logging)
                 .build();
-                    .build();
         }
 
         retrofit = new Retrofit.Builder()

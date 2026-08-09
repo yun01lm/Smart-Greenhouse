@@ -1,4 +1,4 @@
-﻿package com.greenhouse.app.data.local;
+package com.greenhouse.app.data.local;
 
 import android.content.Context;
 import android.content.SharedPreferences;

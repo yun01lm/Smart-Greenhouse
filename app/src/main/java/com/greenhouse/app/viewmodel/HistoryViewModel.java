@@ -6,14 +6,12 @@ import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.model.HistoryDataPoint;
 import com.greenhouse.app.data.model.HistoryResponse;
+import com.greenhouse.app.data.model.SensorDataPoint;
 import com.greenhouse.app.data.repository.SensorRepository;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * 历史数据 ViewModel
@@ -126,21 +124,33 @@ public class HistoryViewModel extends ViewModel {
                 aggregation = "30m";
         }
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault());
-        String startTime = sdf.format(start.getTime());
-        String endTime = sdf.format(end.getTime());
+        long startMillis = start.getTimeInMillis();
+        long endMillis = end.getTimeInMillis();
 
-        repository.getHistory(currentGreenhouseId, sensorType, startTime, endTime, aggregation,
-                new SensorRepository.Callback<HistoryResponse>() {
+        repository.getHistory(currentGreenhouseId, sensorType, startMillis, endMillis, aggregation,
+                new SensorRepository.Callback<List<SensorDataPoint>>() {
                     @Override
-                    public void onSuccess(HistoryResponse data) {
+                    public void onSuccess(List<SensorDataPoint> data) {
                         isLoading.postValue(false);
-                        responseMeta.postValue(data);
-                        if (data.getDataPoints() != null) {
-                            dataPoints.postValue(data.getDataPoints());
-                        } else {
-                            dataPoints.postValue(new ArrayList<>());
+                        List<HistoryDataPoint> points = new ArrayList<>();
+                        if (data != null) {
+                            for (SensorDataPoint p : data) {
+                                HistoryDataPoint dp = new HistoryDataPoint();
+                                String ts = p.getTimestamp();
+                                if (ts != null) {
+                                    // 后端 ISO-8601（可能带毫秒/Z），统一截取到秒
+                                    if (ts.length() > 19) ts = ts.substring(0, 19);
+                                    dp.setTime(ts);
+                                }
+                                dp.setAvg(p.getValue());
+                                points.add(dp);
+                            }
                         }
+                        HistoryResponse meta = new HistoryResponse();
+                        meta.setSensorType(sensorType);
+                        meta.setDataPoints(points);
+                        responseMeta.postValue(meta);
+                        dataPoints.postValue(points);
                     }
 
                     @Override

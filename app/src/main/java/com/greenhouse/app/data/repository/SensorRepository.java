@@ -1,4 +1,4 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.*;
 
@@ -45,13 +45,14 @@ public class SensorRepository extends BaseRepository {
         });
     }
 
-    public void getHistoryData(long greenhouseId, String sensorType,
-                               long startTime, long endTime,
-                               Callback<HistoryResponse> callback) {
+    public void getHistory(long greenhouseId, String sensorType,
+                           long startTime, long endTime, String interval,
+                           Callback<List<SensorDataPoint>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<HistoryResponse>> response =
-                        apiService.getHistoryData(greenhouseId, sensorType, startTime, endTime).execute();
+                SensorHistoryRequest request = new SensorHistoryRequest(sensorType, startTime, endTime, interval);
+                Response<ApiResponse<List<SensorDataPoint>>> response =
+                        apiService.getHistory(greenhouseId, request).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

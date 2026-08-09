@@ -28,6 +28,15 @@ public class HistoryResponse {
     public String getUnit() { return unit; }
     public List<HistoryDataPoint> getDataPoints() { return dataPoints; }
 
+    // ===== Setter =====
+
+    public void setGreenhouseId(Long greenhouseId) { this.greenhouseId = greenhouseId; }
+    public void setGroupId(Long groupId) { this.groupId = groupId; }
+    public void setSensorType(String sensorType) { this.sensorType = sensorType; }
+    public void setAggregation(String aggregation) { this.aggregation = aggregation; }
+    public void setUnit(String unit) { this.unit = unit; }
+    public void setDataPoints(List<HistoryDataPoint> dataPoints) { this.dataPoints = dataPoints; }
+
     /**
      * 获取传感器类型的中文名
      */

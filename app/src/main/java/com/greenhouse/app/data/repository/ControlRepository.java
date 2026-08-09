@@ -1,4 +1,4 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.*;
 
@@ -65,8 +65,8 @@ public class ControlRepository extends BaseRepository {
     public void executeScene(long sceneId, long greenhouseId, Callback<ControlResponse> callback) {
         execute(() -> {
             try {
-                SceneExecuteRequest request = new SceneExecuteRequest(sceneId, greenhouseId);
-                Response<ApiResponse<ControlResponse>> response = apiService.executeScene(request).execute();
+                SceneExecuteRequest request = new SceneExecuteRequest(greenhouseId);
+                Response<ApiResponse<ControlResponse>> response = apiService.executeScene(sceneId, request).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

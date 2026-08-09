@@ -3,6 +3,7 @@ package com.greenhouse.app.data.api;
 import com.greenhouse.app.data.model.*;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
@@ -23,8 +24,11 @@ public interface GreenhouseApiService {
     @POST("auth/login")
     Call<ApiResponse<LoginResponse>> login(@Body LoginRequest request);
 
-    @GET("auth/me")
+    @GET("auth/profile")
     Call<ApiResponse<UserInfo>> getCurrentUser();
+
+    @PUT("auth/password")
+    Call<ApiResponse<Void>> changePassword(@Body ChangePasswordRequest request);
 
     // ===== C3 大棚管理 =====
 
@@ -36,17 +40,8 @@ public interface GreenhouseApiService {
 
     // ===== C5 时序数据 =====
 
-    @GET("sensor/realtime")
+    @GET("sensors/realtime")
     Call<ApiResponse<SensorRealtimeData>> getRealtimeData(@Query("greenhouseId") long greenhouseId);
-
-    @GET("sensor/history")
-    Call<ApiResponse<List<SensorDataPoint>>> getHistoryData(
-            @Query("greenhouseId") long greenhouseId,
-            @Query("sensorType") String sensorType,
-            @Query("startTime") long startTime,
-            @Query("endTime") long endTime,
-            @Query("interval") String interval
-    );
 
     // ===== C6 预警 =====
 
@@ -69,7 +64,7 @@ public interface GreenhouseApiService {
     Call<ApiResponse<Void>> markAlertRead(@Path("id") long id);
 
     @GET("alerts/unread-count")
-    Call<ApiResponse<Integer>> getUnreadAlertCount(@Query("greenhouseId") long greenhouseId);
+    Call<ApiResponse<Map<String, Object>>> getUnreadAlertCount(@Query("greenhouseId") long greenhouseId);
 
     // ===== C21 自定义阈值 =====
 
@@ -159,15 +154,12 @@ public interface GreenhouseApiService {
             @Query("greenhouseId") long greenhouseId
     );
 
-    // ===== C5 历史数据 =====
+    // ===== C5 历史数据（与后端 POST /api/v1/sensors/history 对齐）=====
 
-    @GET("sensors/history")
-    Call<ApiResponse<HistoryResponse>> getHistory(
+    @POST("sensors/history")
+    Call<ApiResponse<List<SensorDataPoint>>> getHistory(
             @Query("greenhouseId") long greenhouseId,
-            @Query("sensorType") String sensorType,
-            @Query("startTime") String startTime,
-            @Query("endTime") String endTime,
-            @Query("aggregation") String aggregation
+            @Body SensorHistoryRequest request
     );
 
     // ===== F7 长势评估 =====

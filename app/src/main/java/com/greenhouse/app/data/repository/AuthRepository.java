@@ -1,6 +1,7 @@
 package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.ApiResponse;
+import com.greenhouse.app.data.model.ChangePasswordRequest;
 import com.greenhouse.app.data.model.LoginRequest;
 import com.greenhouse.app.data.model.LoginResponse;
 import com.greenhouse.app.data.model.UserInfo;

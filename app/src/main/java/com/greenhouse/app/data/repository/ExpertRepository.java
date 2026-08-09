@@ -1,4 +1,4 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.*;
 
@@ -98,6 +98,45 @@ public class ExpertRepository extends BaseRepository {
         });
     }
 
+    public void sendImageMessage(long conversationId, File imageFile, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                RequestBody convBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(conversationId));
+                RequestBody fileBody = RequestBody.create(MediaType.parse("image/*"), imageFile);
+                MultipartBody.Part part = MultipartBody.Part.createFormData("image", imageFile.getName(), fileBody);
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendImageMessage(convBody, part).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void sendVideoMessage(long conversationId, File videoFile, Callback<ChatMessage> callback) {
+        execute(() -> {
+            try {
+                RequestBody convBody = RequestBody.create(
+                        MediaType.parse("text/plain"), String.valueOf(conversationId));
+                RequestBody fileBody = RequestBody.create(MediaType.parse("video/*"), videoFile);
+                MultipartBody.Part part = MultipartBody.Part.createFormData("video", videoFile.getName(), fileBody);
+                Response<ApiResponse<ChatMessage>> response =
+                        apiService.sendVideoMessage(convBody, part).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
     public void sendSnapshot(SnapshotRequest request, Callback<ChatMessage> callback) {
         execute(() -> {
             try {

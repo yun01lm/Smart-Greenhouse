@@ -27,13 +27,13 @@ import com.greenhouse.app.data.model.EmployeeItem;
 import com.greenhouse.app.data.model.EmployeePermissionItem;
 import com.greenhouse.app.data.model.Greenhouse;
 import com.greenhouse.app.data.repository.BaseRepository;
+import com.greenhouse.app.data.repository.EmployeeRepository;
+import com.greenhouse.app.data.repository.SensorRepository;
 import com.greenhouse.app.databinding.ActivityEmployeeManagementBinding;
 import com.greenhouse.app.viewmodel.EmployeeViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
 
 /**
  * 员工管理页（棚主端，R26）
@@ -47,6 +47,7 @@ public class EmployeeManagementActivity extends AppCompatActivity {
     private ActivityEmployeeManagementBinding binding;
     private EmployeeViewModel viewModel;
     private EmployeeAdapter adapter;
+    private final SensorRepository sensorRepository = new SensorRepository();
 
     /** 大棚列表（新增员工时选择授权大棚） */
     private final List<Greenhouse> greenhouses = new ArrayList<>();
@@ -109,19 +110,17 @@ public class EmployeeManagementActivity extends AppCompatActivity {
     // ===== 大棚加载 =====
 
     private void loadGreenhouses() {
-        Call<ApiResponse<List<Greenhouse>>> call = new BaseRepository() {}.apiService.getGreenhouses();
-        call.enqueue(new retrofit2.Callback<ApiResponse<List<Greenhouse>>>() {
+        sensorRepository.getGreenhouses(new BaseRepository.Callback<List<Greenhouse>>() {
             @Override
-            public void onResponse(Call<ApiResponse<List<Greenhouse>>> c,
-                                   retrofit2.Response<ApiResponse<List<Greenhouse>>> response) {
-                if (response.isSuccessful() && response.body() != null && response.body().getData() != null) {
-                    greenhouses.clear();
-                    greenhouses.addAll(response.body().getData());
+            public void onSuccess(List<Greenhouse> data) {
+                greenhouses.clear();
+                if (data != null) {
+                    greenhouses.addAll(data);
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<Greenhouse>>> c, Throwable t) {
+            public void onError(String message) {
                 // 大棚加载失败不阻塞员工管理
             }
         });
@@ -248,100 +247,108 @@ public class EmployeeManagementActivity extends AppCompatActivity {
                 .setTitle("权限设置 - " + name)
                 .setNegativeButton("取消", null);
 
-        viewModel.loadPermissions(item.getId(), permissions -> {
-            LinearLayout root = new LinearLayout(this);
-            root.setOrientation(LinearLayout.VERTICAL);
-            int pad = dp(16);
-            root.setPadding(pad, pad, pad, pad);
+        viewModel.loadPermissions(item.getId(), new EmployeeRepository.Callback<List<EmployeePermissionItem>>() {
+            @Override
+            public void onSuccess(List<EmployeePermissionItem> permissions) {
+                LinearLayout root = new LinearLayout(EmployeeManagementActivity.this);
+                root.setOrientation(LinearLayout.VERTICAL);
+                int pad = dp(16);
+                root.setPadding(pad, pad, pad, pad);
 
-            // R26.1：合并棚主所有大棚 + 员工已有权限；无权限记录的大棚按角色默认值初始化
-            List<EmployeePermissionItem> merged = new ArrayList<>();
-            List<EmployeePermissionItem> existing = permissions != null ? permissions : new ArrayList<>();
-            boolean isTech = item.isTechnician();
-            for (Greenhouse gh : greenhouses) {
-                EmployeePermissionItem found = null;
-                for (EmployeePermissionItem p : existing) {
-                    if (p.getGreenhouseId() == gh.getId()) { found = p; break; }
+                // R26.1：合并棚主所有大棚 + 员工已有权限；无权限记录的大棚按角色默认值初始化
+                List<EmployeePermissionItem> merged = new ArrayList<>();
+                List<EmployeePermissionItem> existing = permissions != null ? permissions : new ArrayList<>();
+                boolean isTech = item.isTechnician();
+                for (Greenhouse gh : greenhouses) {
+                    EmployeePermissionItem found = null;
+                    for (EmployeePermissionItem p : existing) {
+                        if (p.getGreenhouseId() == gh.getId()) { found = p; break; }
+                    }
+                    if (found == null) {
+                        found = new EmployeePermissionItem();
+                        found.setGreenhouseId(gh.getId());
+                        found.setGreenhouseName(gh.getName());
+                        found.setCanViewData(true);
+                        found.setCanControlDevice(true);
+                        found.setCanDiagnose(isTech);
+                        found.setCanAskExpert(isTech);
+                        found.setCanViewAlerts(true);
+                        found.setCanViewHistory(isTech);
+                    }
+                    merged.add(found);
                 }
-                if (found == null) {
-                    found = new EmployeePermissionItem();
-                    found.setGreenhouseId(gh.getId());
-                    found.setGreenhouseName(gh.getName());
-                    found.setCanViewData(true);
-                    found.setCanControlDevice(true);
-                    found.setCanDiagnose(isTech);
-                    found.setCanAskExpert(isTech);
-                    found.setCanViewAlerts(true);
-                    found.setCanViewHistory(isTech);
+
+                if (merged.isEmpty()) {
+                    TextView tv = new TextView(EmployeeManagementActivity.this);
+                    tv.setText("暂无大棚，请先创建大棚");
+                    tv.setTextColor(getColor(R.color.text_secondary));
+                    root.addView(tv);
+                } else {
+                    for (EmployeePermissionItem p : merged) {
+                        TextView tvTitle = new TextView(EmployeeManagementActivity.this);
+                        tvTitle.setText("大棚：" + p.getGreenhouseName());
+                        tvTitle.setTextColor(getColor(R.color.on_surface));
+                        tvTitle.setTextSize(15);
+                        tvTitle.setPadding(0, dp(4), 0, dp(4));
+                        root.addView(tvTitle);
+
+                        CheckBox cbViewData = new CheckBox(EmployeeManagementActivity.this);
+                        cbViewData.setText("查看数据");
+                        cbViewData.setChecked(p.isCanViewData());
+                        cbViewData.setOnCheckedChangeListener((b, v) -> p.setCanViewData(v));
+                        root.addView(cbViewData);
+
+                        CheckBox cbControl = new CheckBox(EmployeeManagementActivity.this);
+                        cbControl.setText("控制设备");
+                        cbControl.setChecked(p.isCanControlDevice());
+                        cbControl.setOnCheckedChangeListener((b, v) -> p.setCanControlDevice(v));
+                        root.addView(cbControl);
+
+                        CheckBox cbDiagnose = new CheckBox(EmployeeManagementActivity.this);
+                        cbDiagnose.setText("病虫害诊断");
+                        cbDiagnose.setChecked(p.isCanDiagnose());
+                        cbDiagnose.setOnCheckedChangeListener((b, v) -> p.setCanDiagnose(v));
+                        root.addView(cbDiagnose);
+
+                        CheckBox cbAskExpert = new CheckBox(EmployeeManagementActivity.this);
+                        cbAskExpert.setText("专家咨询");
+                        cbAskExpert.setChecked(p.isCanAskExpert());
+                        cbAskExpert.setOnCheckedChangeListener((b, v) -> p.setCanAskExpert(v));
+                        root.addView(cbAskExpert);
+
+                        CheckBox cbAlerts = new CheckBox(EmployeeManagementActivity.this);
+                        cbAlerts.setText("查看预警");
+                        cbAlerts.setChecked(p.isCanViewAlerts());
+                        cbAlerts.setOnCheckedChangeListener((b, v) -> p.setCanViewAlerts(v));
+                        root.addView(cbAlerts);
+
+                        CheckBox cbHistory = new CheckBox(EmployeeManagementActivity.this);
+                        cbHistory.setText("查看历史");
+                        cbHistory.setChecked(p.isCanViewHistory());
+                        cbHistory.setOnCheckedChangeListener((b, v) -> p.setCanViewHistory(v));
+                        root.addView(cbHistory);
+
+                        View divider = new View(EmployeeManagementActivity.this);
+                        divider.setLayoutParams(new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT, 1));
+                        divider.setBackgroundColor(getColor(R.color.primary_light));
+                        root.addView(divider);
+                    }
                 }
-                merged.add(found);
+
+                builder.setView(root);
+                builder.setPositiveButton("保存", (dialog, which) -> {
+                    if (!merged.isEmpty()) {
+                        viewModel.savePermissions(item.getId(), merged);
+                    }
+                });
+                builder.show();
             }
 
-            if (merged.isEmpty()) {
-                TextView tv = new TextView(this);
-                tv.setText("暂无大棚，请先创建大棚");
-                tv.setTextColor(getColor(R.color.text_secondary));
-                root.addView(tv);
-            } else {
-                for (EmployeePermissionItem p : merged) {
-                    TextView tvTitle = new TextView(this);
-                    tvTitle.setText("大棚：" + p.getGreenhouseName());
-                    tvTitle.setTextColor(getColor(R.color.on_surface));
-                    tvTitle.setTextSize(15);
-                    tvTitle.setPadding(0, dp(4), 0, dp(4));
-                    root.addView(tvTitle);
-
-                    CheckBox cbViewData = new CheckBox(this);
-                    cbViewData.setText("查看数据");
-                    cbViewData.setChecked(p.isCanViewData());
-                    cbViewData.setOnCheckedChangeListener((b, v) -> p.setCanViewData(v));
-                    root.addView(cbViewData);
-
-                    CheckBox cbControl = new CheckBox(this);
-                    cbControl.setText("控制设备");
-                    cbControl.setChecked(p.isCanControlDevice());
-                    cbControl.setOnCheckedChangeListener((b, v) -> p.setCanControlDevice(v));
-                    root.addView(cbControl);
-
-                    CheckBox cbDiagnose = new CheckBox(this);
-                    cbDiagnose.setText("病虫害诊断");
-                    cbDiagnose.setChecked(p.isCanDiagnose());
-                    cbDiagnose.setOnCheckedChangeListener((b, v) -> p.setCanDiagnose(v));
-                    root.addView(cbDiagnose);
-
-                    CheckBox cbAskExpert = new CheckBox(this);
-                    cbAskExpert.setText("专家咨询");
-                    cbAskExpert.setChecked(p.isCanAskExpert());
-                    cbAskExpert.setOnCheckedChangeListener((b, v) -> p.setCanAskExpert(v));
-                    root.addView(cbAskExpert);
-
-                    CheckBox cbAlerts = new CheckBox(this);
-                    cbAlerts.setText("查看预警");
-                    cbAlerts.setChecked(p.isCanViewAlerts());
-                    cbAlerts.setOnCheckedChangeListener((b, v) -> p.setCanViewAlerts(v));
-                    root.addView(cbAlerts);
-
-                    CheckBox cbHistory = new CheckBox(this);
-                    cbHistory.setText("查看历史");
-                    cbHistory.setChecked(p.isCanViewHistory());
-                    cbHistory.setOnCheckedChangeListener((b, v) -> p.setCanViewHistory(v));
-                    root.addView(cbHistory);
-
-                    View divider = new View(this);
-                    divider.setLayoutParams(new LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT, 1));
-                    divider.setBackgroundColor(getColor(R.color.primary_light));
-                    root.addView(divider);
-                }
+            @Override
+            public void onError(String message) {
+                Toast.makeText(EmployeeManagementActivity.this, "加载权限失败: " + message, Toast.LENGTH_SHORT).show();
             }
-
-            builder.setView(root);
-            builder.setPositiveButton("保存", (dialog, which) -> {
-                if (!merged.isEmpty()) {
-                    viewModel.savePermissions(item.getId(), merged);
-                }
-            });
-            builder.show();
         });
     }
 

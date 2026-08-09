@@ -1,9 +1,10 @@
-﻿package com.greenhouse.app.data.repository;
+package com.greenhouse.app.data.repository;
 
 import com.greenhouse.app.data.model.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Response;
 
@@ -53,13 +54,18 @@ public class AlertRepository extends BaseRepository {
         });
     }
 
-    public void getUnreadAlertCount(long greenhouseId, Callback<UnreadResponse> callback) {
+    public void getUnreadAlertCount(long greenhouseId, Callback<Integer> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<UnreadResponse>> response =
+                Response<ApiResponse<Map<String, Object>>> response =
                         apiService.getUnreadAlertCount(greenhouseId).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
-                    postSuccess(callback, response.body().getData());
+                    Map<String, Object> data = response.body().getData();
+                    int count = 0;
+                    if (data != null && data.get("count") instanceof Number) {
+                        count = ((Number) data.get("count")).intValue();
+                    }
+                    postSuccess(callback, count);
                 } else {
                     postError(callback, parseError(response));
                 }

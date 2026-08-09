@@ -37,6 +37,10 @@ public class EmployeePermissionItem {
     public long getId() { return id; }
     public long getGreenhouseId() { return greenhouseId; }
     public String getGreenhouseName() { return greenhouseName; }
+
+    public void setId(long id) { this.id = id; }
+    public void setGreenhouseId(long greenhouseId) { this.greenhouseId = greenhouseId; }
+    public void setGreenhouseName(String greenhouseName) { this.greenhouseName = greenhouseName; }
     public boolean isCanViewData() { return canViewData; }
     public void setCanViewData(boolean v) { canViewData = v; }
     public boolean isCanControlDevice() { return canControlDevice; }

@@ -24,6 +24,13 @@ public class HistoryDataPoint {
     public Double getMin() { return min; }
     public Double getMax() { return max; }
 
+    // ===== Setter =====
+
+    public void setTime(String time) { this.time = time; }
+    public void setAvg(Double avg) { this.avg = avg; }
+    public void setMin(Double min) { this.min = min; }
+    public void setMax(Double max) { this.max = max; }
+
     /**
      * 获取主要展示值（默认平均值）
      */
