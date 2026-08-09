@@ -16,6 +16,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.ErrorCode;
+import com.greenhouse.entity.SensorDailySummary;
+import com.greenhouse.repository.SensorDailySummaryRepository;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 /**
  * 传感器时序数据服务
@@ -36,6 +43,7 @@ public class SensorDataService {
     private final DeviceRepository deviceRepository;
     private final InfluxDbConfigHelper configHelper;
     private final TrendPredictor trendPredictor;
+    private final SensorDailySummaryRepository dailySummaryRepository;
 
     /**
      * 写入传感器数据到 InfluxDB
@@ -132,6 +140,11 @@ public class SensorDataService {
      * 查询历史数据（时间范围 + 聚合间隔）
      */
     public List<SensorDataPoint> getHistoryData(Long greenhouseId, SensorHistoryRequest request) {
+        validateSensorType(request.getSensorType());
+        // R29：日粒度查询（7天/30天趋势图）优先读 MySQL 日汇总表，避免实时扫描 InfluxDB 原始数据
+        if ("1d".equals(request.getInterval())) {
+            return getDailyHistory(greenhouseId, request);
+        }
         Instant start = Instant.ofEpochMilli(request.getStartTime());
         Instant end = Instant.ofEpochMilli(request.getEndTime());
 
@@ -180,6 +193,7 @@ public class SensorDataService {
      * 环境参数短期预测（第一阶段统计方法，后续可替换 LSTM Provider）
      */
     public ForecastResponse getForecast(Long greenhouseId, String sensorType, int steps, int intervalMinutes) {
+        validateSensorType(sensorType);
         long end = System.currentTimeMillis();
         long start = end - 24L * 3600 * 1000;
         SensorHistoryRequest request = SensorHistoryRequest.builder()
@@ -204,6 +218,7 @@ public class SensorDataService {
     public SensorCompareResponse getCompareData(Long greenhouseId, String sensorType,
                                                   List<Long> deviceIds,
                                                   Long startTime, Long endTime) {
+        validateSensorType(sensorType);
         Instant start = Instant.ofEpochMilli(startTime);
         Instant end = Instant.ofEpochMilli(endTime);
 
@@ -267,6 +282,7 @@ public class SensorDataService {
      */
     public SensorAggregateResponse getAggregateData(Long greenhouseId, String sensorType,
                                                      Long startTime, Long endTime) {
+        validateSensorType(sensorType);
         Instant start = Instant.ofEpochMilli(startTime);
         Instant end = Instant.ofEpochMilli(endTime);
 
@@ -375,6 +391,166 @@ public class SensorDataService {
         }
 
         return csv.toString();
+    }
+
+    // ===== R29：传感器类型白名单 + 日汇总读取 =====
+
+    /** 支持的传感器类型白名单（对应 Device.SensorType 枚举，防未知类型请求打 InfluxDB） */
+    public static final java.util.Set<String> SUPPORTED_SENSOR_TYPES =
+            java.util.Arrays.stream(Device.SensorType.values())
+                    .map(Enum::name)
+                    .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+
+    /** 传感器数据统计时区（与日汇总表 stat_date 保持一致） */
+    public static final ZoneId SENSOR_ZONE = ZoneId.of("Asia/Shanghai");
+
+    /** 校验传感器类型白名单 */
+    private void validateSensorType(String sensorType) {
+        if (sensorType == null || !SUPPORTED_SENSOR_TYPES.contains(sensorType)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "不支持的传感器类型: " + sensorType);
+        }
+    }
+
+    /**
+     * 日粒度历史读取：完整日期优先读 MySQL 日汇总表，今日与缺日回退 InfluxDB 原始聚合
+     */
+    private List<SensorDataPoint> getDailyHistory(Long greenhouseId, SensorHistoryRequest request) {
+        LocalDate startDate = Instant.ofEpochMilli(request.getStartTime()).atZone(SENSOR_ZONE).toLocalDate();
+        LocalDate endDate = Instant.ofEpochMilli(request.getEndTime()).atZone(SENSOR_ZONE).toLocalDate();
+        LocalDate today = LocalDate.now(SENSOR_ZONE);
+        LocalDate summaryEnd = today.minusDays(1);
+
+        Map<LocalDate, List<Double>> dayAvgs = new TreeMap<>();
+        Map<LocalDate, Double> dayMin = new HashMap<>();
+        Map<LocalDate, Double> dayMax = new HashMap<>();
+        Map<LocalDate, Long> dayCount = new HashMap<>();
+
+        if (!startDate.isAfter(summaryEnd)) {
+            List<SensorDailySummary> rows = dailySummaryRepository
+                    .findByGreenhouseIdAndSensorTypeAndStatDateBetween(
+                            greenhouseId, request.getSensorType(), startDate, summaryEnd);
+            for (SensorDailySummary row : rows) {
+                if (row.getAvgValue() == null) continue;
+                dayAvgs.computeIfAbsent(row.getStatDate(), k -> new ArrayList<>()).add(row.getAvgValue());
+                if (row.getMinValue() != null) dayMin.merge(row.getStatDate(), row.getMinValue(), Math::min);
+                if (row.getMaxValue() != null) dayMax.merge(row.getStatDate(), row.getMaxValue(), Math::max);
+                if (row.getDataCount() != null) dayCount.merge(row.getStatDate(), row.getDataCount(), Long::sum);
+            }
+        }
+
+        List<LocalDate> missing = new ArrayList<>();
+        for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+            if (d.isAfter(summaryEnd) || !dayAvgs.containsKey(d)) {
+                missing.add(d);
+            }
+        }
+        if (!missing.isEmpty()) {
+            Map<LocalDate, DailyStat> influx = queryDailyStatsFromInflux(
+                    greenhouseId, request.getSensorType(), missing.get(0), missing.get(missing.size() - 1));
+            for (DailyStat s : influx.values()) {
+                if (s.getAvg() == null) continue;
+                dayAvgs.put(s.getDate(), new ArrayList<>(List.of(s.getAvg())));
+                if (s.getMin() != null) dayMin.merge(s.getDate(), s.getMin(), Math::min);
+                if (s.getMax() != null) dayMax.merge(s.getDate(), s.getMax(), Math::max);
+                if (s.getCount() != null) dayCount.merge(s.getDate(), s.getCount(), Long::sum);
+            }
+        }
+
+        List<SensorDataPoint> result = new ArrayList<>();
+        for (Map.Entry<LocalDate, List<Double>> e : dayAvgs.entrySet()) {
+            double avg = e.getValue().stream().mapToDouble(Double::doubleValue).average().orElse(Double.NaN);
+            if (Double.isNaN(avg)) continue;
+            result.add(SensorDataPoint.builder()
+                    .greenhouseId(greenhouseId)
+                    .sensorType(request.getSensorType())
+                    .value(Math.round(avg * 100.0) / 100.0)
+                    .timestamp(e.getKey().atStartOfDay(SENSOR_ZONE).toInstant())
+                    .build());
+        }
+        result.sort(Comparator.comparing(SensorDataPoint::getTimestamp));
+        return result;
+    }
+
+    /**
+     * 从 InfluxDB 按天聚合（Asia/Shanghai 日界）获取日均/最小/最大/条数
+     */
+    public Map<LocalDate, DailyStat> queryDailyStatsFromInflux(
+            Long greenhouseId, String sensorType, LocalDate start, LocalDate end) {
+        ZonedDateTime startZdt = start.atStartOfDay(SENSOR_ZONE);
+        ZonedDateTime stopZdt = end.plusDays(1).atStartOfDay(SENSOR_ZONE);
+        String template = "option location = {zone: \"Asia/Shanghai\"};\n"
+                + "from(bucket: \"%s\") "
+                + "|> range(start: %s, stop: %s) "
+                + "|> filter(fn: (r) => r[\"_measurement\"] == \"sensor_data\") "
+                + "|> filter(fn: (r) => r[\"greenhouse_id\"] == \"%d\") "
+                + "|> filter(fn: (r) => r[\"sensor_type\"] == \"%s\") "
+                + "|> filter(fn: (r) => r[\"_field\"] == \"value\") "
+                + "|> aggregateWindow(every: 1d, fn: %s, createEmpty: false) "
+                + "|> yield(name: \"%s\")";
+
+        Map<LocalDate, DayAcc> acc = new TreeMap<>();
+        collectDailyAgg(template, greenhouseId, sensorType, startZdt, stopZdt, "mean", acc, "avg");
+        collectDailyAgg(template, greenhouseId, sensorType, startZdt, stopZdt, "min", acc, "min");
+        collectDailyAgg(template, greenhouseId, sensorType, startZdt, stopZdt, "max", acc, "max");
+        collectDailyAgg(template, greenhouseId, sensorType, startZdt, stopZdt, "count", acc, "count");
+
+        Map<LocalDate, DailyStat> result = new TreeMap<>();
+        for (Map.Entry<LocalDate, DayAcc> e : acc.entrySet()) {
+            DayAcc a = e.getValue();
+            if (a.n == 0) continue;
+            result.put(e.getKey(), DailyStat.builder()
+                    .date(e.getKey())
+                    .avg(a.avgSum / a.n)
+                    .min(a.min == Double.MAX_VALUE ? null : a.min)
+                    .max(a.max == -Double.MAX_VALUE ? null : a.max)
+                    .count(a.count)
+                    .build());
+        }
+        return result;
+    }
+
+    private void collectDailyAgg(String template, Long greenhouseId, String sensorType,
+                                 ZonedDateTime start, ZonedDateTime stop, String fn,
+                                 Map<LocalDate, DayAcc> acc, String field) {
+        String flux = String.format(template, configHelper.getBucket(), start.toInstant(), stop.toInstant(),
+                greenhouseId, sensorType, fn, fn);
+        List<FluxTable> tables = queryApi.query(flux);
+        for (FluxTable table : tables) {
+            for (FluxRecord record : table.getRecords()) {
+                Object value = record.getValue();
+                Instant time = record.getTime();
+                if (value == null || time == null) continue;
+                LocalDate date = time.atZone(SENSOR_ZONE).toLocalDate();
+                DayAcc a = acc.computeIfAbsent(date, k -> new DayAcc());
+                switch (field) {
+                    case "avg" -> { a.avgSum += (Double) value; a.n++; }
+                    case "min" -> a.min = Math.min(a.min, (Double) value);
+                    case "max" -> a.max = Math.max(a.max, (Double) value);
+                    case "count" -> a.count += (Long) value;
+                    default -> { }
+                }
+            }
+        }
+    }
+
+    /** 单日聚合累加器（内部类） */
+    private static class DayAcc {
+        double avgSum = 0;
+        int n = 0;
+        double min = Double.MAX_VALUE;
+        double max = -Double.MAX_VALUE;
+        long count = 0;
+    }
+
+    /** 日聚合结果（内部类） */
+    @lombok.Getter
+    @lombok.Builder
+    public static class DailyStat {
+        private final LocalDate date;
+        private final Double avg;
+        private final Double min;
+        private final Double max;
+        private final Long count;
     }
 
     // ===== 辅助方法 =====

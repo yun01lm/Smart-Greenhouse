@@ -71,7 +71,15 @@
       <!-- 中部：趋势图 + 健康评分 -->
       <div class="middle-row">
         <div class="chart-area">
-          <TrendChart :history-data="historyData" :forecast-data="forecastData" :allow-mock="!isExpert" />
+          <TrendChart
+            :history-data="historyData"
+            :forecast-data="forecastData"
+            :allow-mock="!isExpert"
+            :history-range="historyRange"
+            :metric-options="METRICS"
+            :selected-metrics="selectedMetrics"
+            @update:selected-metrics="onMetricsChange"
+          />
         </div>
         <div class="score-area">
           <HealthScore :data="healthData" />
@@ -264,9 +272,25 @@ const selectedGhName = ref('')
 const historyRange = ref('24h')
 const RANGE_CONFIG = {
   '24h': { ms: 24 * 3600 * 1000, interval: '1h' },
-  '7d': { ms: 7 * 24 * 3600 * 1000, interval: '6h' },
+  '7d': { ms: 7 * 24 * 3600 * 1000, interval: '1d' },
   '30d': { ms: 30 * 24 * 3600 * 1000, interval: '1d' }
 }
+const RANGE_LABEL = { '24h': '近24小时', '7d': '近7天', '30d': '近30天' }
+
+// R29：趋势图可选指标（8 种，与后端 Device.SensorType 白名单一致）
+const METRICS = [
+  { type: 'TEMPERATURE', key: 'temperature', label: '温度', unit: '°C', color: '#FF9800', mockBase: 24, mockAmp: 4 },
+  { type: 'HUMIDITY', key: 'humidity', label: '湿度', unit: '%', color: '#2196F3', mockBase: 65, mockAmp: 8 },
+  { type: 'CO2', key: 'co2', label: 'CO₂', unit: 'ppm', color: '#4CAF50', mockBase: 450, mockAmp: 60 },
+  { type: 'LIGHT', key: 'light', label: '光照', unit: 'lux', color: '#FFC107', mockBase: 25000, mockAmp: 8000 },
+  { type: 'SOIL_TEMP', key: 'soilTemperature', label: '土壤温度', unit: '°C', color: '#795548', mockBase: 22, mockAmp: 2 },
+  { type: 'SOIL_MOISTURE', key: 'soilHumidity', label: '土壤湿度', unit: '%', color: '#00BCD4', mockBase: 55, mockAmp: 10 },
+  { type: 'SOIL_PH', key: 'soilPh', label: '土壤pH', unit: 'pH', color: '#9C27B0', mockBase: 6.5, mockAmp: 0.4 },
+  { type: 'WIND_SPEED', key: 'windSpeed', label: '风速', unit: 'm/s', color: '#607D8B', mockBase: 2, mockAmp: 1 }
+]
+
+// 勾选显示的指标（默认温度+湿度；至少保留 1 项）
+const selectedMetrics = ref(['TEMPERATURE', 'HUMIDITY'])
 
 /** 生效中的大棚ID：专家用自选授权大棚，其他角色用全局选择器 */
 const effectiveGreenhouseId = computed(() => (isExpert.value ? selectedGhId.value : props.greenhouseId))
@@ -286,7 +310,9 @@ const TYPE_TO_KEY = {
   CO2: 'co2',
   LIGHT: 'light',
   SOIL_TEMP: 'soilTemperature',
-  SOIL_MOISTURE: 'soilHumidity'
+  SOIL_MOISTURE: 'soilHumidity',
+  SOIL_PH: 'soilPh',
+  WIND_SPEED: 'windSpeed'
 }
 
 /** 把后端 dataByType 嵌套结构拍平为 SensorCards 需要的扁平字段 */
@@ -303,43 +329,48 @@ function flattenRealtime(data) {
   return flat
 }
 
-/** 合并温度/湿度历史点为趋势图需要的 [{ time, temperature, humidity }] */
-function buildHistory(tempPoints, humPoints) {
+/** 时间格式化：24h → HH:00；7d/30d → MM-DD（R29 日汇总粒度） */
+function fmtHistoryTime(ts, range) {
+  const d = new Date(ts)
+  const pad = (n) => String(n).padStart(2, '0')
+  if (range === '24h') return `${pad(d.getHours())}:00`
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** 预测时间格式化：24h → HH:mm；7d/30d → MM-DD HH:mm */
+function fmtForecastTime(ts, range) {
+  const d = new Date(ts)
+  const pad = (n) => String(n).padStart(2, '0')
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return range === '24h' ? hm : `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`
+}
+
+/** 合并多指标历史点为趋势图需要的 [{ time, temperature, humidity, co2, ... }] */
+function buildHistory(byType, range) {
   const map = new Map()
-  const hour = (ts) => {
-    const d = new Date(ts)
-    return `${String(d.getHours()).padStart(2, '0')}:00`
-  }
-  for (const p of tempPoints || []) {
-    const k = hour(p.timestamp)
-    map.set(k, { time: k, temperature: p.value, humidity: null })
-  }
-  for (const p of humPoints || []) {
-    const k = hour(p.timestamp)
-    if (map.has(k)) {
-      map.get(k).humidity = p.value
-    } else {
-      map.set(k, { time: k, temperature: null, humidity: p.value })
+  for (const [type, points] of Object.entries(byType || {})) {
+    const key = TYPE_TO_KEY[type]
+    if (!key) continue
+    for (const p of points || []) {
+      const k = fmtHistoryTime(p.timestamp, range)
+      if (!map.has(k)) map.set(k, { time: k })
+      map.get(k)[key] = p.value
     }
   }
   return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
 }
 
-/** 合并温度/湿度预测点为 [{ time, temperature, humidity }]（保留分钟粒度） */
-function buildForecast(tempPoints, humPoints) {
+/** 合并多指标预测点为 [{ time, temperature, humidity, co2, ... }] */
+function buildForecast(byType, range) {
   const map = new Map()
-  const fmt = (ts) => {
-    const d = new Date(ts)
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
-  for (const p of tempPoints || []) {
-    const k = fmt(p.timestamp)
-    map.set(k, { time: k, temperature: p.value, humidity: null })
-  }
-  for (const p of humPoints || []) {
-    const k = fmt(p.timestamp)
-    if (map.has(k)) map.get(k).humidity = p.value
-    else map.set(k, { time: k, temperature: null, humidity: p.value })
+  for (const [type, points] of Object.entries(byType || {})) {
+    const key = TYPE_TO_KEY[type]
+    if (!key) continue
+    for (const p of points || []) {
+      const k = fmtForecastTime(p.timestamp, range)
+      if (!map.has(k)) map.set(k, { time: k })
+      map.get(k)[key] = p.value
+    }
   }
   return [...map.values()].sort((a, b) => (a.time < b.time ? -1 : 1))
 }
@@ -411,6 +442,13 @@ function onRangeChange() {
   loadAll()
 }
 
+/** 趋势图指标勾选变化：更新选中集合并重新拉取曲线数据（至少保留 1 项） */
+function onMetricsChange(types) {
+  if (!types || types.length === 0) return
+  selectedMetrics.value = types
+  loadAll()
+}
+
 let refreshTimer = null
 
 async function loadAll() {
@@ -420,16 +458,21 @@ async function loadAll() {
     const endTime = Date.now()
     const range = RANGE_CONFIG[historyRange.value] || RANGE_CONFIG['24h']
     const startTime = endTime - range.ms
-    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, tempHistRes, humHistRes, tempForecastRes, humForecastRes] = await Promise.allSettled([
+    const metricTypes = selectedMetrics.value
+    const historyPromises = metricTypes.map(type =>
+      getSensorHistory(ghId, { sensorType: type, startTime, endTime, interval: range.interval })
+    )
+    const forecastPromises = metricTypes.map(type =>
+      getSensorForecast(ghId, type, 4, 30)
+    )
+    const [sensorRes, healthRes, alertRes, unreadRes, weatherRes, ...curveResults] = await Promise.allSettled([
       getRealtimeData(ghId),
       getHealthScore(ghId),
       getAlerts(ghId, 1, 5),
       getUnreadAlertCount(ghId),
       getCurrentWeather({ greenhouseId: ghId }),
-      getSensorHistory(ghId, { sensorType: 'TEMPERATURE', startTime, endTime, interval: range.interval }),
-      getSensorHistory(ghId, { sensorType: 'HUMIDITY', startTime, endTime, interval: range.interval }),
-      getSensorForecast(ghId, 'TEMPERATURE', 4, 30),
-      getSensorForecast(ghId, 'HUMIDITY', 4, 30)
+      ...historyPromises,
+      ...forecastPromises
     ])
 
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
@@ -450,15 +493,19 @@ async function loadAll() {
     if (weatherRes.status === 'fulfilled' && weatherRes.value?.data) {
       weatherData.value = weatherRes.value.data
     }
-    if (tempHistRes.status === 'fulfilled' || humHistRes.status === 'fulfilled') {
-      const temps = tempHistRes.status === 'fulfilled' ? tempHistRes.value?.data || [] : []
-      const hums = humHistRes.status === 'fulfilled' ? humHistRes.value?.data || [] : []
-      historyData.value = buildHistory(temps, hums)
+    const histRes = curveResults.slice(0, metricTypes.length)
+    const fcRes = curveResults.slice(metricTypes.length)
+    const byTypeHist = {}
+    const byTypeFc = {}
+    metricTypes.forEach((type, i) => {
+      if (histRes[i]?.status === 'fulfilled') byTypeHist[type] = histRes[i].value?.data || []
+      if (fcRes[i]?.status === 'fulfilled') byTypeFc[type] = fcRes[i].value?.data?.points || []
+    })
+    if (Object.keys(byTypeHist).length) {
+      historyData.value = buildHistory(byTypeHist, historyRange.value)
     }
-    if (tempForecastRes.status === 'fulfilled' || humForecastRes.status === 'fulfilled') {
-      const fTemps = tempForecastRes.status === 'fulfilled' ? tempForecastRes.value?.data?.points || [] : []
-      const fHums = humForecastRes.status === 'fulfilled' ? humForecastRes.value?.data?.points || [] : []
-      forecastData.value = buildForecast(fTemps, fHums)
+    if (Object.keys(byTypeFc).length) {
+      forecastData.value = buildForecast(byTypeFc, historyRange.value)
     }
   } catch (e) {
     // 静默处理
