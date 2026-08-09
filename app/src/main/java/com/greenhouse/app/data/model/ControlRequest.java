@@ -3,22 +3,24 @@ package com.greenhouse.app.data.model;
 /**
  * 设备控制请求模型
  * <p>
- * 对应后端: POST /api/v1/control/actuator
+ * 对应后端: POST /api/v1/control/actuator 请求体 {deviceId, action}
  * </p>
  */
 public class ControlRequest {
 
-    private Long actuatorId;
+    private Long deviceId;
     private String action;      // ON / OFF
-    private Long greenhouseId;
 
-    public ControlRequest(Long actuatorId, String action, Long greenhouseId) {
-        this.actuatorId = actuatorId;
+    public ControlRequest() {}
+
+    public ControlRequest(Long deviceId, String action) {
+        this.deviceId = deviceId;
         this.action = action;
-        this.greenhouseId = greenhouseId;
     }
 
-    public Long getActuatorId() { return actuatorId; }
+    public Long getDeviceId() { return deviceId; }
     public String getAction() { return action; }
-    public Long getGreenhouseId() { return greenhouseId; }
+
+    public void setDeviceId(Long deviceId) { this.deviceId = deviceId; }
+    public void setAction(String action) { this.action = action; }
 }

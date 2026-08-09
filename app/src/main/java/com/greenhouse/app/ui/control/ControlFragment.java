@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.greenhouse.app.adapter.DeviceAdapter;
 import com.greenhouse.app.adapter.SceneAdapter;
-import com.greenhouse.app.data.model.ActuatorInfo;
+import com.greenhouse.app.data.model.DeviceInfo;
 import com.greenhouse.app.data.model.SceneInfo;
 import com.greenhouse.app.databinding.FragmentControlBinding;
 import com.greenhouse.app.util.RoleAdapter;

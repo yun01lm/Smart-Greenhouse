@@ -13,11 +13,12 @@ import retrofit2.Response;
  */
 public class ControlRepository extends BaseRepository {
 
-    public void getActuators(long greenhouseId, Callback<List<ActuatorInfo>> callback) {
+    public void getDevices(long greenhouseId, Callback<List<DeviceInfo>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<List<ActuatorInfo>>> response =
-                        apiService.getActuators(greenhouseId).execute();
+                // 控制页只展示控制器类设备
+                Response<ApiResponse<List<DeviceInfo>>> response =
+                        apiService.getDevices(greenhouseId, "CONTROLLER").execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {
@@ -29,12 +30,12 @@ public class ControlRepository extends BaseRepository {
         });
     }
 
-    public void controlActuator(long actuatorId, String action, long greenhouseId,
-                                Callback<ControlResponse> callback) {
+    public void controlActuator(long deviceId, String action,
+                                Callback<DeviceControlResult> callback) {
         execute(() -> {
             try {
-                ControlRequest request = new ControlRequest(actuatorId, action, greenhouseId);
-                Response<ApiResponse<ControlResponse>> response = apiService.controlActuator(request).execute();
+                ControlRequest request = new ControlRequest(deviceId, action);
+                Response<ApiResponse<DeviceControlResult>> response = apiService.controlActuator(request).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {
@@ -62,11 +63,11 @@ public class ControlRepository extends BaseRepository {
         });
     }
 
-    public void executeScene(long sceneId, long greenhouseId, Callback<ControlResponse> callback) {
+    public void executeScene(long sceneId, Callback<List<DeviceControlResult>> callback) {
         execute(() -> {
             try {
-                SceneExecuteRequest request = new SceneExecuteRequest(greenhouseId);
-                Response<ApiResponse<ControlResponse>> response = apiService.executeScene(sceneId, request).execute();
+                Response<ApiResponse<List<DeviceControlResult>>> response =
+                        apiService.executeScene(sceneId).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

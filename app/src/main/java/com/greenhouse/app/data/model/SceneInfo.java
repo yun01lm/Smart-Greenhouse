@@ -16,6 +16,7 @@ public class SceneInfo {
     private String name;                    // 场景名称（如"高温通风"）
     private String description;             // 场景描述
     private Boolean enabled;
+    @SerializedName("actions")
     private List<SceneAction> actionsJson;  // 场景包含的设备操作列表
     private Long greenhouseId;
     private String createdAt;
@@ -50,14 +51,28 @@ public class SceneInfo {
      * 场景中单个操作
      */
     public static class SceneAction {
-        private Long actuatorId;
+        @SerializedName("deviceId")
+        private Long deviceId;
+
+        @SerializedName("deviceName")
+        private String deviceName;
         private String action;      // ON / OFF / SET
         private String description; // 如"开启通风风机"
 
         public SceneAction() {}
 
-        public Long getActuatorId() { return actuatorId; }
+        public Long getDeviceId() { return deviceId; }
+        public String getDeviceName() { return deviceName; }
         public String getAction() { return action; }
-        public String getDescription() { return description; }
+
+        /**
+         * 生成操作描述（如"开启通风风机"）
+         */
+        public String getDescription() {
+            if (deviceName != null) {
+                return ("ON".equals(action) ? "开启" : "关闭") + deviceName;
+            }
+            return action != null ? action : "";
+        }
     }
 }

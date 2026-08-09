@@ -136,7 +136,7 @@ public interface GreenhouseApiService {
     // ===== C7 设备控制 =====
 
     @POST("control/actuator")
-    Call<ApiResponse<ControlResponse>> controlActuator(@Body ControlRequest request);
+    Call<ApiResponse<DeviceControlResult>> controlActuator(@Body ControlRequest request);
 
     @GET("control/scenes")
     Call<ApiResponse<List<SceneInfo>>> getScenes(
@@ -144,14 +144,12 @@ public interface GreenhouseApiService {
     );
 
     @POST("control/scenes/{id}/execute")
-    Call<ApiResponse<ControlResponse>> executeScene(
-            @Path("id") long sceneId,
-            @Body SceneExecuteRequest request
-    );
+    Call<ApiResponse<List<DeviceControlResult>>> executeScene(@Path("id") long sceneId);
 
-    @GET("devices/actuators")
-    Call<ApiResponse<List<ActuatorInfo>>> getActuators(
-            @Query("greenhouseId") long greenhouseId
+    @GET("greenhouses/{greenhouseId}/devices")
+    Call<ApiResponse<List<DeviceInfo>>> getDevices(
+            @Path("greenhouseId") long greenhouseId,
+            @Query("type") String type
     );
 
     // ===== C5 历史数据（与后端 POST /api/v1/sensors/history 对齐）=====
