@@ -32,4 +32,18 @@
     <color name="confidence_high">#FF4CAF50</color>
     <color name="confidence_medium">#FFFFC107</color>
     <color name="confidence_low">#FFF44336</color>
+    <!-- 美化专用色 -->
+    <color name="gradient_start">#FF1B5E20</color>
+    <color name="gradient_end">#FF43A047</color>
+    <color name="card_white">#FFFFFFFF</color>
+    <color name="bg_page">#FFF4F7F4</color>
+    <color name="chip_green_bg">#FFE8F5E9</color>
+    <color name="chip_green_fg">#FF2E7D32</color>
+    <color name="chip_blue_bg">#FFE3F2FD</color>
+    <color name="chip_blue_fg">#FF1565C0</color>
+    <color name="chip_orange_bg">#FFFFF3E0</color>
+    <color name="chip_orange_fg">#FFE65100</color>
+    <color name="chip_purple_bg">#FFF3E5F5</color>
+    <color name="chip_purple_fg">#FF6A1B9A</color>
+    <color name="divider_light">#FFEDF0ED</color>
 </resources>

@@ -1,122 +1,255 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background">
+    android:background="@color/bg_page"
+    android:fillViewport="true">
 
-    <!-- 用户信息卡片 -->
-    <androidx.cardview.widget.CardView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <!-- 用户信息卡片 -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="20dp"
-            android:gravity="center">
+            android:layout_margin="16dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="4dp">
 
-            <!-- 头像占位 -->
-            <View
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:background="@drawable/bg_avatar" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:gravity="center">
+
+                <!-- 头像占位 -->
+                <FrameLayout
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:background="@drawable/bg_avatar"
+                    android:elevation="2dp">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:gravity="center"
+                        android:text="@string/app_name"
+                        android:textColor="@android:color/white"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tv_real_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="--"
+                    android:textColor="@color/on_surface"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_role"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="3dp"
+                    android:text="--"
+                    android:textColor="@color/chip_green_fg"
+                    android:textSize="13sp"
+                    android:background="@drawable/bg_icon_chip_green" />
+
+                <TextView
+                    android:id="@+id/tv_username"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="--"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- 员工管理入口 (R26 棚主专属) -->
+        <LinearLayout
+            android:id="@+id/btn_employee_management"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_menu_item"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:padding="7dp"
+                android:background="@drawable/bg_icon_chip_green"
+                android:src="@drawable/ic_profile"
+                android:contentDescription="员工管理" />
 
             <TextView
-                android:id="@+id/tv_real_name"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="--"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:text="员工管理"
                 android:textColor="@color/on_surface"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="15sp" />
 
             <TextView
-                android:id="@+id/tv_role"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="--"
-                android:textColor="@color/primary"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/tv_username"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="--"
+                android:text="›"
                 android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:textSize="22sp" />
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
 
-    <!-- 员工管理入口 (R26 棚主专属) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_employee_management"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        android:text="员工管理"
-        android:textColor="@color/on_surface"
-        app:icon="@drawable/ic_profile"
-        app:iconGravity="start"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        <!-- 专家咨询入口 (F10) -->
+        <LinearLayout
+            android:id="@+id/btn_expert_consult"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_menu_item"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-    <!-- 专家咨询入口 (F10) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_expert_consult"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        android:text="专家咨询"
-        android:textColor="@color/on_surface"
-        app:icon="@drawable/ic_expert"
-        app:iconGravity="start"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:padding="7dp"
+                android:background="@drawable/bg_icon_chip_blue"
+                android:src="@drawable/ic_expert"
+                android:contentDescription="专家咨询" />
 
-    <!-- 授权管理入口 (F10) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_authorization"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:text="授权管理"
-        android:textColor="@color/on_surface"
-        app:icon="@drawable/ic_snapshot"
-        app:iconGravity="start"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:text="专家咨询"
+                android:textColor="@color/on_surface"
+                android:textSize="15sp" />
 
-    <!-- 修改密码入口 (R16) -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_change_password"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        android:text="修改密码"
-        android:textColor="@color/on_surface"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="›"
+                android:textColor="@color/text_secondary"
+                android:textSize="22sp" />
+        </LinearLayout>
 
-    <!-- 退出登录按钮 -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_logout"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="16dp"
-        android:text="@string/profile_logout"
-        android:textColor="@color/level_danger"
-        app:strokeColor="@color/level_danger"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+        <!-- 授权管理入口 (F10) -->
+        <LinearLayout
+            android:id="@+id/btn_authorization"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_menu_item"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
 
-</LinearLayout>
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:padding="7dp"
+                android:background="@drawable/bg_icon_chip_orange"
+                android:src="@drawable/ic_snapshot"
+                android:contentDescription="授权管理" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:text="授权管理"
+                android:textColor="@color/on_surface"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="›"
+                android:textColor="@color/text_secondary"
+                android:textSize="22sp" />
+        </LinearLayout>
+
+        <!-- 修改密码入口 (R16) -->
+        <LinearLayout
+            android:id="@+id/btn_change_password"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_menu_item"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground">
+
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:padding="7dp"
+                android:background="@drawable/bg_icon_chip_purple"
+                android:src="@drawable/ic_profile"
+                android:contentDescription="修改密码" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:text="修改密码"
+                android:textColor="@color/on_surface"
+                android:textSize="15sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="›"
+                android:textColor="@color/text_secondary"
+                android:textSize="22sp" />
+        </LinearLayout>
+
+        <!-- 退出登录按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_logout"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/profile_logout"
+            android:textColor="@color/level_danger"
+            android:textSize="15sp"
+            app:strokeColor="@color/level_danger"
+            app:cornerRadius="14dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+    </LinearLayout>
+</ScrollView>

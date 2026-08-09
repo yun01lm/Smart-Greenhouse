@@ -3,4 +3,7 @@
     <cache-path
         name="diagnosis_images"
         path="." />
+    <external-files-path
+        name="diagnosis_images_ext"
+        path="Pictures/" />
 </paths>

@@ -1,6 +1,8 @@
 package com.greenhouse.app.ui.diagnosis;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -16,6 +18,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
@@ -51,6 +54,7 @@ public class DiagnosisFragment extends Fragment {
     private Uri currentPhotoUri;
     private ActivityResultLauncher<Uri> takePhotoLauncher;
     private ActivityResultLauncher<String> pickImageLauncher;
+    private ActivityResultLauncher<String> cameraPermissionLauncher;
 
     @Nullable
     @Override
@@ -91,6 +95,17 @@ public class DiagnosisFragment extends Fragment {
                         compressAndDiagnose(uri);
                     }
                 });
+
+        cameraPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (Boolean.TRUE.equals(granted)) {
+                        takePhoto();
+                    } else {
+                        Toast.makeText(requireContext(), "需要相机权限才能拍照", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
 
         // 按钮事件
         binding.btnCamera.setOnClickListener(v -> takePhoto());
@@ -165,6 +180,11 @@ public class DiagnosisFragment extends Fragment {
     // ===== 拍照 =====
 
     private void takePhoto() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+            return;
+        }
         try {
             File photoFile = File.createTempFile("diagnosis_", ".jpg",
                     requireContext().getExternalFilesDir(Environment.DIRECTORY_PICTURES));
