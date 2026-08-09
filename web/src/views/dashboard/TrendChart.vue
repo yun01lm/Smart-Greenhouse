@@ -71,18 +71,17 @@ function areaGradient(color) {
   ])
 }
 
-/** 按单位构建 Y 轴（同类单位共轴，位置左右交替 + 偏移） */
+/** 构建 Y 轴：每个选中指标独立一轴（同单位不再共轴，避免曲线重叠），左右交替 + 偏移 */
 function buildAxes(metrics) {
-  const units = [...new Set((props.metricOptions || []).map(m => m.unit))]
-  const axes = []
+  const axes = (metrics || []).map((m, i) => ({
+    unit: m.unit,
+    metricType: m.type,
+    position: i % 2 === 0 ? 'left' : 'right',
+    offset: Math.floor(i / 2) * 50
+  }))
   const unitIndex = {}
-  units.forEach((unit, i) => {
-    unitIndex[unit] = i
-    axes.push({
-      unit,
-      position: i % 2 === 0 ? 'left' : 'right',
-      offset: Math.floor(i / 2) * 55
-    })
+  axes.forEach((a, i) => {
+    unitIndex[a.metricType] = i
   })
   return { axes, unitIndex }
 }
@@ -111,7 +110,7 @@ function buildOption() {
         ...future.map(d => (d[key] != null ? d[key] : null))
       ]
     }
-    const yi = unitIndex[m.unit]
+    const yi = unitIndex[m.type]
     axisValues[yi].push(...histVals.filter(v => v != null), ...fcVals.filter(v => v != null))
     series.push({
       name: `${m.label} (${m.unit})`,
@@ -174,8 +173,8 @@ function buildOption() {
       type: 'scroll'
     },
     grid: {
-      left: '3%',
-      right: '8%',
+      left: '4%',
+      right: '10%',
       bottom: '3%',
       top: '52px',
       containLabel: true
@@ -196,7 +195,7 @@ function renderEmpty() {
     xAxis: { data: [] },
     yAxis: [],
     series: []
-  })
+  }, { notMerge: true })
 }
 
 /** 无数据时生成模拟曲线（按范围生成对应天数/小时数） */
@@ -222,7 +221,7 @@ function buildMock(metrics, axes, unitIndex) {
   }
   const axisValues = axes.map(() => [])
   for (const m of metrics) {
-    const yi = unitIndex[m.unit]
+    const yi = unitIndex[m.type]
     for (const p of points) axisValues[yi].push(p[m.key])
   }
   return { points, axisValues }
@@ -267,7 +266,7 @@ function render() {
         }
       }),
       series: filled
-    })
+    }, { notMerge: true })
     return
   }
 
