@@ -43,17 +43,27 @@ public class VoiceQaService {
      */
     @Transactional
     public QaResponse askVoice(Long userId, Long greenhouseId, MultipartFile audioFile) {
-        // 1. 保存音频文件
+        // 1. 先读取音频字节（必须在 transfer/save 之前，否则 Tomcat 临时文件会被清理）
+        byte[] audioBytes;
+        try {
+            audioBytes = audioFile.getBytes();
+        } catch (Exception e) {
+            log.error("读取音频文件失败: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.FILE_UPLOAD_FAILED, "音频文件读取失败");
+        }
+
+        // 2. 保存音频文件
         String audioPath = fileService.saveAudioFile(audioFile);
 
-        // 2. 语音识别
+        // 3. 语音识别
         SpeechRecognitionProvider.SpeechRecognitionResult asrResult;
         try {
-            asrResult = speechProvider.recognize(audioFile.getBytes());
+            asrResult = speechProvider.recognize(audioBytes);
         } catch (Exception e) {
             log.error("语音识别失败: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.AI_SPEECH_FAILED);
         }
+
 
         String question = asrResult.text();
         if (question == null || question.isBlank()) {
@@ -63,7 +73,7 @@ public class VoiceQaService {
         log.info("语音识别完成: text={}, engine={}, dialect={}, confidence={}",
                 question, asrResult.engineName(), asrResult.dialect(), asrResult.confidence());
 
-        // 3. RAG 问答（仅生成回答，不保存记录）
+        // 4. RAG 问答（仅生成回答，不保存记录）
         String answer;
         String sourcesJson = "[]";
         try {
@@ -76,7 +86,7 @@ public class VoiceQaService {
             answer = "抱歉，AI 服务暂时不可用，请稍后重试。";
         }
 
-        // 4. 保存语音问答记录
+        // 5. 保存语音问答记录
         QaRecord record = QaRecord.builder()
                 .userId(userId)
                 .question(question)

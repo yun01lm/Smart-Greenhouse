@@ -38,6 +38,9 @@ public class DiagnosisResultActivity extends AppCompatActivity {
         binding = ActivityDiagnosisResultBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 返回按钮
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
+
         // 读取 Intent 数据
         readIntentData();
         // 显示数据

@@ -109,8 +109,7 @@ public interface GreenhouseApiService {
     );
 
     @GET("diagnosis/records")
-    Call<ApiResponse<PageResult<DiagnosisHistoryItem>>> getDiagnosisHistory(
-            @Query("greenhouseId") long greenhouseId,
+    Call<ApiResponse<List<DiagnosisHistoryItem>>> getDiagnosisHistory(
             @Query("page") int page,
             @Query("size") int size
     );

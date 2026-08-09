@@ -2,6 +2,7 @@ package com.greenhouse.ai.xunfei;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.greenhouse.ai.SpeechRecognitionProvider;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -20,26 +21,28 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 讯飞语音识别实现
+ * ????????
  * <p>
- * 调用讯飞 WebAPI 进行语音转文字，支持河北方言识别。
- * 使用 HMAC-SHA256 签名鉴权方式。
+ * ?????????? WebAPI?WebSocket ????????????????????
+ * ?? HMAC-SHA256 ???????
  * </p>
  *
- * <h3>API 文档</h3>
+ * <h3>API ??</h3>
  * <ul>
- *   <li>WebAPI 文档：https://www.xfyun.cn/doc/asr/voicedictation/API.html</li>
- *   <li>方言支持：hebei（河北话）</li>
+ *   <li>WebAPI ???https://www.xfyun.cn/doc/asr/voicedictation/API.html</li>
+ *   <li>?????hebei???????????????????</li>
  * </ul>
  *
- * <h3>配置项</h3>
+ * <h3>???</h3>
  * <ul>
- *   <li>{@code xunfei.app-id} — 讯飞应用 ID</li>
- *   <li>{@code xunfei.api-key} — 讯飞 API Key</li>
- *   <li>{@code xunfei.api-secret} — 讯飞 API Secret（用于签名）</li>
+ *   <li>{@code xunfei.app-id} ? ???? ID</li>
+ *   <li>{@code xunfei.api-key} ? ?? API Key</li>
+ *   <li>{@code xunfei.api-secret} ? ?? API Secret??????</li>
  * </ul>
  */
 @Slf4j
@@ -53,10 +56,16 @@ public class XunfeiSpeechProvider implements SpeechRecognitionProvider {
     private final ObjectMapper objectMapper;
     private final OkHttpClient httpClient;
 
-    /** 讯飞语音听写 WebAPI 地址 */
-    private static final String ASR_URL = "https://ws-api.xfyun.cn/v2/aisp";
+    /** ???????? WebAPI ???WebSocket ??? */
+    private static final String ASR_URL = "wss://iat-api.xfyun.cn/v2/iat";
 
-    /** 支持的方言 */
+    /** ???????????? host ????? */
+    private static final String HOST = "iat-api.xfyun.cn";
+
+    /** ???????????????? 8000 ??? */
+    private static final int FRAME_SIZE = 8000;
+
+    /** ????? */
     private static final List<String> SUPPORTED_DIALECTS = List.of("mandarin", "hebei");
 
     public XunfeiSpeechProvider(
@@ -70,37 +79,150 @@ public class XunfeiSpeechProvider implements SpeechRecognitionProvider {
         this.objectMapper = objectMapper;
         this.httpClient = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .pingInterval(5, TimeUnit.SECONDS)
                 .build();
     }
 
     @Override
     public SpeechRecognitionResult recognize(byte[] audioData) throws Exception {
-        // 1. 构建请求 URL（带签名参数）
         String requestUrl = buildAuthUrl();
 
-        // 2. Base64 编码音频
-        String base64Audio = Base64.getEncoder().encodeToString(audioData);
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<SpeechRecognitionResult> resultRef = new AtomicReference<>();
+        AtomicReference<Exception> errorRef = new AtomicReference<>();
 
-        // 3. 构建请求体
-        String requestBody = buildRequestBody(base64Audio);
+        Request request = new Request.Builder().url(requestUrl).build();
+        WebSocketListener listener = new WebSocketListener() {
+            private final StringBuilder textBuilder = new StringBuilder();
 
-        // 4. 发送请求
-        Request request = new Request.Builder()
-                .url(requestUrl)
-                .post(RequestBody.create(requestBody, MediaType.parse("application/json")))
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json")
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                throw new IOException("讯飞 ASR 请求失败: HTTP " + response.code());
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+                sendFrames(webSocket, audioData);
             }
 
-            String responseBody = response.body() != null ? response.body().string() : "";
-            return parseResponse(responseBody);
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                try {
+                    JsonNode root = objectMapper.readTree(text);
+                    int code = root.path("code").asInt(-1);
+                    if (code != 0) {
+                        String message = root.path("message").asText("????");
+                        errorRef.set(new IOException("?? ASR ?? [" + code + "]: " + message));
+                        latch.countDown();
+                        return;
+                    }
+                    JsonNode ws = root.path("data").path("result").path("ws");
+                    if (ws.isArray()) {
+                        for (JsonNode wordSegment : ws) {
+                            JsonNode cw = wordSegment.get("cw");
+                            if (cw != null && cw.isArray()) {
+                                for (JsonNode word : cw) {
+                                    if (word.has("w")) {
+                                        textBuilder.append(word.get("w").asText());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    int status = root.path("data").path("status").asInt(-1);
+                    if (status == 2) {
+                        resultRef.set(new SpeechRecognitionResult(
+                                textBuilder.toString().trim(), "", 0.0, "hebei", "xunfei", 0));
+                        latch.countDown();
+                    }
+                } catch (Exception e) {
+                    errorRef.set(e);
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                errorRef.set(new IOException("?? WebSocket ????: " + t.getMessage(), t));
+                latch.countDown();
+            }
+        };
+
+        WebSocket webSocket = httpClient.newWebSocket(request, listener);
+        try {
+            if (!latch.await(30, TimeUnit.SECONDS)) {
+                throw new IOException("?? ASR ??");
+            }
+        } finally {
+            webSocket.close(1000, null);
+            httpClient.dispatcher().executorService().shutdown();
         }
+
+        if (errorRef.get() != null) {
+            throw errorRef.get();
+        }
+        return resultRef.get();
+    }
+
+    /** ???????status 0 ??? common/business?1 ????2 ??? */
+    private void sendFrames(WebSocket webSocket, byte[] audioData) {
+        try {
+            int offset = 0;
+            int frameIndex = 0;
+            int total = audioData.length;
+            while (offset < total) {
+                int len = Math.min(FRAME_SIZE, total - offset);
+                byte[] chunk = new byte[len];
+                System.arraycopy(audioData, offset, chunk, 0, len);
+                String frame;
+                if (frameIndex == 0) {
+                    frame = buildFirstFrame(chunk);
+                } else {
+                    frame = buildMiddleFrame(chunk, 1);
+                }
+                log.debug("?????[{}] len={}: {}", frameIndex, frame.length(), frame.substring(0, Math.min(200, frame.length())));
+                webSocket.send(frame);
+                offset += len;
+                frameIndex++;
+            }
+            String last = buildMiddleFrame(new byte[0], 2);
+            log.debug("??????: {}", last);
+            webSocket.send(last);
+        } catch (Exception e) {
+            log.error("???????: {}", e.getMessage(), e);
+        }
+    }
+
+    private String buildFirstFrame(byte[] chunk) throws Exception {
+        String common = objectMapper.writeValueAsString(
+                objectMapper.createObjectNode().put("app_id", appId));
+        String business = objectMapper.writeValueAsString(
+                objectMapper.createObjectNode()
+                        .put("language", "zh_cn")
+                        .put("domain", "iat")
+                        .put("accent", "hebei")
+                        .put("vad_eos", 3000)
+                        .put("dwa", "wpgs")
+                        .put("vinfo", 1));
+        String data = buildDataFrame(0, chunk);
+        ObjectNode frame = objectMapper.createObjectNode();
+        frame.set("common", objectMapper.readTree(common));
+        frame.set("business", objectMapper.readTree(business));
+        frame.set("data", objectMapper.readTree(data));
+        return objectMapper.writeValueAsString(frame);
+    }
+
+    private String buildMiddleFrame(byte[] chunk, int status) throws Exception {
+        String dataJson = buildDataFrame(status, chunk);
+        ObjectNode frame = objectMapper.createObjectNode();
+        frame.set("data", objectMapper.readTree(dataJson));
+        return objectMapper.writeValueAsString(frame);
+    }
+
+    private String buildDataFrame(int status, byte[] chunk) throws Exception {
+        String base64Audio = Base64.getEncoder().encodeToString(chunk);
+        return objectMapper.writeValueAsString(
+                objectMapper.createObjectNode()
+                        .put("status", status)
+                        .put("format", "audio/L16;rate=16000")
+                        .put("encoding", "raw")
+                        .put("audio", base64Audio));
     }
 
     @Override
@@ -113,155 +235,48 @@ public class XunfeiSpeechProvider implements SpeechRecognitionProvider {
         return SUPPORTED_DIALECTS;
     }
 
-    // ===== 私有方法 =====
+    // ===== ???? =====
 
     /**
-     * 构建带 HMAC-SHA256 签名的请求 URL
+     * ??? HMAC-SHA256 ??? WebSocket ?? URL
      * <p>
-     * 讯飞鉴权方式：对 host + date + request-line 做 HMAC-SHA256 签名，
-     * 结果编码为 authorization header 参数。
+     * ???????? host + date + request-line?GET /v2/iat HTTP/1.1?? HMAC-SHA256 ???
+     * ????? authorization ?????
      * </p>
      */
     private String buildAuthUrl() throws Exception {
-        URL url = new URL(ASR_URL);
-        String host = url.getHost();
+        String host = HOST;
 
-        // RFC 1123 格式时间
+        // RFC 1123 ????
         SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US);
         sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
         String date = sdf.format(new Date());
 
-        // 签名字符串: host: host\ndate: date\nGET /v2/aisp HTTP/1.1
+        // ?????: host: host\ndate: date\nGET /v2/iat HTTP/1.1
         String signatureOrigin = "host: " + host + "\ndate: " + date + "\n"
-                + "POST /v2/aisp HTTP/1.1";
+                + "GET /v2/iat HTTP/1.1";
 
-        // HMAC-SHA256 签名
+        // HMAC-SHA256 ??
         Mac mac = Mac.getInstance("HmacSHA256");
         SecretKeySpec spec = new SecretKeySpec(apiSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         mac.init(spec);
         String signature = Base64.getEncoder().encodeToString(
                 mac.doFinal(signatureOrigin.getBytes(StandardCharsets.UTF_8)));
 
-        // 组装 authorization 参数
+        // ?? authorization ??
         String authorizationOrigin = "api_key=\"" + apiKey
                 + "\", algorithm=\"hmac-sha256\", headers=\"host date request-line\", signature=\""
                 + signature + "\"";
         String authorization = Base64.getEncoder().encodeToString(
                 authorizationOrigin.getBytes(StandardCharsets.UTF_8));
 
-        return ASR_URL + "?host=" + host + "&date=" + date + "&authorization=" + authorization;
+        return ASR_URL + "?authorization=" + encode(authorization)
+                + "&date=" + encode(date)
+                + "&host=" + encode(host);
     }
 
-    /**
-     * 构建讯飞语音听写请求体
-     */
-    private String buildRequestBody(String base64Audio) throws Exception {
-        // 构建 common 参数
-        String common = objectMapper.writeValueAsString(
-                objectMapper.createObjectNode().put("app_id", appId));
-
-        // 构建 business 参数：开启方言识别（河北话）
-        String business = objectMapper.writeValueAsString(
-                objectMapper.createObjectNode()
-                        .put("language", "zh_cn")
-                        .put("domain", "iat")
-                        .put("accent", "hebei")
-                        .put("vad_eos", 3000)     // 尾端点静音检测 3 秒
-                        .put("dwa", "wpgs")        // 动态修正
-        );
-
-        // 构建 data 参数
-        String data = objectMapper.writeValueAsString(
-                objectMapper.createObjectNode()
-                        .put("status", 2)          // 2 = 最后一帧（一次性上传）
-                        .put("format", "audio/L16;rate=16000")
-                        .put("encoding", "raw")
-                        .put("audio", base64Audio)
-        );
-
-        return objectMapper.writeValueAsString(
-                objectMapper.createObjectNode()
-                        .put("common", common)
-                        .put("business", business)
-                        .put("data", data)
-        );
-    }
-
-    /**
-     * 解析讯飞语音识别响应
-     */
-    private SpeechRecognitionResult parseResponse(String responseBody) throws Exception {
-        JsonNode root = objectMapper.readTree(responseBody);
-
-        // 检查 header.code
-        JsonNode header = root.get("header");
-        if (header == null) {
-            throw new IOException("讯飞 ASR 响应格式异常：缺少 header");
-        }
-        int code = header.get("code").asInt();
-        if (code != 0) {
-            String message = header.has("message") ? header.get("message").asText() : "未知错误";
-            throw new IOException("讯飞 ASR 错误 [" + code + "]: " + message);
-        }
-
-        // 解析识别结果
-        JsonNode payload = root.get("payload");
-        if (payload == null) {
-            return new SpeechRecognitionResult("", "", 0.0, "hebei", "xunfei", 0);
-        }
-
-        JsonNode result = payload.get("result");
-        if (result == null) {
-            return new SpeechRecognitionResult("", "", 0.0, "hebei", "xunfei", 0);
-        }
-
-        // 拼接所有识别片段
-        StringBuilder textBuilder = new StringBuilder();
-        double totalConfidence = 0.0;
-        int segmentCount = 0;
-
-        JsonNode ws = result.get("ws");
-        if (ws != null && ws.isArray()) {
-            for (JsonNode wordSegment : ws) {
-                JsonNode cw = wordSegment.get("cw");
-                if (cw != null && cw.isArray()) {
-                    for (JsonNode word : cw) {
-                        if (word.has("w")) {
-                            textBuilder.append(word.get("w").asText());
-                        }
-                    }
-                }
-            }
-        }
-
-        // 计算平均置信度
-        if (result.has("rg")) {
-            JsonNode rg = result.get("rg");
-            if (rg.isArray() && !rg.isEmpty()) {
-                for (JsonNode r : rg) {
-                    totalConfidence += r.asDouble();
-                    segmentCount++;
-                }
-            }
-        }
-        double confidence = segmentCount > 0 ? totalConfidence / segmentCount : 0.0;
-
-        // 提取方言原文（讯飞有时返回 dialect 字段）
-        String rawDialectText = "";
-        if (result.has("dialect")) {
-            rawDialectText = result.get("dialect").asText();
-        }
-
-        log.info("讯飞 ASR 识别完成: text={}, confidence={}, segments={}",
-                textBuilder.toString(), confidence, segmentCount);
-
-        return new SpeechRecognitionResult(
-                textBuilder.toString().trim(),
-                rawDialectText,
-                Math.min(confidence, 1.0),
-                "hebei",
-                "xunfei",
-                0  // 一次性上传模式无法精确获取时长
-        );
+    /** URL ?????? %20 ????????????? */
+    private String encode(String value) throws Exception {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 }

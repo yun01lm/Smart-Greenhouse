@@ -4,6 +4,7 @@ import com.greenhouse.app.data.model.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -36,12 +37,12 @@ public class DiagnosisRepository extends BaseRepository {
         });
     }
 
-    public void getDiagnosisHistory(long greenhouseId, int page, int size,
-                                    Callback<PageResult<DiagnosisHistoryItem>> callback) {
+    public void getDiagnosisHistory(int page, int size,
+                                    Callback<List<DiagnosisHistoryItem>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<PageResult<DiagnosisHistoryItem>>> response =
-                        apiService.getDiagnosisHistory(greenhouseId, page, size).execute();
+                Response<ApiResponse<List<DiagnosisHistoryItem>>> response =
+                        apiService.getDiagnosisHistory(page, size).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
                 } else {

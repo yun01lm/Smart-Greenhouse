@@ -20,6 +20,9 @@ public class AlertDetailActivity extends AppCompatActivity {
         binding = ActivityAlertDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 返回按钮
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
+
         // 从 Intent 获取数据
         String title = getIntent().getStringExtra("alert_title");
         String content = getIntent().getStringExtra("alert_content");
@@ -51,18 +54,6 @@ public class AlertDetailActivity extends AppCompatActivity {
         binding.tvSensorType.setText(sensorType != null ? sensorType : "--");
         binding.tvSensorValue.setText(String.valueOf(sensorValue));
         binding.tvTime.setText(time != null ? time : "--");
-
-        // 返回按钮
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("预警详情");
-        }
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        finish();
-        return true;
     }
 
     @Override

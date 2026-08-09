@@ -74,7 +74,7 @@ mqtt:
 # JWT 配置
 jwt:
   secret: ${JWT_SECRET:dev-secret-key-greenhouse-2026-must-be-at-least-256-bits-long}
-  expiration: 7200000             # Token有效期：2小时（毫秒）
+  expiration: 604800000            # Token有效期：7天（毫秒）
 
 # 文件存储
 file:
@@ -104,9 +104,9 @@ qweather:
 # AI引擎切换（RC验收默认使用 Mock 模式）
 ai:
   image:
-    provider: mock              # mock | baidu | resnet
+    provider: ${AI_IMAGE_PROVIDER:mock}   # mock | baidu | resnet（.env.local 注入 AI_IMAGE_PROVIDER）
   voice:
-    provider: mock              # mock | xunfei | whisper
+    provider: ${AI_VOICE_PROVIDER:mock}   # mock | xunfei | whisper（.env.local 注入 AI_VOICE_PROVIDER）
   llm:
     provider: ${AI_LLM_PROVIDER:deepseek}        # mock | deepseek（默认真实；未设环境变量时也走 DeepSeek，Key 由 .env.local 注入）（R7 真实问答；.env.local 注入）
   embedding:

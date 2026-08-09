@@ -36,6 +36,9 @@ public class ThresholdSettingsActivity extends AppCompatActivity {
         binding = ActivityThresholdSettingsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        // 返回按钮
+        binding.toolbar.setNavigationOnClickListener(v -> finish());
+
         viewModel = new ViewModelProvider(this).get(AlertViewModel.class);
 
         // RecyclerView
@@ -70,12 +73,6 @@ public class ThresholdSettingsActivity extends AppCompatActivity {
             }
             Toast.makeText(this, "正在保存...", Toast.LENGTH_SHORT).show();
         });
-
-        // 返回按钮
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("自定义预警阈值");
-        }
     }
 
     /**
@@ -104,12 +101,6 @@ public class ThresholdSettingsActivity extends AppCompatActivity {
         }
 
         return result;
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        finish();
-        return true;
     }
 
     @Override

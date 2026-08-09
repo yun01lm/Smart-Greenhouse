@@ -25,6 +25,13 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 public class ApiClient {
 
+    /** 会话过期监听（Token 失效时触发，用于跳转登录页） */
+    public interface SessionExpiredListener {
+        void onSessionExpired();
+    }
+
+    private static volatile SessionExpiredListener sessionExpiredListener;
+
     private static final String BASE_URL = BuildConfig.API_BASE_URL + "/api/v1/";
 
     private static Retrofit retrofit;
@@ -56,7 +63,16 @@ public class ApiClient {
                     Request authenticated = original.newBuilder()
                             .header("Authorization", "Bearer " + token)
                             .build();
-                    return chain.proceed(authenticated);
+                    Response response = chain.proceed(authenticated);
+                    // Token ??/??????? 403???????????????
+                    if (response.code() == 403) {
+                        TokenManager.clear();
+                        SessionExpiredListener listener = sessionExpiredListener;
+                        if (listener != null) {
+                            listener.onSessionExpired();
+                        }
+                    }
+                    return response;
                 }
 
                 return chain.proceed(original);
@@ -106,5 +122,10 @@ public class ApiClient {
     /** 获取认证 Token */
     public static String getAuthToken() {
         return TokenManager.getToken();
+    }
+
+    /** ???????????? Application ??? */
+    public static void setSessionExpiredListener(SessionExpiredListener listener) {
+        sessionExpiredListener = listener;
     }
 }

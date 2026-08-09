@@ -6,6 +6,18 @@
     android:orientation="vertical"
     android:background="@color/bg_page">
 
+    <!-- 顶部工具栏 -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@drawable/bg_header_gradient"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:title="自定义预警阈值"
+        app:titleTextColor="@android:color/white" />
+
     <!-- 顶部说明 -->
     <TextView
         android:layout_width="match_parent"

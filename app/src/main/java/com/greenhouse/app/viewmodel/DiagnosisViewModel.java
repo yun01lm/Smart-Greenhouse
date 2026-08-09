@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.model.DiagnosisHistoryItem;
 import com.greenhouse.app.data.model.DiagnosisResponse;
-import com.greenhouse.app.data.model.PageResult;
 import com.greenhouse.app.data.repository.DiagnosisRepository;
 
 import java.io.File;
@@ -34,7 +33,7 @@ public class DiagnosisViewModel extends ViewModel {
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
     private long currentGreenhouseId;
-    private int currentPage = 1;
+    private int currentPage = 0;
     private boolean hasMore = true;
     private static final int PAGE_SIZE = 20;
 
@@ -51,7 +50,7 @@ public class DiagnosisViewModel extends ViewModel {
 
     public void setCurrentGreenhouseId(long id) {
         this.currentGreenhouseId = id;
-        currentPage = 1;
+        currentPage = 0;
         hasMore = true;
     }
 
@@ -96,9 +95,9 @@ public class DiagnosisViewModel extends ViewModel {
      * 加载诊断历史（首页/刷新）
      */
     public void loadHistory(long greenhouseId) {
-        currentPage = 1;
+        currentPage = 0;
         hasMore = true;
-        loadHistoryPage(greenhouseId, currentPage);
+        loadHistoryPage(currentPage);
     }
 
     /**
@@ -107,23 +106,23 @@ public class DiagnosisViewModel extends ViewModel {
     public void loadMoreHistory() {
         if (!hasMore) return;
         currentPage++;
-        loadHistoryPage(currentGreenhouseId, currentPage);
+        loadHistoryPage(currentPage);
     }
 
-    private void loadHistoryPage(long greenhouseId, int page) {
+    private void loadHistoryPage(int page) {
         isLoading.postValue(true);
-        repository.getDiagnosisHistory(greenhouseId, page, PAGE_SIZE,
-                new DiagnosisRepository.Callback<PageResult<DiagnosisHistoryItem>>() {
+        repository.getDiagnosisHistory(page, PAGE_SIZE,
+                new DiagnosisRepository.Callback<List<DiagnosisHistoryItem>>() {
             @Override
-            public void onSuccess(PageResult<DiagnosisHistoryItem> data) {
+            public void onSuccess(List<DiagnosisHistoryItem> data) {
                 isLoading.postValue(false);
                 List<DiagnosisHistoryItem> currentList = historyList.getValue();
-                if (currentList == null || page == 1) {
+                if (currentList == null || page == 0) {
                     currentList = new ArrayList<>();
                 }
-                if (data.getList() != null) {
-                    currentList.addAll(data.getList());
-                    hasMore = data.getList().size() >= PAGE_SIZE;
+                if (data != null) {
+                    currentList.addAll(data);
+                    hasMore = data.size() >= PAGE_SIZE;
                 } else {
                     hasMore = false;
                 }

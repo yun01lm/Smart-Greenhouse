@@ -281,8 +281,8 @@ public class DiagnosisFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // 每次返回页面时刷新历史
-        if (viewModel != null && viewModel.getCurrentGreenhouseId() > 0) {
+        // 每次返回页面时刷新历史（历史接口按登录用户查询，不依赖大棚ID）
+        if (viewModel != null) {
             viewModel.loadHistory(viewModel.getCurrentGreenhouseId());
         }
     }
