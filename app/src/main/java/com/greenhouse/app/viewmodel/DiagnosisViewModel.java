@@ -74,7 +74,7 @@ public class DiagnosisViewModel extends ViewModel {
      * @param greenhouseId 大棚ID
      */
     public void diagnose(File imageFile, long greenhouseId) {
-        isLoading.setValue(true);
+        isLoading.postValue(true);
         repository.diagnose(imageFile, greenhouseId, new DiagnosisRepository.Callback<DiagnosisResponse>() {
             @Override
             public void onSuccess(DiagnosisResponse data) {
@@ -111,7 +111,7 @@ public class DiagnosisViewModel extends ViewModel {
     }
 
     private void loadHistoryPage(long greenhouseId, int page) {
-        isLoading.setValue(true);
+        isLoading.postValue(true);
         repository.getDiagnosisHistory(greenhouseId, page, PAGE_SIZE,
                 new DiagnosisRepository.Callback<PageResult<DiagnosisHistoryItem>>() {
             @Override

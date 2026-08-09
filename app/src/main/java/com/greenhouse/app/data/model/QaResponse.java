@@ -40,6 +40,47 @@ public class QaResponse {
     public List<SourceInfo> getSources() { return sources; }
     public String getCreatedAt() { return createdAt; }
 
+
+    // ===== Setter =====
+
+
+
+    public void setQuestion(String question) { this.question = question; }
+
+    public void setAnswer(String answer) { this.answer = answer; }
+
+    public void setInputType(String inputType) { this.inputType = inputType; }
+
+    public void setSources(List<SourceInfo> sources) { this.sources = sources; }
+
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
+
+
+
+    /**
+
+     * 从历史记录构建（用于恢复历史对话气泡）
+
+     */
+
+    public static QaResponse fromHistory(QaHistoryItem item) {
+
+        QaResponse resp = new QaResponse();
+
+        resp.setQuestion(item.getQuestion());
+
+        resp.setAnswer(item.getAnswer());
+
+        resp.setInputType(item.getInputType());
+
+        resp.setSources(item.getSources());
+
+        resp.setCreatedAt(item.getCreatedAt());
+
+        return resp;
+
+    }
+
     /**
      * 是否来自语音输入
      */

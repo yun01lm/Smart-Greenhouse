@@ -108,7 +108,7 @@ ai:
   voice:
     provider: mock              # mock | xunfei | whisper
   llm:
-    provider: ${AI_LLM_PROVIDER:mock}            # mock | deepseek（R7 真实问答；.env.local 注入）
+    provider: ${AI_LLM_PROVIDER:deepseek}        # mock | deepseek（默认真实；未设环境变量时也走 DeepSeek，Key 由 .env.local 注入）（R7 真实问答；.env.local 注入）
   embedding:
     provider: ${AI_EMBEDDING_PROVIDER:mock}      # mock | siliconflow（R6 真实向量化；.env.local 注入 SILICONFLOW_API_KEY）
 

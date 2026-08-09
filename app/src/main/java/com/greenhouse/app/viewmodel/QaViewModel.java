@@ -12,6 +12,9 @@ import com.greenhouse.app.data.model.PageResult;
 import com.greenhouse.app.data.repository.QaRepository;
 
 import java.io.File;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -20,6 +23,8 @@ import java.util.Locale;
  * AI 智能问答业务逻辑
  * <p>
  * 符合规范：ViewModel 不持有 Context，TTS 由 Fragment 注入。
+ * 历史记录与 Web 端一致：默认加载最近 30 条；时间显示规则
+ * （今天 HH:mm、今年 MM-DD HH:mm、往年 YYYY-MM-DD HH:mm）。
  * </p>
  */
 public class QaViewModel extends ViewModel {
@@ -39,7 +44,9 @@ public class QaViewModel extends ViewModel {
 
     private long currentGreenhouseId;
     private int currentPage = 1;
-    private static final int PAGE_SIZE = 20;
+    private static final int PAGE_SIZE = 30;   // 与 Web 端一致：默认加载最近 30 条
+
+    private static final DateTimeFormatter ISO_DT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public QaViewModel() {
         this.repository = new QaRepository();
@@ -55,6 +62,37 @@ public class QaViewModel extends ViewModel {
 
     public void setCurrentGreenhouseId(long id) { this.currentGreenhouseId = id; }
     public long getCurrentGreenhouseId() { return currentGreenhouseId; }
+
+    // ===== 历史记录（与 Web 端一致） =====
+
+    /**
+     * 加载最近 30 条历史并恢复为聊天气泡
+     */
+    public void loadHistoryIntoMessages() {
+        repository.getQaHistory(1, PAGE_SIZE, new QaRepository.Callback<PageResult<QaHistoryItem>>() {
+            @Override
+            public void onSuccess(PageResult<QaHistoryItem> data) {
+                List<QaHistoryItem> list = data.getList();
+                List<ChatMessage> msgs = new ArrayList<>();
+                if (list != null) {
+                    for (QaHistoryItem item : list) {
+                        msgs.add(ChatMessage.userFromHistory(item));
+                        if (item.getAnswer() != null && !item.getAnswer().isEmpty()) {
+                            msgs.add(ChatMessage.aiFromHistory(item));
+                        }
+                    }
+                }
+                messages.postValue(msgs);
+                historyList.postValue(list);
+            }
+
+            @Override
+            public void onError(String message) {
+                // 历史加载失败不阻塞问答，仅提示
+                errorMessage.postValue("历史记录加载失败: " + message);
+            }
+        });
+    }
 
     // ===== 文字问答 =====
 
@@ -121,7 +159,7 @@ public class QaViewModel extends ViewModel {
         });
     }
 
-    // ===== 问答历史 =====
+    // ===== 问答历史（分页，保留给后续扩展） =====
 
     public void loadHistory() {
         currentPage = 1;
@@ -152,6 +190,26 @@ public class QaViewModel extends ViewModel {
                 errorMessage.postValue(message);
             }
         });
+    }
+
+    // ===== 时间格式化（与 Web 端 formatTime 一致） =====
+
+    /**
+     * 今天只显示 HH:mm；今年显示 MM-DD HH:mm；往年显示 YYYY-MM-DD HH:mm
+     */
+    public static String formatMessageTime(String createdAt) {
+        if (createdAt == null || createdAt.isEmpty()) return "";
+        try {
+            LocalDateTime dt = LocalDateTime.parse(createdAt, ISO_DT);
+            LocalDateTime now = LocalDateTime.now();
+            String hm = String.format(Locale.CHINA, "%02d:%02d", dt.getHour(), dt.getMinute());
+            if (dt.toLocalDate().equals(LocalDate.now())) return hm;
+            String md = String.format(Locale.CHINA, "%02d-%02d", dt.getMonthValue(), dt.getDayOfMonth());
+            if (dt.getYear() == now.getYear()) return md + " " + hm;
+            return dt.getYear() + "-" + md + " " + hm;
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     // ===== TTS =====
@@ -197,33 +255,48 @@ public class QaViewModel extends ViewModel {
         private final String text;
         private final QaResponse qaResponse;
         private final boolean isVoice;
+        private final String timeText;
 
-        private ChatMessage(int type, String text, QaResponse qaResponse, boolean isVoice) {
+        private ChatMessage(int type, String text, QaResponse qaResponse, boolean isVoice, String timeText) {
             this.type = type;
             this.text = text;
             this.qaResponse = qaResponse;
             this.isVoice = isVoice;
+            this.timeText = timeText;
         }
 
         public static ChatMessage user(String text) {
-            return new ChatMessage(TYPE_USER, text, null, false);
+            return new ChatMessage(TYPE_USER, text, null, false, formatMessageTime(LocalDateTime.now().toString()));
         }
 
         public static ChatMessage userVoice(String text) {
-            return new ChatMessage(TYPE_USER, "[语音] " + text, null, true);
+            return new ChatMessage(TYPE_USER, "[语音] " + text, null, true, formatMessageTime(LocalDateTime.now().toString()));
+        }
+
+        public static ChatMessage userFromHistory(QaHistoryItem item) {
+            String text = item.isVoiceInput() ? "[语音] " + item.getQuestion() : item.getQuestion();
+            return new ChatMessage(TYPE_USER, text, null, item.isVoiceInput(),
+                    formatMessageTime(item.getCreatedAt()));
         }
 
         public static ChatMessage ai(QaResponse response) {
-            return new ChatMessage(TYPE_AI, response.getAnswer(), response, false);
+            return new ChatMessage(TYPE_AI, response.getAnswer(), response, false,
+                    formatMessageTime(response.getCreatedAt()));
+        }
+
+        public static ChatMessage aiFromHistory(QaHistoryItem item) {
+            return new ChatMessage(TYPE_AI, item.getAnswer(), QaResponse.fromHistory(item), false,
+                    formatMessageTime(item.getCreatedAt()));
         }
 
         public static ChatMessage error(String text) {
-            return new ChatMessage(TYPE_ERROR, text, null, false);
+            return new ChatMessage(TYPE_ERROR, text, null, false, "");
         }
 
         public int getType() { return type; }
         public String getText() { return text; }
         public QaResponse getQaResponse() { return qaResponse; }
         public boolean isVoice() { return isVoice; }
+        public String getTimeText() { return timeText; }
     }
 }

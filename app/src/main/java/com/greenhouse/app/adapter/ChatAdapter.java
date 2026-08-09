@@ -94,22 +94,31 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     static class UserViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage;
         TextView tvVoiceHint;
+        TextView tvTime;
 
         UserViewHolder(View itemView) {
             super(itemView);
             tvMessage = itemView.findViewById(R.id.tv_message);
             tvVoiceHint = itemView.findViewById(R.id.tv_voice_hint);
+            tvTime = itemView.findViewById(R.id.tv_time);
         }
 
         void bind(QaViewModel.ChatMessage msg) {
             tvMessage.setText(msg.getText());
             tvVoiceHint.setVisibility(msg.isVoice() ? View.VISIBLE : View.GONE);
+            if (msg.getTimeText() != null && !msg.getTimeText().isEmpty()) {
+                tvTime.setText(msg.getTimeText());
+                tvTime.setVisibility(View.VISIBLE);
+            } else {
+                tvTime.setVisibility(View.GONE);
+            }
         }
     }
 
     class AiViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage;
         TextView tvSources;
+        TextView tvTime;
         ImageButton btnTts;
         LinearLayout llSources;
 
@@ -117,6 +126,7 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             super(itemView);
             tvMessage = itemView.findViewById(R.id.tv_message);
             tvSources = itemView.findViewById(R.id.tv_sources);
+            tvTime = itemView.findViewById(R.id.tv_time);
             btnTts = itemView.findViewById(R.id.btn_tts);
             llSources = itemView.findViewById(R.id.ll_sources);
         }
@@ -143,6 +153,12 @@ public class ChatAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 llSources.setVisibility(View.VISIBLE);
             } else {
                 llSources.setVisibility(View.GONE);
+            }
+            if (msg.getTimeText() != null && !msg.getTimeText().isEmpty()) {
+                tvTime.setText(msg.getTimeText());
+                tvTime.setVisibility(View.VISIBLE);
+            } else {
+                tvTime.setVisibility(View.GONE);
             }
         }
     }

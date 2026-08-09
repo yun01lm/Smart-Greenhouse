@@ -105,6 +105,9 @@ public class QaFragment extends Fragment {
             }
         });
 
+        // 打开页面时加载最近 30 条历史（与 Web 端一致）
+        viewModel.loadHistoryIntoMessages();
+
         observeViewModel();
     }
 
