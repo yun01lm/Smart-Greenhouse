@@ -295,7 +295,11 @@ public class ExpertViewModel extends ViewModel {
         String baseUrl = com.greenhouse.app.data.api.ApiClient.getBaseUrl();
         if (baseUrl == null) return;
 
-        String wsUrl = baseUrl.replace("http://", "ws://").replace("https://", "wss://") + "ws/connect";
+        String wsBase = baseUrl.replace("http://", "ws://").replace("https://", "wss://");
+        if (!wsBase.endsWith("/")) {
+            wsBase += "/";
+        }
+        String wsUrl = wsBase + "ws/connect";
         String token = com.greenhouse.app.data.api.ApiClient.getAuthToken();
         if (token == null || token.isEmpty()) return;
 
