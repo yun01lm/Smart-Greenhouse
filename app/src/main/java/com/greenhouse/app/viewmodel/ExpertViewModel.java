@@ -57,8 +57,8 @@ public class ExpertViewModel extends ViewModel {
     private final MutableLiveData<ConversationInfo> createdConversation = new MutableLiveData<>();
     private long currentConversationId;
     private long currentGreenhouseId;
-    private int conversationPage = 1;
-    private int messagePage = 1;
+    private int conversationPage = 0; // 后端分页从 0 开始
+    private int messagePage = 0; // 后端分页从 0 开始
     private static final int PAGE_SIZE = 20;
     private static final long POLL_INTERVAL = 3000; // REST 轮询间隔（WebSocket不可用时）
 
@@ -138,7 +138,7 @@ public class ExpertViewModel extends ViewModel {
     }
 
     public void refreshConversations() {
-        conversationPage = 1;
+        conversationPage = 0;
         loadConversationsPage();
     }
 
@@ -163,7 +163,7 @@ public class ExpertViewModel extends ViewModel {
 
     public void enterConversation(long conversationId) {
         this.currentConversationId = conversationId;
-        messagePage = 1;
+        messagePage = 0;
         loadMessages();
         // 尝试连接 WebSocket
         connectWebSocket();
