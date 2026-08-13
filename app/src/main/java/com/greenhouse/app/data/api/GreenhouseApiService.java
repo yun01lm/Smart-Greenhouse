@@ -142,6 +142,9 @@ public interface GreenhouseApiService {
             @Query("greenhouseId") long greenhouseId
     );
 
+    @POST("control/scenes")
+    Call<ApiResponse<SceneInfo>> createScene(@Query("greenhouseId") long greenhouseId,
+                                              @Body CreateSceneRequest request);
     @POST("control/scenes/{id}/execute")
     Call<ApiResponse<List<DeviceControlResult>>> executeScene(@Path("id") long sceneId);
 

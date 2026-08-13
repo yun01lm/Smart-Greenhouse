@@ -5,17 +5,22 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.greenhouse.app.data.model.DeviceControlResult;
+import com.greenhouse.app.data.model.DeviceGroup;
 import com.greenhouse.app.data.model.DeviceInfo;
+import com.greenhouse.app.data.model.CreateSceneRequest;
+import com.greenhouse.app.data.model.Greenhouse;
 import com.greenhouse.app.data.model.SceneInfo;
 import com.greenhouse.app.data.repository.ControlRepository;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
  * 设备控制 ViewModel
  * <p>
- * 管理设备列表、场景列表、控制指令下发。
+ * 按大棚分组加载设备列表、加载全部大棚场景、创建场景、下发控制指令。
  * 符合规范：ViewModel 不持有 Context，所有网络请求在 Repository 子线程执行。
  * </p>
  */
@@ -23,9 +28,9 @@ public class ControlViewModel extends ViewModel {
 
     private final ControlRepository repository;
 
-    // 设备列表（控制器类设备）
-    private final MutableLiveData<List<DeviceInfo>> devices = new MutableLiveData<>(new ArrayList<>());
-    // 场景列表
+    // 按大棚分组的设备列表
+    private final MutableLiveData<List<DeviceGroup>> deviceGroups = new MutableLiveData<>(new ArrayList<>());
+    // 场景列表（全部大棚）
     private final MutableLiveData<List<SceneInfo>> scenes = new MutableLiveData<>(new ArrayList<>());
     // 加载状态
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
@@ -42,7 +47,7 @@ public class ControlViewModel extends ViewModel {
 
     // ===== LiveData =====
 
-    public LiveData<List<DeviceInfo>> getDevices() { return devices; }
+    public LiveData<List<DeviceGroup>> getDeviceGroups() { return deviceGroups; }
     public LiveData<List<SceneInfo>> getScenes() { return scenes; }
     public LiveData<Boolean> getIsLoading() { return isLoading; }
     public LiveData<String> getActionResult() { return actionResult; }
@@ -50,33 +55,84 @@ public class ControlViewModel extends ViewModel {
 
     public void setCurrentGreenhouseId(long id) { this.currentGreenhouseId = id; }
 
-    // ===== 加载设备列表 =====
+    // ===== 按大棚分组加载设备 =====
 
-    public void loadDevices(long greenhouseId) {
-        this.currentGreenhouseId = greenhouseId;
+    public void loadDeviceGroups() {
         isLoading.setValue(true);
-        repository.getDevices(greenhouseId, new ControlRepository.Callback<List<DeviceInfo>>() {
+        repository.getGreenhouses(new ControlRepository.Callback<List<Greenhouse>>() {
             @Override
-            public void onSuccess(List<DeviceInfo> data) {
-                isLoading.postValue(false);
-                devices.postValue(data != null ? data : new ArrayList<>());
+            public void onSuccess(List<Greenhouse> greenhouses) {
+                if (greenhouses == null || greenhouses.isEmpty()) {
+                    isLoading.postValue(false);
+                    deviceGroups.postValue(new ArrayList<>());
+                    return;
+                }
+                List<DeviceGroup> groups = Collections.synchronizedList(new ArrayList<>());
+                int[] remaining = {greenhouses.size()};
+                for (Greenhouse gh : greenhouses) {
+                    repository.getDevices(gh.getId(),
+                            new ControlRepository.Callback<List<DeviceInfo>>() {
+                                @Override
+                                public void onSuccess(List<DeviceInfo> data) {
+                                    addGroup(groups, remaining, gh.getId(), gh.getName(),
+                                            data != null ? data : new ArrayList<>());
+                                }
+
+                                @Override
+                                public void onError(String message) {
+                                    addGroup(groups, remaining, gh.getId(), gh.getName(), new ArrayList<>());
+                                }
+                            });
+                }
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue("加载设备失败: " + message);
+                errorMessage.postValue("加载大棚失败: " + message);
             }
         });
     }
 
-    // ===== 加载场景列表 =====
+    private void addGroup(List<DeviceGroup> groups, int[] remaining,
+                          long ghId, String ghName, List<DeviceInfo> devices) {
+        synchronized (remaining) {
+            groups.add(new DeviceGroup(ghId, ghName, devices));
+            remaining[0]--;
+            if (remaining[0] == 0) {
+                List<DeviceGroup> sorted = new ArrayList<>(groups);
+                sorted.sort(Comparator.comparingLong(DeviceGroup::getGreenhouseId));
+                deviceGroups.postValue(sorted);
+                isLoading.postValue(false);
+            }
+        }
+    }
 
-    public void loadScenes(long greenhouseId) {
-        repository.getScenes(greenhouseId, new ControlRepository.Callback<List<SceneInfo>>() {
+    // ===== 加载全部大棚场景 =====
+
+    public void loadAllScenes() {
+        repository.getGreenhouses(new ControlRepository.Callback<List<Greenhouse>>() {
             @Override
-            public void onSuccess(List<SceneInfo> data) {
-                scenes.postValue(data != null ? data : new ArrayList<>());
+            public void onSuccess(List<Greenhouse> greenhouses) {
+                if (greenhouses == null || greenhouses.isEmpty()) {
+                    scenes.postValue(new ArrayList<>());
+                    return;
+                }
+                List<SceneInfo> all = Collections.synchronizedList(new ArrayList<>());
+                int[] remaining = {greenhouses.size()};
+                for (Greenhouse gh : greenhouses) {
+                    repository.getScenes(gh.getId(), new ControlRepository.Callback<List<SceneInfo>>() {
+                        @Override
+                        public void onSuccess(List<SceneInfo> data) {
+                            collectScenes(all, remaining, data);
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            collectScenes(all, remaining, null);
+                        }
+                    });
+                }
             }
 
             @Override
@@ -84,6 +140,18 @@ public class ControlViewModel extends ViewModel {
                 errorMessage.postValue("加载场景失败: " + message);
             }
         });
+    }
+
+    private void collectScenes(List<SceneInfo> all, int[] remaining, List<SceneInfo> data) {
+        synchronized (remaining) {
+            if (data != null) all.addAll(data);
+            remaining[0]--;
+            if (remaining[0] == 0) {
+                List<SceneInfo> sorted = new ArrayList<>(all);
+                sorted.sort(Comparator.comparingLong(SceneInfo::getId));
+                scenes.postValue(sorted);
+            }
+        }
     }
 
     // ===== 单个设备控制 =====
@@ -96,8 +164,8 @@ public class ControlViewModel extends ViewModel {
                     public void onSuccess(DeviceControlResult data) {
                         isLoading.postValue(false);
                         actionResult.postValue(data != null ? data.getResultText() : "控制指令已下发");
-                        // 刷新设备列表（状态/开关会变化）
-                        loadDevices(currentGreenhouseId);
+                        // 刷新设备分组（状态/开关会变化）
+                        loadDeviceGroups();
                     }
 
                     @Override
@@ -106,6 +174,29 @@ public class ControlViewModel extends ViewModel {
                         actionResult.postValue("控制失败: " + message);
                     }
                 });
+    }
+
+    // ===== 创建场景 =====
+
+    public void createScene(long greenhouseId, String name, String description,
+                            List<CreateSceneRequest.SceneActionItem> actions) {
+        isLoading.setValue(true);
+        CreateSceneRequest request = new CreateSceneRequest(name, description, actions);
+        repository.createScene(greenhouseId, request, new ControlRepository.Callback<SceneInfo>() {
+            @Override
+            public void onSuccess(SceneInfo data) {
+                isLoading.postValue(false);
+                String sceneName = (data != null && data.getName() != null) ? data.getName() : name;
+                actionResult.postValue("场景「" + sceneName + "」创建成功");
+                loadAllScenes();
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoading.postValue(false);
+                actionResult.postValue("创建场景失败: " + message);
+            }
+        });
     }
 
     // ===== 场景执行 =====
@@ -134,8 +225,8 @@ public class ControlViewModel extends ViewModel {
                         } else {
                             actionResult.postValue("场景「" + scene.getName() + "」已执行");
                         }
-                        // 刷新设备列表
-                        loadDevices(currentGreenhouseId);
+                        // 刷新设备分组（场景可能改变设备状态）
+                        loadDeviceGroups();
                     }
 
                     @Override

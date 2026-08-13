@@ -11,21 +11,24 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.greenhouse.app.R;
+import com.greenhouse.app.data.model.DeviceGroup;
 import com.greenhouse.app.data.model.DeviceInfo;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 设备控制列表适配器
+ * 设备控制列表适配器（按大棚分组）
  * <p>
- * 每个设备卡片展示：类型图标 + 名称 + 安装位置 + 状态 + 开关按钮。
- * 数据来自后端 DeviceResponse（控制器类设备）。
+ * 支持两种 ViewType：分组标题（大棚名 + 设备数）与设备项（图标 + 名称 + 位置 + 状态 + 开关）。
  * </p>
  */
-public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceViewHolder> {
+public class DeviceAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private final List<DeviceInfo> devices = new ArrayList<>();
+    private static final int TYPE_HEADER = 0;
+    private static final int TYPE_DEVICE = 1;
+
+    private final List<Object> items = new ArrayList<>();
     private OnDeviceSwitchListener listener;
 
     public interface OnDeviceSwitchListener {
@@ -36,29 +39,67 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
         this.listener = listener;
     }
 
-    public void setData(List<DeviceInfo> newDevices) {
-        devices.clear();
-        if (newDevices != null) devices.addAll(newDevices);
+    public void setGroups(List<DeviceGroup> groups) {
+        items.clear();
+        if (groups != null) {
+            for (DeviceGroup group : groups) {
+                items.add(group);
+                if (group.getDevices() != null) {
+                    items.addAll(group.getDevices());
+                }
+            }
+        }
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return items.get(position) instanceof DeviceGroup ? TYPE_HEADER : TYPE_DEVICE;
     }
 
     @NonNull
     @Override
-    public DeviceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_device_control, parent, false);
-        return new DeviceViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_HEADER) {
+            return new HeaderViewHolder(inflater.inflate(R.layout.item_device_group_header, parent, false));
+        }
+        return new DeviceViewHolder(inflater.inflate(R.layout.item_device_control, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull DeviceViewHolder holder, int position) {
-        holder.bind(devices.get(position));
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof HeaderViewHolder) {
+            ((HeaderViewHolder) holder).bind((DeviceGroup) items.get(position));
+        } else {
+            ((DeviceViewHolder) holder).bind((DeviceInfo) items.get(position));
+        }
     }
 
     @Override
     public int getItemCount() {
-        return devices.size();
+        return items.size();
     }
+
+    // ===== 分组头 =====
+
+    class HeaderViewHolder extends RecyclerView.ViewHolder {
+        TextView tvGroupName;
+        TextView tvGroupCount;
+
+        HeaderViewHolder(View itemView) {
+            super(itemView);
+            tvGroupName = itemView.findViewById(R.id.tv_group_name);
+            tvGroupCount = itemView.findViewById(R.id.tv_group_count);
+        }
+
+        void bind(DeviceGroup group) {
+            tvGroupName.setText(group.getGreenhouseName() != null ? group.getGreenhouseName() : "大棚");
+            tvGroupCount.setText(group.getDeviceCount() + " 台设备");
+        }
+    }
+
+    // ===== 设备项 =====
 
     class DeviceViewHolder extends RecyclerView.ViewHolder {
         ImageView ivIcon;
@@ -80,42 +121,28 @@ public class DeviceAdapter extends RecyclerView.Adapter<DeviceAdapter.DeviceView
             ivIcon.setImageResource(resolveIconRes(device.getName()));
             tvName.setText(device.getName());
             tvZone.setText(device.getInstallLocation() != null ? device.getInstallLocation() : "");
-
-            // 在线状态：仅 OFFLINE 视为离线，其余（ONLINE/ALARM）可控制
-            if (!device.isOnline()) {
-                tvStatus.setText("离线");
-                tvStatus.setTextColor(itemView.getContext().getResources()
-                        .getColor(R.color.alert_critical, null));
-                swControl.setEnabled(false);
-                swControl.setChecked(false);
-            } else {
-                boolean running = device.isRunning();
-                tvStatus.setText(running ? "运行中" : "已停止");
-                tvStatus.setTextColor(itemView.getContext().getResources()
-                        .getColor(running ? R.color.confidence_high : R.color.text_secondary, null));
-                swControl.setEnabled(true);
-                swControl.setChecked(running);
-            }
-
-            // 开关监听（避免 setChecked 触发无限循环）
+            boolean online = "ONLINE".equals(device.getStatus());
+            boolean isOn = "ON".equals(device.getLastValue());
+            tvStatus.setText(online ? (isOn ? "运行中" : "已停止") : "离线");
+            tvStatus.setTextColor(itemView.getContext().getColor(online ? R.color.primary : R.color.text_secondary));
+            // 先清除旧监听再设置状态，避免 ViewHolder 复用时 setChecked 误触发上一次设备的控制指令
             swControl.setOnCheckedChangeListener(null);
-            swControl.setChecked(device.isOnline() && device.isRunning());
+            swControl.setChecked(isOn);
+            swControl.setEnabled(online);
             swControl.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (listener != null && device.isOnline()) {
+                if (listener != null) {
                     listener.onSwitchChanged(device, isChecked);
                 }
             });
         }
 
-        /**
-         * 按设备名称关键字推断控制器图标（后端只有 CONTROLLER 大类，无细分类型）
-         */
-        private int resolveIconRes(String name) {
+        int resolveIconRes(String name) {
             if (name == null) return R.drawable.ic_device_default;
+            if (name.contains("风机") || name.contains("风扇")) return R.drawable.ic_device_fan;
             if (name.contains("灯")) return R.drawable.ic_device_light;
-            if (name.contains("风")) return R.drawable.ic_device_fan;
-            if (name.contains("卷帘") || name.contains("遮阳")) return R.drawable.ic_device_roller;
-            if (name.contains("泵") || name.contains("阀") || name.contains("灌溉")) return R.drawable.ic_device_valve;
+            if (name.contains("遮阳")) return R.drawable.ic_device_shade;
+            if (name.contains("卷帘") || name.contains("卷膜")) return R.drawable.ic_device_roller;
+            if (name.contains("灌溉") || name.contains("阀门") || name.contains("水")) return R.drawable.ic_device_valve;
             return R.drawable.ic_device_default;
         }
     }

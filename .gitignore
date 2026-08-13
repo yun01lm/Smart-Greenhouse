@@ -53,3 +53,7 @@ app/build/
 *.aab
 local.properties
 __pycache__/
+
+# === 离线构建本地镜像（不入库） ===
+.gradle-mirror/
+.gradle-offline.init.gradle

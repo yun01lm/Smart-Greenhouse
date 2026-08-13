@@ -63,6 +63,36 @@ public class ControlRepository extends BaseRepository {
         });
     }
 
+    public void getGreenhouses(Callback<List<Greenhouse>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<Greenhouse>>> response = apiService.getGreenhouses().execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void createScene(long greenhouseId, CreateSceneRequest request, Callback<SceneInfo> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<SceneInfo>> response = apiService.createScene(greenhouseId, request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     public void executeScene(long sceneId, Callback<List<DeviceControlResult>> callback) {
         execute(() -> {
             try {
