@@ -1,5 +1,6 @@
 package com.greenhouse.app.ui.control;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -90,6 +91,13 @@ public class ControlFragment extends Fragment {
         // 添加场景入口
         binding.btnAddScene.setOnClickListener(v -> showCreateSceneDialog());
 
+        // 设备控制记录入口
+        binding.tvControlLogEntry.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), ControlLogActivity.class);
+            intent.putExtra("greenhouse_id", currentGreenhouseId);
+            startActivity(intent);
+        });
+
         // 观察数据
         viewModel.getDeviceGroups().observe(getViewLifecycleOwner(), groups -> {
             cachedGroups.clear();
@@ -123,6 +131,10 @@ public class ControlFragment extends Fragment {
 
         viewModel.getIsLoading().observe(getViewLifecycleOwner(), loading ->
                 binding.progressBar.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE));
+
+        viewModel.getIsOperating().observe(getViewLifecycleOwner(), operating -> {
+            sceneAdapter.setOperating(Boolean.TRUE.equals(operating));
+        });
 
         viewModel.getActionResult().observe(getViewLifecycleOwner(), result -> {
             if (result != null && !result.isEmpty()) {

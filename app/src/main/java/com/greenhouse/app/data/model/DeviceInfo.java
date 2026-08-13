@@ -64,8 +64,10 @@ public class DeviceInfo {
     public String getDeviceType() { return deviceType; }
     public String getSensorType() { return sensorType; }
     public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public Long getGreenhouseId() { return greenhouseId; }
     public String getLastValue() { return lastValue; }
+    public void setLastValue(String lastValue) { this.lastValue = lastValue; }
     public String getLastDataTime() { return lastDataTime; }
     public String getMqttTopic() { return mqttTopic; }
     public String getInstallLocation() { return installLocation; }

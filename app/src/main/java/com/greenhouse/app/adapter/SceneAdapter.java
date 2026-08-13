@@ -25,6 +25,7 @@ public class SceneAdapter extends RecyclerView.Adapter<SceneAdapter.SceneViewHol
 
     private final List<SceneInfo> scenes = new ArrayList<>();
     private OnSceneExecuteListener listener;
+    private boolean operating = false;
 
     public interface OnSceneExecuteListener {
         void onExecute(SceneInfo scene);
@@ -32,6 +33,12 @@ public class SceneAdapter extends RecyclerView.Adapter<SceneAdapter.SceneViewHol
 
     public void setOnSceneExecuteListener(OnSceneExecuteListener listener) {
         this.listener = listener;
+    }
+
+    /** 操作进行中：禁用执行按钮，防止重复点击 */
+    public void setOperating(boolean operating) {
+        this.operating = operating;
+        notifyDataSetChanged();
     }
 
     public void setData(List<SceneInfo> newScenes) {
@@ -73,8 +80,10 @@ public class SceneAdapter extends RecyclerView.Adapter<SceneAdapter.SceneViewHol
         void bind(SceneInfo scene) {
             tvSceneName.setText(scene.getName());
             tvSceneDesc.setText(scene.getActionsSummary());
+            btnExecute.setEnabled(!operating);
+            btnExecute.setText(operating ? "执行中..." : "一键执行");
             btnExecute.setOnClickListener(v -> {
-                if (listener != null) {
+                if (listener != null && !operating) {
                     listener.onExecute(scene);
                 }
             });

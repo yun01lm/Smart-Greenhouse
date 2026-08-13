@@ -25,6 +25,8 @@ public class ControlLogResponse {
     private String action;
     private String source;
     private Long sceneId;
+    /** 触发场景名称（sceneId 有值时填充，便于前端展示"场景触发：XXX"） */
+    private String sceneName;
     private Boolean success;
     private String failReason;
     private LocalDateTime createdAt;

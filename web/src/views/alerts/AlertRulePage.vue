@@ -71,6 +71,14 @@
                 </el-tag>
               </template>
             </el-table-column>
+            <el-table-column label="联动场景" min-width="130" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.sceneId" type="success" size="small">
+                  {{ getSceneName(row.sceneId) || `场景#${row.sceneId}` }}
+                </el-tag>
+                <span v-else class="muted-text">未联动</span>
+              </template>
+            </el-table-column>
             <el-table-column label="状态" width="80" align="center">
               <template #default="{ row }">
                 <el-switch
@@ -239,6 +247,26 @@
             <el-radio-button value="CRITICAL">严重</el-radio-button>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="联动场景" prop="sceneId">
+          <el-select
+            v-model="ruleForm.sceneId"
+            placeholder="选择预警触发后自动执行的场景（可选）"
+            clearable
+            style="width: 100%"
+            :disabled="!ruleForm.greenhouseId"
+          >
+            <el-option
+              v-for="scene in scenes"
+              :key="scene.id"
+              :label="scene.name"
+              :value="scene.id"
+            >
+              <span>{{ scene.name }}</span>
+              <span class="scene-option-desc">{{ scene.description || '' }}</span>
+            </el-option>
+          </el-select>
+          <div class="form-tip">预警触发时自动执行该场景（同一规则 10 分钟内不重复触发）</div>
+        </el-form-item>
         <el-form-item label="启用状态" prop="enabled">
           <el-switch v-model="ruleForm.enabled" active-text="启用" inactive-text="禁用" />
         </el-form-item>
@@ -258,6 +286,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getGreenhouses } from '@/api/greenhouse'
+import { getScenes } from '@/api/control'
 import { useViewModeStore } from '@/stores/viewMode'
 import {
   getAlertRules, createAlertRule, updateAlertRule, deleteAlertRule,
@@ -271,6 +300,7 @@ const greenhouses = ref([])
 // ===== 预警规则 =====
 const ruleLoading = ref(false)
 const rules = ref([])
+const scenes = ref([])
 
 const ruleFilter = reactive({
   greenhouseId: null,
@@ -297,6 +327,7 @@ const defaultRuleForm = () => ({
   ruleType: 'THRESHOLD',
   conditionJson: '',
   alertLevel: 'WARNING',
+  sceneId: null,
   enabled: true
 })
 
@@ -390,13 +421,53 @@ function openRuleDialog(row) {
       ruleType: row.ruleType,
       conditionJson: row.conditionJson,
       alertLevel: row.alertLevel,
+      sceneId: row.sceneId ?? null,
       enabled: row.enabled
     })
   } else {
     editingRule.value = null
     Object.assign(ruleForm, defaultRuleForm())
   }
+  loadScenes(ruleForm.greenhouseId)
   ruleDialogVisible.value = true
+}
+
+async function loadScenes(greenhouseId) {
+  scenes.value = []
+  if (!greenhouseId) return
+  try {
+    const res = await getScenes(greenhouseId)
+    scenes.value = res.data || []
+  } catch { /* handled by interceptor */ }
+}
+
+function getSceneName(sceneId) {
+  const scene = scenes.value.find(s => s.id === sceneId)
+  if (scene) return scene.name
+  // 规则列表页展示时尝试按大棚加载的场景缓存
+  return sceneNames.value[sceneId] || ''
+}
+
+// 规则列表展示用：按大棚聚合场景名（行内不逐个发请求）
+const sceneNames = ref({})
+
+async function loadSceneNamesForRules() {
+  const map = {}
+  const ids = new Set(rules.value.map(r => r.sceneId).filter(Boolean))
+  if (ids.size === 0) {
+    sceneNames.value = {}
+    return
+  }
+  const ghIds = new Set(rules.value.map(r => r.greenhouseId))
+  for (const ghId of ghIds) {
+    try {
+      const res = await getScenes(ghId)
+      for (const s of (res.data || [])) {
+        if (ids.has(s.id)) map[s.id] = s.name
+      }
+    } catch { /* ignored */ }
+  }
+  sceneNames.value = map
 }
 
 async function submitRuleForm() {
@@ -412,6 +483,7 @@ async function submitRuleForm() {
       ruleType: ruleForm.ruleType,
       conditionJson: ruleForm.conditionJson,
       alertLevel: ruleForm.alertLevel,
+      sceneId: ruleForm.sceneId,
       enabled: ruleForm.enabled
     }
 
@@ -424,6 +496,7 @@ async function submitRuleForm() {
     }
     ruleDialogVisible.value = false
     await loadRules()
+    await loadSceneNamesForRules()
   } catch { /* handled by interceptor */ }
   finally { ruleSubmitting.value = false }
 }
@@ -436,6 +509,7 @@ async function toggleRule(row, enabled) {
       ruleType: row.ruleType,
       conditionJson: row.conditionJson,
       alertLevel: row.alertLevel,
+      sceneId: row.sceneId,
       enabled
     })
     row.enabled = enabled
@@ -527,7 +601,8 @@ function formatTime(dateStr) {
 // ===== 初始化 =====
 onMounted(async () => {
   await loadGreenhouses()
-  loadRules()
+  await loadRules()
+  loadSceneNamesForRules()
   loadThresholds()
 })
 </script>
@@ -573,6 +648,18 @@ onMounted(async () => {
 
 .text-muted {
   color: #c0c4cc;
+}
+
+.muted-text {
+  color: #c0c4cc;
+  font-size: 13px;
+}
+
+.scene-option-desc {
+  float: right;
+  color: #909399;
+  font-size: 12px;
+  margin-left: 16px;
 }
 
 .pagination-wrapper {

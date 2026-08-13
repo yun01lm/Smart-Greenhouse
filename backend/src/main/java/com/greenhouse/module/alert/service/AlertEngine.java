@@ -6,6 +6,8 @@ import com.greenhouse.entity.Alert;
 import com.greenhouse.entity.AlertRule;
 import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.UserAlertThreshold;
+import com.greenhouse.module.control.dto.ControlLogResponse;
+import com.greenhouse.module.control.service.SceneService;
 import com.greenhouse.module.weather.dto.WeatherCurrentResponse;
 import com.greenhouse.module.weather.service.QWeatherService;
 import com.greenhouse.module.websocket.service.RealtimePushService;
@@ -16,7 +18,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 预警引擎
@@ -45,6 +50,13 @@ public class AlertEngine {
     private final ObjectMapper objectMapper;
     private final GreenhouseRepository greenhouseRepository;
     private final QWeatherService weatherService;
+    private final SceneService sceneService;
+
+    /** 预警联动场景冷却时间（10 分钟），防止传感器高频上报导致场景反复执行 */
+    private static final long SCENE_COOLDOWN_MS = 10 * 60 * 1000L;
+
+    /** 规则ID → 最近一次联动场景触发时间戳（内存防抖，单机部署足够） */
+    private final Map<Long, Long> lastSceneTriggerAt = new ConcurrentHashMap<>();
 
     /**
      * 检测传感器数据是否触发预警
@@ -248,5 +260,48 @@ public class AlertEngine {
 
         log.info("预警触发: id={}, level={}, title={}, value={}",
                 alert.getId(), level, title, sensorValue);
+
+        // 预警联动场景：规则绑定了场景则自动执行（10 分钟冷却防抖）
+        if (ruleId != null) {
+            triggerLinkedScene(ruleId);
+        }
+    }
+
+    /**
+     * 预警联动触发场景（异步执行，避免阻塞 MQTT 回调线程）
+     * <p>
+     * 同一规则触发场景后有 10 分钟冷却时间，防止传感器高频上报导致
+     * 场景反复执行、设备开关抖动。
+     * </p>
+     */
+    private void triggerLinkedScene(Long ruleId) {
+        try {
+            AlertRule rule = ruleRepository.findById(ruleId).orElse(null);
+            if (rule == null || rule.getSceneId() == null) {
+                return;
+            }
+
+            long now = System.currentTimeMillis();
+            Long last = lastSceneTriggerAt.get(ruleId);
+            if (last != null && now - last < SCENE_COOLDOWN_MS) {
+                log.debug("预警联动场景冷却中，跳过: ruleId={}, sceneId={}", ruleId, rule.getSceneId());
+                return;
+            }
+            lastSceneTriggerAt.put(ruleId, now);
+
+            Long sceneId = rule.getSceneId();
+            log.info("预警联动触发场景: ruleId={}, sceneId={}", ruleId, sceneId);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    List<ControlLogResponse> results = sceneService.executeSceneByAlert(sceneId);
+                    log.info("预警联动场景执行完成: sceneId={}, actionCount={}",
+                            sceneId, results.size());
+                } catch (Exception e) {
+                    log.error("预警联动场景执行异常: sceneId={}, error={}", sceneId, e.getMessage(), e);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("预警联动场景触发异常: ruleId={}, error={}", ruleId, e.getMessage());
+        }
     }
 }

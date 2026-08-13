@@ -78,6 +78,27 @@ public class ControlRepository extends BaseRepository {
         });
     }
 
+    /**
+     * 按大棚分页查询设备控制日志（source 为空表示全部来源）
+     */
+    public void getControlLogs(long greenhouseId, String source, int page, int size,
+                               Callback<List<ControlLogItem>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<PageResult<ControlLogItem>>> response =
+                        apiService.getControlLogs(greenhouseId, source, page, size).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    PageResult<ControlLogItem> pageResult = response.body().getData();
+                    postSuccess(callback, pageResult != null ? pageResult.getList() : new java.util.ArrayList<>());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
     public void createScene(long greenhouseId, CreateSceneRequest request, Callback<SceneInfo> callback) {
         execute(() -> {
             try {

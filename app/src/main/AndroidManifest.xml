@@ -60,6 +60,13 @@
             android:theme="@style/Theme.SmartGreenhouse"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 设备控制记录 -->
+        <activity
+            android:name=".ui.control.ControlLogActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse"
+            android:parentActivityName=".ui.common.MainActivity" />
+
         <!-- 阈值设置 -->
         <activity
             android:name=".ui.alert.ThresholdSettingsActivity"

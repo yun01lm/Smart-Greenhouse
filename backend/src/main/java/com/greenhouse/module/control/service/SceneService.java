@@ -242,6 +242,60 @@ public class SceneService {
         return results;
     }
 
+    /**
+     * 预警联动自动执行场景（系统触发，无用户上下文）
+     * <p>
+     * 由 AlertEngine 在预警触发时调用；跳过用户权限校验，
+     * 保留设备在线/类型校验，控制日志来源标记为 ALERT（预警联动）。
+     * </p>
+     */
+    @Transactional
+    public List<ControlLogResponse> executeSceneByAlert(Long sceneId) {
+        Scene scene = sceneRepository.findById(sceneId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PARAM_ERROR, "场景不存在"));
+
+        if (!scene.getEnabled()) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "场景已禁用");
+        }
+
+        // 解析动作列表
+        List<SceneRequest.SceneAction> actions;
+        try {
+            actions = objectMapper.readValue(scene.getActionsJson(),
+                    new TypeReference<List<SceneRequest.SceneAction>>() {});
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "场景动作数据格式错误");
+        }
+
+        // 逐一执行动作
+        List<ControlLogResponse> results = new ArrayList<>();
+        for (SceneRequest.SceneAction action : actions) {
+            try {
+                ControlLogResponse result = controlService.controlDeviceBySystem(
+                        action.getDeviceId(), action.getAction(), sceneId);
+                results.add(result);
+            } catch (Exception e) {
+                log.warn("预警联动场景执行中设备控制失败: sceneId={}, deviceId={}, error={}",
+                        sceneId, action.getDeviceId(), e.getMessage());
+                results.add(ControlLogResponse.builder()
+                        .deviceId(action.getDeviceId())
+                        .action(action.getAction())
+                        .source("ALERT")
+                        .sceneId(sceneId)
+                        .success(false)
+                        .failReason(e.getMessage())
+                        .build());
+            }
+        }
+
+        log.info("预警联动场景执行完成: sceneId={}, name={}, successCount={}/{}, totalActions={}",
+                sceneId, scene.getName(),
+                results.stream().filter(ControlLogResponse::getSuccess).count(),
+                results.size(), actions.size());
+
+        return results;
+    }
+
     // ===== 辅助方法 =====
 
     /**

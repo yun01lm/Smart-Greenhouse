@@ -12,6 +12,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,7 @@ public class ControlService {
     private final DeviceRepository deviceRepository;
     private final GreenhouseRepository greenhouseRepository;
     private final ControlLogRepository controlLogRepository;
+    private final SceneRepository sceneRepository;
     private final UserRepository userRepository;
     private final EmployeePermissionRepository permissionRepository;
     private final ObjectMapper objectMapper;
@@ -109,21 +114,144 @@ public class ControlService {
     }
 
     /**
+     * 系统自动控制设备（预警联动触发）
+     * <p>
+     * 跳过用户权限校验（系统操作），操作人记为空（展示为"系统"），
+     * 日志来源固定为 ALERT 并记录触发场景ID。
+     * </p>
+     *
+     * @param deviceId 设备ID
+     * @param action   动作（ON / OFF）
+     * @param sceneId  触发场景ID（预警关联的场景）
+     */
+    @Transactional
+    public ControlLogResponse controlDeviceBySystem(Long deviceId, String action, Long sceneId) {
+        // 1. 校验设备存在
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DEVICE_NOT_FOUND));
+
+        // 2. 校验设备类型必须是 CONTROLLER
+        if (device.getDeviceType() != Device.DeviceType.CONTROLLER) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "只有控制器类设备才能执行操作");
+        }
+
+        // 3. 校验设备在线
+        if (device.getStatus() == Device.DeviceStatus.OFFLINE) {
+            throw new BusinessException(ErrorCode.DEVICE_OFFLINE);
+        }
+
+        // 4. 校验动作合法性
+        String act = action.toUpperCase();
+        if (!"ON".equals(act) && !"OFF".equals(act)) {
+            throw new BusinessException(ErrorCode.PARAM_ERROR, "控制动作只能是 ON 或 OFF");
+        }
+
+        // 5. 通过 MQTT 下发控制指令
+        boolean success = sendMqttCommand(device, act);
+        String failReason = success ? null : "MQTT 发送失败，设备可能不在线";
+
+        // 6. 记录控制日志（系统触发：userId=null, source=ALERT, sceneId）
+        ControlLog controlLog = ControlLog.builder()
+                .userId(null)
+                .deviceId(deviceId)
+                .action(act)
+                .source("ALERT")
+                .sceneId(sceneId)
+                .success(success)
+                .failReason(failReason)
+                .build();
+        controlLog = controlLogRepository.save(controlLog);
+
+        // 7. 更新设备状态
+        if (success) {
+            device.setLastValue(act);
+            device.setLastDataTime(java.time.LocalDateTime.now());
+            deviceRepository.save(device);
+        }
+
+        log.info("系统预警联动设备控制: deviceId={}, action={}, sceneId={}, success={}",
+                deviceId, act, sceneId, success);
+
+        return ControlLogResponse.fromEntity(controlLog, "系统", device.getName());
+    }
+
+    /**
      * 查询设备的控制日志
      */
     public List<ControlLogResponse> getDeviceLogs(Long deviceId) {
         List<ControlLog> logs = controlLogRepository.findByDeviceIdOrderByCreatedAtDesc(deviceId);
 
         return logs.stream()
-                .map(log -> {
-                    String username = log.getUserId() != null
-                            ? userRepository.findById(log.getUserId()).map(User::getUsername).orElse("未知用户")
-                            : "系统";
-                    String deviceName = deviceRepository.findById(log.getDeviceId())
-                            .map(Device::getName).orElse("未知设备");
-                    return ControlLogResponse.fromEntity(log, username, deviceName);
-                })
+                .map(this::toControlLogResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 按大棚查询控制日志（分页，用户权限收口）
+     * <p>
+     * OWNER 只能查自己大棚；WORKER/TECHNICIAN 需有该大棚授权；ADMIN 可查任意大棚。
+     * 可通过 source 过滤来源（MANUAL / SCENE / ALERT）。
+     * </p>
+     */
+    public Page<ControlLogResponse> getGreenhouseLogs(Long userId, User.Role role, Long greenhouseId,
+                                                      String source, int page, int size) {
+        Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
+
+        switch (role) {
+            case ADMIN:
+                break;
+            case OWNER:
+                if (!greenhouse.getOwnerId().equals(userId)) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
+                break;
+            case WORKER:
+            case TECHNICIAN:
+                var perm = permissionRepository.findByEmployeeIdAndGreenhouseId(userId, greenhouseId);
+                if (perm.isEmpty()) {
+                    throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
+                }
+                break;
+            default:
+                throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        List<Long> deviceIds = deviceRepository.findByGreenhouseId(greenhouseId).stream()
+                .map(Device::getId)
+                .collect(Collectors.toList());
+        if (deviceIds.isEmpty()) {
+            return Page.empty(PageRequest.of(page, size));
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<ControlLog> logPage;
+        if (source != null && !source.isBlank()) {
+            logPage = controlLogRepository.findByDeviceIdInAndSourceOrderByCreatedAtDesc(
+                    deviceIds, source.toUpperCase(), pageable);
+        } else {
+            logPage = controlLogRepository.findByDeviceIdInOrderByCreatedAtDesc(deviceIds, pageable);
+        }
+        return logPage.map(this::toControlLogResponse);
+    }
+
+    /**
+     * 控制日志转响应 DTO（操作人：系统触发显示"系统"；附带触发场景名称）
+     */
+    private ControlLogResponse toControlLogResponse(ControlLog log) {
+        String username = log.getUserId() != null
+                ? userRepository.findById(log.getUserId()).map(User::getUsername).orElse("未知用户")
+                : "系统";
+        String deviceName = deviceRepository.findById(log.getDeviceId())
+                .map(Device::getName).orElse("未知设备");
+        String sceneName = null;
+        if (log.getSceneId() != null) {
+            sceneName = sceneRepository.findById(log.getSceneId())
+                    .map(Scene::getName).orElse(null);
+        }
+        ControlLogResponse response = ControlLogResponse.fromEntity(log, username, deviceName);
+        response.setSceneName(sceneName);
+        return response;
     }
 
     // ===== 辅助方法 =====

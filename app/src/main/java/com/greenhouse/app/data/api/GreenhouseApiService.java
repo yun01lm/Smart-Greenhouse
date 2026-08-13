@@ -142,6 +142,14 @@ public interface GreenhouseApiService {
             @Query("greenhouseId") long greenhouseId
     );
 
+    @GET("control/logs")
+    Call<ApiResponse<PageResult<ControlLogItem>>> getControlLogs(
+            @Query("greenhouseId") long greenhouseId,
+            @Query("source") String source,
+            @Query("page") int page,
+            @Query("size") int size
+    );
+
     @POST("control/scenes")
     Call<ApiResponse<SceneInfo>> createScene(@Query("greenhouseId") long greenhouseId,
                                               @Body CreateSceneRequest request);

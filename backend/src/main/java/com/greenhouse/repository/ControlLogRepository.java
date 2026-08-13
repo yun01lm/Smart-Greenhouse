@@ -20,6 +20,10 @@ public interface ControlLogRepository extends JpaRepository<ControlLog, Long> {
     /** 按大棚ID查询（通过设备关联） */
     Page<ControlLog> findByDeviceIdInOrderByCreatedAtDesc(List<Long> deviceIds, Pageable pageable);
 
+    /** 按大棚ID+来源查询（通过设备关联） */
+    Page<ControlLog> findByDeviceIdInAndSourceOrderByCreatedAtDesc(
+            List<Long> deviceIds, String source, Pageable pageable);
+
     /** 按用户ID查询 */
     List<ControlLog> findByUserIdOrderByCreatedAtDesc(Long userId);
 

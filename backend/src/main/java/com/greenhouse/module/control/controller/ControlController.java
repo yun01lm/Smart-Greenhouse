@@ -1,12 +1,16 @@
 package com.greenhouse.module.control.controller;
 
 import com.greenhouse.common.ApiResponse;
+import com.greenhouse.common.BusinessException;
+import com.greenhouse.common.ErrorCode;
+import com.greenhouse.common.PageResult;
 import com.greenhouse.entity.User;
 import com.greenhouse.module.control.dto.ControlLogResponse;
 import com.greenhouse.module.control.dto.ControlRequest;
 import com.greenhouse.module.control.service.ControlService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -41,11 +45,29 @@ public class ControlController {
 
     /**
      * 查询设备控制日志
-     * GET /api/v1/control/logs?deviceId=1
+     * <p>
+     * 1) GET /api/v1/control/logs?deviceId=1  → 按设备查询（不分页，兼容旧调用）
+     * 2) GET /api/v1/control/logs?greenhouseId=1&page=0&size=20&source=SCENE → 按大棚分页查询
+     * </p>
      */
     @GetMapping("/logs")
-    public ApiResponse<List<ControlLogResponse>> logs(@RequestParam Long deviceId) {
-        return ApiResponse.success(controlService.getDeviceLogs(deviceId));
+    public ApiResponse<?> logs(@RequestParam(required = false) Long deviceId,
+                               @RequestParam(required = false) Long greenhouseId,
+                               @RequestParam(required = false) String source,
+                               @RequestParam(defaultValue = "0") int page,
+                               @RequestParam(defaultValue = "20") int size) {
+        Long userId = getCurrentUserId();
+        User.Role role = getCurrentUserRole();
+
+        if (greenhouseId != null) {
+            Page<ControlLogResponse> logPage = controlService.getGreenhouseLogs(
+                    userId, role, greenhouseId, source, page, size);
+            return ApiResponse.success(PageResult.of(logPage));
+        }
+        if (deviceId != null) {
+            return ApiResponse.success(controlService.getDeviceLogs(deviceId));
+        }
+        throw new BusinessException(ErrorCode.PARAM_ERROR, "deviceId 或 greenhouseId 至少传一个");
     }
 
     // ===== 辅助方法 =====
