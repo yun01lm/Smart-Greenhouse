@@ -30,8 +30,7 @@ public class ChatMessage {
     @SerializedName("filePath")
     private String filePath;
 
-    @SerializedName("snapshotData")
-    private SnapshotData snapshotData;
+    private String snapshotData;
 
     @SerializedName("readStatus")
     private int readStatus; // 0=未读, 1=已读
@@ -48,7 +47,7 @@ public class ChatMessage {
     public String getMessageType() { return messageType; }
     public String getContent() { return content; }
     public String getFilePath() { return filePath; }
-    public SnapshotData getSnapshotData() { return snapshotData; }
+    public String getSnapshotData() { return snapshotData; }
     public int getReadStatus() { return readStatus; }
     public String getCreatedAt() { return createdAt; }
 
@@ -82,34 +81,4 @@ public class ChatMessage {
         return readStatus == 1;
     }
 
-    /**
-     * 环境快照数据（仅 ENV_SNAPSHOT 类型消息有值）
-     */
-    public static class SnapshotData {
-
-        @SerializedName("greenhouseId")
-        private long greenhouseId;
-
-        @SerializedName("greenhouseName")
-        private String greenhouseName;
-
-        @SerializedName("capturedAt")
-        private String capturedAt;
-
-        @SerializedName("avgTemp")
-        private double avgTemp;
-
-        @SerializedName("avgHumidity")
-        private double avgHumidity;
-
-        public long getGreenhouseId() { return greenhouseId; }
-        public String getGreenhouseName() { return greenhouseName; }
-        public String getCapturedAt() { return capturedAt; }
-        public double getAvgTemp() { return avgTemp; }
-        public double getAvgHumidity() { return avgHumidity; }
-
-        public String getSummary() {
-            return String.format("%s · 均温 %.1f°C · 均湿 %.1f%%", greenhouseName, avgTemp, avgHumidity);
-        }
-    }
 }

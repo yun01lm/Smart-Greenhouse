@@ -12,7 +12,6 @@ import com.greenhouse.app.data.model.ChatMessage;
 import com.greenhouse.app.data.model.ConversationInfo;
 import com.greenhouse.app.data.model.CreateConversationRequest;
 import com.greenhouse.app.data.model.ExpertInfo;
-import com.greenhouse.app.data.model.PageResult;
 import com.greenhouse.app.data.model.SendMessageRequest;
 import com.greenhouse.app.data.model.SnapshotRequest;
 import com.greenhouse.app.data.model.UnreadResponse;
@@ -54,6 +53,8 @@ public class ExpertViewModel extends ViewModel {
     // 错误信息
     private final MutableLiveData<String> errorMessage = new MutableLiveData<>();
 
+    // 新创建的会话（用于创建成功后跳转聊天页）
+    private final MutableLiveData<ConversationInfo> createdConversation = new MutableLiveData<>();
     private long currentConversationId;
     private long currentGreenhouseId;
     private int conversationPage = 1;
@@ -84,6 +85,10 @@ public class ExpertViewModel extends ViewModel {
 
     public void setCurrentGreenhouseId(long id) { this.currentGreenhouseId = id; }
     public long getCurrentGreenhouseId() { return currentGreenhouseId; }
+
+    public LiveData<ConversationInfo> getCreatedConversation() { return createdConversation; }
+
+    public void consumeCreatedConversation() { createdConversation.setValue(null); }
 
     // ===== 专家列表 =====
 
@@ -118,6 +123,8 @@ public class ExpertViewModel extends ViewModel {
             public void onSuccess(ConversationInfo data) {
                 isLoading.postValue(false);
                 currentConversationId = data.getId();
+                // 通知页面跳转聊天页
+                createdConversation.postValue(data);
                 // 刷新对话列表
                 refreshConversations();
             }
@@ -137,10 +144,10 @@ public class ExpertViewModel extends ViewModel {
 
     private void loadConversationsPage() {
         repository.getConversations(null, conversationPage, PAGE_SIZE,
-                new ExpertRepository.Callback<PageResult<ConversationInfo>>() {
+                new ExpertRepository.Callback<List<ConversationInfo>>() {
                     @Override
-                    public void onSuccess(PageResult<ConversationInfo> data) {
-                        List<ConversationInfo> list = data.getList();
+                    public void onSuccess(List<ConversationInfo> data) {
+                        List<ConversationInfo> list = data;
                         if (list == null) list = new ArrayList<>();
                         conversations.postValue(list);
                     }
@@ -166,11 +173,11 @@ public class ExpertViewModel extends ViewModel {
         if (currentConversationId == 0) return;
         isLoading.setValue(true);
         repository.getMessages(currentConversationId, messagePage, PAGE_SIZE,
-                new ExpertRepository.Callback<PageResult<ChatMessage>>() {
+                new ExpertRepository.Callback<List<ChatMessage>>() {
                     @Override
-                    public void onSuccess(PageResult<ChatMessage> data) {
+                    public void onSuccess(List<ChatMessage> data) {
                         isLoading.postValue(false);
-                        List<ChatMessage> list = data.getList();
+                        List<ChatMessage> list = data;
                         if (list == null) list = new ArrayList<>();
                         messages.postValue(list);
                     }

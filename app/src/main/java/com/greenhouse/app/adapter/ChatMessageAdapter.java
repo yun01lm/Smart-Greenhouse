@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.greenhouse.app.R;
 import com.greenhouse.app.data.model.ChatMessage;
+import org.json.JSONObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -164,15 +165,22 @@ public class ChatMessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     }
 
     private void bindSnapshot(SnapshotHolder holder, ChatMessage msg) {
-        ChatMessage.SnapshotData data = msg.getSnapshotData();
-        if (data != null) {
-            holder.tvGreenhouseName.setText(data.getGreenhouseName() != null ? data.getGreenhouseName() : "大棚");
-            holder.tvAvgTemp.setText(String.format(Locale.getDefault(), "%.1f°C", data.getAvgTemp()));
-            holder.tvAvgHumidity.setText(String.format(Locale.getDefault(), "%.1f%%", data.getAvgHumidity()));
-            holder.tvSnapshotTime.setText(data.getCapturedAt() != null ? data.getCapturedAt() : "");
+        String raw = msg.getSnapshotData();
+        if (raw == null || raw.isEmpty()) return;
+        try {
+            JSONObject obj = new JSONObject(raw);
+            String name = obj.optString("greenhouseName", "大棚");
+            double avgTemp = obj.optDouble("avgTemp", 0);
+            double avgHumidity = obj.optDouble("avgHumidity", 0);
+            String capturedAt = obj.optString("capturedAt", "");
+            holder.tvGreenhouseName.setText(name);
+            holder.tvAvgTemp.setText(String.format(Locale.getDefault(), "%.1f°C", avgTemp));
+            holder.tvAvgHumidity.setText(String.format(Locale.getDefault(), "%.1f%%", avgHumidity));
+            holder.tvSnapshotTime.setText(capturedAt);
+        } catch (Exception e) {
+            holder.tvGreenhouseName.setText("环境快照");
         }
     }
-
     // ===== 时间格式化 =====
 
     private String formatTime(String isoTime) {

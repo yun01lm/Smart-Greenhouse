@@ -45,10 +45,18 @@ public class ExpertListActivity extends AppCompatActivity {
         setupRecyclerView();
         observeData();
         viewModel.loadExperts();
+        viewModel.loadUnreadCount();
     }
 
     private void setupToolbar() {
         binding.toolbar.setNavigationOnClickListener(v -> finish());
+
+        // 我的咨询入口（APP-D02）
+        binding.btnMyConversations.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ConversationListActivity.class);
+            intent.putExtra("greenhouse_id", viewModel.getCurrentGreenhouseId());
+            startActivity(intent);
+        });
     }
 
     private void setupRecyclerView() {
@@ -71,6 +79,27 @@ public class ExpertListActivity extends AppCompatActivity {
             }
         });
 
+
+        // 未读角标（APP-D02）
+        viewModel.getUnreadCount().observe(this, count -> {
+            if (count != null && count > 0) {
+                binding.tvUnreadBadge.setVisibility(View.VISIBLE);
+                binding.tvUnreadBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+            } else {
+                binding.tvUnreadBadge.setVisibility(View.GONE);
+            }
+        });
+
+        // 创建会话成功后自动进入聊天页（APP-D02）
+        viewModel.getCreatedConversation().observe(this, conversation -> {
+            if (conversation == null) return;
+            Intent intent = new Intent(this, ChatActivity.class);
+            intent.putExtra("conversation_id", conversation.getId());
+            intent.putExtra("expert_name", conversation.getExpertName());
+            intent.putExtra("greenhouse_id", conversation.getGreenhouseId());
+            startActivity(intent);
+            viewModel.consumeCreatedConversation();
+        });
         viewModel.getErrorMessage().observe(this, error -> {
             if (error != null && !error.isEmpty()) {
                 Toast.makeText(this, error, Toast.LENGTH_SHORT).show();

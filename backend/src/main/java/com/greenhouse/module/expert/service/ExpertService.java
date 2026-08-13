@@ -55,11 +55,13 @@ public class ExpertService {
 
             result.add(Map.of(
                     "id", expert.getId(),
-                    "name", expert.getUsername(),
-                    "phone", expert.getPhone() != null ? expert.getPhone() : "",
-                    "specialty", "农业专家",
-                    "isOnline", availability.getIsOnline(),
-                    "consultCount", 0  // Phase 4 完善统计
+                    "realName", expert.getRealName() != null ? expert.getRealName() : expert.getUsername(),
+                    "expertSpecialty", expert.getExpertSpecialty() != null ? expert.getExpertSpecialty() : "农业专家",
+                    "expertStatus", availability.getIsOnline(),
+                    "rating", 0.0,
+                    "consultCount", 0,
+                    "currentCount", 0,
+                    "introduction", expert.getExpertSpecialty() != null ? expert.getExpertSpecialty() : ""
             ));
         }
 

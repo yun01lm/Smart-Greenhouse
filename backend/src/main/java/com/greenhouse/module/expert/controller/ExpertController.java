@@ -26,13 +26,13 @@ public class ExpertController {
      * GET /api/v1/experts?specialty=蔬菜植保&onlineOnly=true&page=0&size=10
      */
     @GetMapping
-    public ApiResponse<Map<String, Object>> list(
+    public ApiResponse<List<Map<String, Object>>> list(
             @RequestParam(required = false) String specialty,
             @RequestParam(required = false) Boolean onlineOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         List<Map<String, Object>> experts = expertService.getExpertList(specialty, onlineOnly, page, size);
-        return ApiResponse.success(Map.of("list", experts));
+        return ApiResponse.success(experts);
     }
 }

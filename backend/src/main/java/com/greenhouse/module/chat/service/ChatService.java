@@ -106,7 +106,10 @@ public class ChatService {
                             ? messageRepository.countUnreadByConversationId(conv.getId())
                             : messageRepository.countUnreadByConversationId(conv.getId());
 
-                    String expertName = otherUser != null ? otherUser.getUsername() : "未知";
+                    String expertName = otherUser != null
+                            ? (otherUser.getRealName() != null && !otherUser.getRealName().isEmpty()
+                                ? otherUser.getRealName() : otherUser.getUsername())
+                            : "未知";
                     String lastMsg = getLastMessagePreview(conv.getId());
 
                     return ConversationResponse.fromEntity(conv, expertName, "", unread, lastMsg);

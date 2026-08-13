@@ -50,10 +50,10 @@ public class ExpertRepository extends BaseRepository {
     }
 
     public void getConversations(String status, int page, int size,
-                                 Callback<PageResult<ConversationInfo>> callback) {
+                                 Callback<List<ConversationInfo>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<PageResult<ConversationInfo>>> response =
+                Response<ApiResponse<List<ConversationInfo>>> response =
                         apiService.getConversations(status, page, size).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());
@@ -67,10 +67,10 @@ public class ExpertRepository extends BaseRepository {
     }
 
     public void getMessages(long conversationId, int page, int size,
-                            Callback<PageResult<ChatMessage>> callback) {
+                            Callback<List<ChatMessage>> callback) {
         execute(() -> {
             try {
-                Response<ApiResponse<PageResult<ChatMessage>>> response =
+                Response<ApiResponse<List<ChatMessage>>> response =
                         apiService.getMessages(conversationId, page, size).execute();
                 if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
                     postSuccess(callback, response.body().getData());

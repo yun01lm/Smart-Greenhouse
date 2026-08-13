@@ -195,14 +195,14 @@ public interface GreenhouseApiService {
     Call<ApiResponse<ConversationInfo>> createConversation(@Body CreateConversationRequest request);
 
     @GET("chat/conversations")
-    Call<ApiResponse<PageResult<ConversationInfo>>> getConversations(
+    Call<ApiResponse<List<ConversationInfo>>> getConversations(
             @Query("status") String status,
             @Query("page") int page,
             @Query("size") int size
     );
 
     @GET("chat/conversations/{id}/messages")
-    Call<ApiResponse<PageResult<ChatMessage>>> getMessages(
+    Call<ApiResponse<List<ChatMessage>>> getMessages(
             @Path("id") long conversationId,
             @Query("page") int page,
             @Query("size") int size

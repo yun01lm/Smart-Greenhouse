@@ -101,6 +101,12 @@
             android:exported="false"
             android:theme="@style/Theme.SmartGreenhouse" />
 
+        <!-- 我的咨询（会话列表，APP-D02） -->
+        <activity
+            android:name=".ui.expert.ConversationListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartGreenhouse" />
+
         <!-- 专家聊天 (F10) -->
         <activity
             android:name=".ui.expert.ChatActivity"

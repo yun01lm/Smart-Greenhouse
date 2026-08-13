@@ -12,13 +12,13 @@ import java.util.List;
  */
 public class UnreadResponse {
 
-    @SerializedName("totalUnread")
-    private int totalUnread;
+    @SerializedName("count")
+    private int count;
 
     @SerializedName("conversations")
     private List<UnreadConversation> conversations;
 
-    public int getTotalUnread() { return totalUnread; }
+    public int getTotalUnread() { return count; }
     public List<UnreadConversation> getConversations() { return conversations; }
 
     public static class UnreadConversation {
