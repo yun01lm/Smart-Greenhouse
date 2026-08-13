@@ -23,6 +23,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Page<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId, Pageable pageable);
 
     /**
+     * 按对话ID分页查询消息（时间倒序，取最新消息预览用）
+     */
+    Page<ChatMessage> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
+
+    /**
      * 按对话ID查询全部消息（时间正序，R9 管理端明细/导出用）
      */
     List<ChatMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId);

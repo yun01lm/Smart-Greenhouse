@@ -32,6 +32,9 @@ public class ConversationResponse {
     /** 专家专业领域 */
     private String expertSpecialty;
 
+    /** 用户/咨询者姓名（专家视角显示） */
+    private String userName;
+
     /** 大棚ID */
     private Long greenhouseId;
 
@@ -54,13 +57,14 @@ public class ConversationResponse {
      * 从实体转换
      */
     public static ConversationResponse fromEntity(ChatConversation conversation,
-                                                    String expertName, String expertSpecialty,
+                                                    String expertName, String userName, String expertSpecialty,
                                                     long unreadCount, String lastMessage) {
         return ConversationResponse.builder()
                 .id(conversation.getId())
                 .userId(conversation.getUserId())
                 .expertId(conversation.getExpertId())
                 .expertName(expertName)
+                .userName(userName)
                 .expertSpecialty(expertSpecialty)
                 .greenhouseId(conversation.getGreenhouseId())
                 .subject(conversation.getSubject())

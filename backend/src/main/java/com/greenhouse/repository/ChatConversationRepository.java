@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 聊天对话 Repository
@@ -35,6 +36,18 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
      * 按用户ID和状态查询
      */
     List<ChatConversation> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, ChatConversation.ConversationStatus status);
+
+    /**
+     * 查询某用户与某专家之间未关闭（进行中/等待中）的最新会话（R35 同专家复用）
+     */
+    Optional<ChatConversation> findTopByUserIdAndExpertIdAndStatusNotOrderByCreatedAtDesc(
+            Long userId, Long expertId, ChatConversation.ConversationStatus status);
+
+    /**
+     * 查询某用户与某专家之间最近关闭的会话（R35 关闭后复用重新开启）
+     */
+    Optional<ChatConversation> findTopByUserIdAndExpertIdAndStatusOrderByClosedAtDesc(
+            Long userId, Long expertId, ChatConversation.ConversationStatus status);
 
     /** ADMIN 统计某专家的咨询会话数 */
     long countByExpertId(Long expertId);

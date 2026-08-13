@@ -52,19 +52,45 @@ public class ChatService {
             throw new BusinessException(ErrorCode.EXPERT_NOT_FOUND);
         }
 
-        // 创建对话
-        ChatConversation conversation = ChatConversation.builder()
-                .userId(userId)
-                .expertId(request.getExpertId())
-                .greenhouseId(request.getGreenhouseId())
-                .subject(request.getSubject())
-                .diagnosticId(request.getDiagnosticId())
-                .status(ChatConversation.ConversationStatus.WAITING)
-                .build();
+        // R35：同专家复用会话——优先复用未关闭（等待中/进行中）的会话
+        ChatConversation conversation = conversationRepository
+                .findTopByUserIdAndExpertIdAndStatusNotOrderByCreatedAtDesc(
+                        userId, request.getExpertId(), ChatConversation.ConversationStatus.CLOSED)
+                .orElse(null);
 
-        conversation = conversationRepository.save(conversation);
+        if (conversation == null) {
+            // 无进行中会话时，复用最近一次已关闭的会话（自动重新开启，继续对话）
+            conversation = conversationRepository
+                    .findTopByUserIdAndExpertIdAndStatusOrderByClosedAtDesc(
+                            userId, request.getExpertId(), ChatConversation.ConversationStatus.CLOSED)
+                    .orElse(null);
+            if (conversation != null) {
+                conversation.setStatus(ChatConversation.ConversationStatus.ACTIVE);
+                conversation.setClosedAt(null);
+                conversationRepository.save(conversation);
+                log.info("已关闭对话重新开启: id={}, user={}, expert={}", conversation.getId(), userId, request.getExpertId());
+            }
+        }
 
-        // 发送首条消息（求助描述）
+        if (conversation == null) {
+            // 从未对话过，新建会话
+            conversation = ChatConversation.builder()
+                    .userId(userId)
+                    .expertId(request.getExpertId())
+                    .greenhouseId(request.getGreenhouseId())
+                    .subject(request.getSubject())
+                    .diagnosticId(request.getDiagnosticId())
+                    .status(ChatConversation.ConversationStatus.WAITING)
+                    .build();
+            conversation = conversationRepository.save(conversation);
+            log.info("对话已创建: id={}, user={}, expert={}, subject={}",
+                    conversation.getId(), userId, request.getExpertId(), request.getSubject());
+        } else {
+            log.info("复用已有对话: id={}, user={}, expert={}, subject={}",
+                    conversation.getId(), userId, request.getExpertId(), request.getSubject());
+        }
+
+        // 发送/追加求助消息（新会话首条 / 复用会话继续）
         ChatMessage firstMessage = ChatMessage.builder()
                 .conversationId(conversation.getId())
                 .senderId(userId)
@@ -72,13 +98,14 @@ public class ChatService {
                 .messageType(ChatMessage.MessageType.TEXT)
                 .content(request.getSubject())
                 .build();
-        messageRepository.save(firstMessage);
+        firstMessage = messageRepository.save(firstMessage);
 
-        log.info("对话已创建: id={}, user={}, expert={}, subject={}",
-                conversation.getId(), userId, request.getExpertId(), request.getSubject());
+        // R27：WebSocket 推送给对话双方
+        pushChatMessage(conversation.getUserId(), conversation.getExpertId(),
+                MessageResponse.fromEntity(firstMessage));
 
         return ConversationResponse.fromEntity(conversation,
-                expert.getUsername(), "", 0, request.getSubject());
+                displayName(expert), "", "", 0, request.getSubject());
     }
 
     /**
@@ -95,24 +122,16 @@ public class ChatService {
 
         return conversations.getContent().stream()
                 .map(conv -> {
-                    User otherUser;
-                    if ("EXPERT".equalsIgnoreCase(role)) {
-                        otherUser = userRepository.findById(conv.getUserId()).orElse(null);
-                    } else {
-                        otherUser = userRepository.findById(conv.getExpertId()).orElse(null);
-                    }
+                    User user = userRepository.findById(conv.getUserId()).orElse(null);
+                    User expert = userRepository.findById(conv.getExpertId()).orElse(null);
 
-                    long unread = "EXPERT".equalsIgnoreCase(role)
-                            ? messageRepository.countUnreadByConversationId(conv.getId())
-                            : messageRepository.countUnreadByConversationId(conv.getId());
+                    long unread = messageRepository.countUnreadByConversationId(conv.getId());
 
-                    String expertName = otherUser != null
-                            ? (otherUser.getRealName() != null && !otherUser.getRealName().isEmpty()
-                                ? otherUser.getRealName() : otherUser.getUsername())
-                            : "未知";
+                    String expertName = displayName(expert);
+                    String userName = displayName(user);
                     String lastMsg = getLastMessagePreview(conv.getId());
 
-                    return ConversationResponse.fromEntity(conv, expertName, "", unread, lastMsg);
+                    return ConversationResponse.fromEntity(conv, expertName, userName, "", unread, lastMsg);
                 })
                 .toList();
     }
@@ -313,9 +332,18 @@ public class ChatService {
     /**
      * 获取最后一条消息的预览文本
      */
+    /**
+     * 姓名展示：真实姓名优先，无则回退账号名
+     */
+    private String displayName(User user) {
+        if (user == null) return "未知";
+        return (user.getRealName() != null && !user.getRealName().isEmpty())
+                ? user.getRealName() : user.getUsername();
+    }
+
     private String getLastMessagePreview(Long conversationId) {
         Page<ChatMessage> lastPage = messageRepository
-                .findByConversationIdOrderByCreatedAtAsc(conversationId, PageRequest.of(0, 1));
+                .findByConversationIdOrderByCreatedAtDesc(conversationId, PageRequest.of(0, 1));
         if (lastPage.hasContent()) {
             ChatMessage lastMsg = lastPage.getContent().get(0);
             if (lastMsg.getMessageType() == ChatMessage.MessageType.TEXT && lastMsg.getContent() != null) {
