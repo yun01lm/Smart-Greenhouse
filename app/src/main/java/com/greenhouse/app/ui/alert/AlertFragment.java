@@ -65,6 +65,33 @@ public class AlertFragment extends Fragment {
             startActivity(intent);
         });
 
+        // 处理告警（第 4 项告警闭环）
+        adapter.setOnHandleListener(alert -> {
+            new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("处理告警")
+                    .setMessage("确认标记该告警为已处理？")
+                    .setPositiveButton("处理", (d, w) -> {
+                        new com.greenhouse.app.data.repository.AlertRepository().handleAlert(
+                                alert.getId(),
+                                new com.greenhouse.app.data.repository.SensorRepository.Callback<Void>() {
+                                    @Override
+                                    public void onSuccess(Void data) {
+                                        android.widget.Toast.makeText(requireContext(),
+                                                "已处理", android.widget.Toast.LENGTH_SHORT).show();
+                                        viewModel.loadAlerts(true);
+                                    }
+
+                                    @Override
+                                    public void onError(String message) {
+                                        android.widget.Toast.makeText(requireContext(),
+                                                "处理失败: " + message, android.widget.Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        });
+
         // 筛选芯片
         binding.chipAll.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) viewModel.clearFilter();

@@ -27,13 +27,23 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.ViewHolder> 
 
     private final List<AlertItem> items = new ArrayList<>();
     private OnItemClickListener listener;
+    private OnHandleListener handleListener;
 
     public interface OnItemClickListener {
         void onItemClick(AlertItem alert);
     }
 
+    /** 告警处理回调（第 4 项告警闭环） */
+    public interface OnHandleListener {
+        void onHandle(AlertItem alert);
+    }
+
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
+    }
+
+    public void setOnHandleListener(OnHandleListener listener) {
+        this.handleListener = listener;
     }
 
     public void setData(List<AlertItem> newItems) {
@@ -87,6 +97,18 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.ViewHolder> 
         // 未读标记
         holder.dotUnread.setVisibility(alert.isReadStatus() ? View.GONE : View.VISIBLE);
 
+        // 处理按钮（第 4 项）：已处理置灰，未处理可点击
+        if (alert.isHandled()) {
+            holder.tvHandle.setText("已处理");
+            holder.tvHandle.setTextColor(Color.parseColor("#5C6F66"));
+        } else {
+            holder.tvHandle.setText("处理");
+            holder.tvHandle.setTextColor(Color.parseColor("#3DDC84"));
+            holder.tvHandle.setOnClickListener(v -> {
+                if (handleListener != null) handleListener.onHandle(alert);
+            });
+        }
+
         // 点击
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
@@ -124,7 +146,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.ViewHolder> 
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvLevelTag, tvTitle, tvContent, tvSensorInfo, tvTime;
+        TextView tvLevelTag, tvTitle, tvContent, tvSensorInfo, tvTime, tvHandle;
         View dotUnread;
 
         ViewHolder(View itemView) {
@@ -134,6 +156,7 @@ public class AlertAdapter extends RecyclerView.Adapter<AlertAdapter.ViewHolder> 
             tvContent = itemView.findViewById(R.id.tv_content);
             tvSensorInfo = itemView.findViewById(R.id.tv_sensor_info);
             tvTime = itemView.findViewById(R.id.tv_time);
+            tvHandle = itemView.findViewById(R.id.tv_handle);
             dotUnread = itemView.findViewById(R.id.dot_unread);
         }
     }

@@ -25,6 +25,9 @@ public class AlertItem {
     @SerializedName("readStatus")
     private boolean readStatus;
 
+    @SerializedName("handled")
+    private boolean handled;
+
     @SerializedName("createdAt")
     private String createdAt;
 
@@ -36,5 +39,6 @@ public class AlertItem {
     public String getSensorType() { return sensorType; }
     public Double getSensorValue() { return sensorValue; }
     public boolean isReadStatus() { return readStatus; }
+    public boolean isHandled() { return handled; }
     public String getCreatedAt() { return createdAt; }
 }
