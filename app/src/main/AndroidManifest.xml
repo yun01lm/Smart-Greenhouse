@@ -146,5 +146,15 @@
             android:name=".service.MonitorService"
             android:exported="false" />
 
+        <!-- 农事日历（F3） -->
+        <activity
+            android:name=".ui.farming.FarmingCalendarActivity"
+            android:parentActivityName=".ui.common.MainActivity" />
+
+        <!-- 农事提醒通知接收器（F3） -->
+        <receiver
+            android:name=".ui.farming.ReminderReceiver"
+            android:exported="false" />
+
     </application>
 </manifest>

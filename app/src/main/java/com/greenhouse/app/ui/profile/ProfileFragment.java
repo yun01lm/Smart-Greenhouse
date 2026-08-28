@@ -90,6 +90,13 @@ public class ProfileFragment extends Fragment {
         // 修改密码入口 (R16) — 修复：此前只有 UI 无点击绑定，功能失效
         binding.btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
 
+        // 农事提醒入口 (F3)
+        binding.btnFarming.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), com.greenhouse.app.ui.farming.FarmingCalendarActivity.class);
+            intent.putExtra("greenhouse_id", 1);
+            startActivity(intent);
+        });
+
         // 退出登录
         binding.btnLogout.setOnClickListener(v -> {
             TokenManager.clear();
