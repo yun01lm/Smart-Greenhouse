@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================================================
+         深色模式设计令牌（UI 重构三期）
+         ============================================================ -->
+
+    <!-- 主色：亮农业绿 -->
+    <color name="primary">#FF66BB6A</color>
+    <color name="primary_dark">#FF2E7D32</color>
+    <color name="primary_light">#FF1E3A24</color>
+    <color name="accent">#FF4DD0E1</color>
+
+    <!-- 文本 -->
+    <color name="text_primary">#FFE3F0E6</color>
+    <color name="on_primary">#FF10241A</color>
+    <color name="on_surface">#FFE0E0E0</color>
+    <color name="text_secondary">#FFA3AFA6</color>
+    <color name="text_hint">#FF6B7A70</color>
+
+    <!-- 背景与面板 -->
+    <color name="background">#FF101613</color>
+    <color name="surface">#FF1B221E</color>
+    <color name="surface_variant">#FF242D28</color>
+    <color name="outline">#FF333D36</color>
+    <color name="divider_light">#FF2A332D</color>
+
+    <!-- 健康评分等级色 -->
+    <color name="level_healthy">#FF66BB6A</color>
+    <color name="level_good">#FF64B5F6</color>
+    <color name="level_attention">#FFFFB300</color>
+    <color name="level_warning">#FFFF8F00</color>
+    <color name="level_danger">#FFE57373</color>
+
+    <!-- 传感器值状态 -->
+    <color name="sensor_normal">#FF66BB6A</color>
+    <color name="sensor_abnormal">#FFE57373</color>
+
+    <!-- 预警级别 -->
+    <color name="alert_info">#FF64B5F6</color>
+    <color name="alert_warning">#FFFF8F00</color>
+    <color name="alert_critical">#FFE57373</color>
+
+    <!-- 诊断置信度 -->
+    <color name="confidence_high">#FF66BB6A</color>
+    <color name="confidence_medium">#FFFFB300</color>
+    <color name="confidence_low">#FFE57373</color>
+
+    <!-- 渐变 -->
+    <color name="gradient_start">#FF175D2C</color>
+    <color name="gradient_end">#FF4DA459</color>
+    <color name="card_white">#FF1B221E</color>
+    <color name="bg_page">#FF101613</color>
+
+    <!-- 图标/标签浅底（chip） -->
+    <color name="chip_green_bg">#FF1E3A24</color>
+    <color name="chip_green_fg">#FF81C784</color>
+    <color name="chip_blue_bg">#FF16324B</color>
+    <color name="chip_blue_fg">#FF64B5F6</color>
+    <color name="chip_orange_bg">#FF4B3418</color>
+    <color name="chip_orange_fg">#FFFFB74D</color>
+    <color name="chip_purple_bg">#FF3A2444</color>
+    <color name="chip_purple_fg">#FFBA68C8</color>
+
+    <!-- 底部导航 -->
+    <color name="nav_checked">#FF66BB6A</color>
+    <color name="nav_unchecked">#FF8A9A90</color>
+</resources>
