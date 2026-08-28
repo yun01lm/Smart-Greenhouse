@@ -1,5 +1,6 @@
 package com.greenhouse.app.ui.common;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,6 +9,7 @@ import androidx.fragment.app.Fragment;
 
 import com.greenhouse.app.R;
 import com.greenhouse.app.databinding.ActivityMainBinding;
+import com.greenhouse.app.service.MonitorService;
 import com.greenhouse.app.ui.assistant.AiAssistantFragment;
 import com.greenhouse.app.ui.control.ControlFragment;
 import com.greenhouse.app.ui.dashboard.DashboardFragment;
@@ -32,6 +34,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        // 启动离线/告警推送监控（F2）
+        startService(new Intent(this, MonitorService.class));
 
         // 默认显示看板
         if (savedInstanceState == null) {

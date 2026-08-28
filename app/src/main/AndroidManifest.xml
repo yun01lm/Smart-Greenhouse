@@ -18,6 +18,9 @@
     <!-- 录音权限（语音问答） -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- 通知权限（Android 13+ 离线/告警推送，F2） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".GreenhouseApplication"
         android:allowBackup="false"
@@ -137,6 +140,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- 离线/告警推送监控服务（F2） -->
+        <service
+            android:name=".service.MonitorService"
+            android:exported="false" />
 
     </application>
 </manifest>
