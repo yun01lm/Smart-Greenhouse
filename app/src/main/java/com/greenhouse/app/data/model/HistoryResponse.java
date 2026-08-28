@@ -38,22 +38,19 @@ public class HistoryResponse {
     public void setDataPoints(List<HistoryDataPoint> dataPoints) { this.dataPoints = dataPoints; }
 
     /**
-     * 获取传感器类型的中文名
+     * 获取传感器类型的中文名（键与后端 SensorType 枚举一致，第 11 项修复）
      */
     public String getSensorTypeName() {
         if (sensorType == null) return "未知";
         switch (sensorType) {
-            case "TEMP": return "空气温度";
+            case "TEMPERATURE": return "空气温度";
             case "HUMIDITY": return "空气湿度";
             case "LIGHT": return "光照强度";
             case "CO2": return "CO₂浓度";
-            case "O2": return "O₂浓度";
             case "SOIL_TEMP": return "土壤温度";
-            case "SOIL_HUMIDITY": return "土壤湿度";
-            case "EC": return "土壤EC值";
-            case "N": return "氮(N)";
-            case "P": return "磷(P)";
-            case "K": return "钾(K)";
+            case "SOIL_MOISTURE": return "土壤湿度";
+            case "SOIL_PH": return "土壤pH";
+            case "WIND_SPEED": return "风速";
             default: return sensorType;
         }
     }
@@ -65,17 +62,13 @@ public class HistoryResponse {
         if (unit != null && !unit.isEmpty()) return unit;
         if (sensorType == null) return "";
         switch (sensorType) {
-            case "TEMP":
+            case "TEMPERATURE":
             case "SOIL_TEMP": return "°C";
             case "HUMIDITY":
-            case "SOIL_HUMIDITY": return "%";
+            case "SOIL_MOISTURE": return "%";
             case "LIGHT": return "lux";
             case "CO2": return "ppm";
-            case "O2": return "%";
-            case "EC": return "mS/cm";
-            case "N":
-            case "P":
-            case "K": return "mg/kg";
+            case "WIND_SPEED": return "m/s";
             default: return "";
         }
     }

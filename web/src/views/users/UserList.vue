@@ -497,12 +497,12 @@ async function handleDelete(row) {
 
 // ===== 工具函数 =====
 function roleLabel(role) {
-  const map = { ADMIN: '管理员', OWNER: '棚主', WORKER: '员工', EXPERT: '专家' }
+  const map = { ADMIN: '管理员', OWNER: '棚主', WORKER: '员工', TECHNICIAN: '技术员', EXPERT: '专家' }
   return map[role] || role
 }
 
 function roleTagType(role) {
-  const map = { ADMIN: 'danger', OWNER: 'warning', WORKER: 'success', EXPERT: 'info' }
+  const map = { ADMIN: 'danger', OWNER: 'warning', WORKER: 'success', TECHNICIAN: 'primary', EXPERT: 'info' }
   return map[role] || 'info'
 }
 
