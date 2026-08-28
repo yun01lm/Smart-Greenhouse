@@ -72,7 +72,9 @@ public class ControlFragment extends Fragment {
         // 设备列表 RecyclerView
         deviceAdapter = new DeviceAdapter();
         binding.rvDevices.setLayoutManager(new LinearLayoutManager(requireContext()));
-        binding.rvDevices.setHasFixedSize(true);
+        // ScrollView 内嵌套 RecyclerView：禁用固定尺寸与嵌套滚动，让 wrap_content 完整展开（修复分组只显示前 3 个的问题）
+        binding.rvDevices.setHasFixedSize(false);
+        binding.rvDevices.setNestedScrollingEnabled(false);
         binding.rvDevices.setAdapter(deviceAdapter);
         deviceAdapter.setOnDeviceSwitchListener((device, turnOn) -> {
             viewModel.controlActuator(device, turnOn ? "ON" : "OFF");
