@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="user-list">
     <!-- 顶部操作栏 -->
     <div class="toolbar">
@@ -13,6 +13,7 @@
           <el-option label="管理员" value="ADMIN" />
           <el-option label="棚主" value="OWNER" />
           <el-option label="员工" value="WORKER" />
+          <el-option label="技术员" value="TECHNICIAN" />
           <el-option label="专家" value="EXPERT" />
         </el-select>
         <RegionCascader v-model="regionPath" width="300px" style="margin-left: 12px" />

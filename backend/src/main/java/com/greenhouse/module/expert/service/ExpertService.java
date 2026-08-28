@@ -73,11 +73,13 @@ public class ExpertService {
      */
     @Transactional
     public AuthorizationResponse requestAuthorization(Long expertId, Long userId, Long greenhouseId, String reason) {
-        // 检查是否已有有效授权（已同意或待审批均不可重复申请）
+        // 检查是否已有有效授权（已同意但未过期、或待审批均不可重复申请；已过期的授权可重新申请）
         Optional<DataAuthorization> existingApproved = authorizationRepository
                 .findTopByExpertIdAndUserIdAndGreenhouseIdAndStatusOrderByRequestedAtDesc(
                         expertId, userId, greenhouseId, DataAuthorization.AuthorizationStatus.APPROVED);
-        if (existingApproved.isPresent()) {
+        if (existingApproved.isPresent()
+                && (existingApproved.get().getExpiresAt() == null
+                    || existingApproved.get().getExpiresAt().isAfter(LocalDateTime.now()))) {
             throw new BusinessException(ErrorCode.AUTHORIZATION_ALREADY_EXISTS);
         }
         Optional<DataAuthorization> existingPending = authorizationRepository
