@@ -32,14 +32,14 @@
       <div class="stat-card">
         <div class="stat-icon icon-owner"><el-icon :size="24"><User /></el-icon></div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.ownerOnline }}<span class="stat-sub">/ {{ stats.ownerCount }}</span></div>
+          <div class="stat-value">{{ stats.ownerOnline }}<span class="stat-sub">/{{ stats.ownerCount }}</span></div>
           <div class="stat-label">农户在线 / 总数</div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-icon icon-device"><el-icon :size="24"><Cpu /></el-icon></div>
         <div class="stat-info">
-          <div class="stat-value">{{ stats.deviceOnline }}<span class="stat-sub">/ {{ stats.deviceTotal }}</span></div>
+          <div class="stat-value">{{ stats.deviceOnline }}<span class="stat-sub">/{{ stats.deviceTotal }}</span></div>
           <div class="stat-label">设备在线 / 总数（离线 {{ stats.deviceOffline }}）</div>
         </div>
       </div>
@@ -148,7 +148,7 @@
               <div class="weather-icon"><el-icon :size="34" color="#FF9800"><Sunny /></el-icon></div>
               <div class="weather-temp">{{ weather.temperature }}<span class="temp-unit">°C</span></div>
               <div class="weather-desc">{{ weather.weatherText }}</div>
-              <div class="weather-loc">📍 {{ weather.location }}</div>
+              <div class="weather-loc">{{ weather.location }}</div>
               <div class="weather-details">
                 <span class="wd-item"><el-icon size="13"><Pouring /></el-icon>湿度 {{ weather.humidity }}%</span>
                 <span class="wd-item"><el-icon size="13"><WindPower /></el-icon>风速 {{ weather.windSpeed }}m/s</span>
@@ -342,15 +342,15 @@ loadOverview()
 .admin-dashboard {
   min-height: 100vh;
   padding: 0;
-  background: linear-gradient(180deg, #f3f6fb 0%, #e9eef6 100%);
+  background: transparent;
 }
 
 /* ===== 地区选择 ===== */
 .region-card {
   margin-bottom: 16px;
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
 }
 .region-card :deep(.el-card__body) {
   padding: 14px 18px;
@@ -373,7 +373,7 @@ loadOverview()
   gap: 6px;
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
   white-space: nowrap;
 }
 .region-right {
@@ -386,7 +386,7 @@ loadOverview()
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin-right: 4px;
 }
 
@@ -401,16 +401,17 @@ loadOverview()
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #fff;
-  border: 1px solid #ebeef5;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 18px 20px;
-  box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(10px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(31, 45, 61, 0.1);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
 }
 .stat-icon {
   width: 48px;
@@ -421,9 +422,9 @@ loadOverview()
   justify-content: center;
   flex-shrink: 0;
 }
-.icon-greenhouse { background: #ecf5ff; color: #409EFF; }
-.icon-owner { background: #f0f9eb; color: #67C23A; }
-.icon-device { background: #fdf6ec; color: #E6A23C; }
+.icon-greenhouse { background: rgba(64, 158, 255, 0.16); color: #409EFF; }
+.icon-owner { background: rgba(103, 194, 58, 0.16); color: #67C23A; }
+.icon-device { background: rgba(230, 162, 60, 0.16); color: #E6A23C; }
 .stat-info { min-width: 0; }
 .stat-value {
   font-size: 28px;
@@ -431,11 +432,11 @@ loadOverview()
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
-.stat-sub { font-size: 13px; font-weight: 400; color: #909399; }
+.stat-sub { font-size: 13px; font-weight: 400; color: #94a3b8; }
 .stat-label {
   margin-top: 4px;
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -444,9 +445,9 @@ loadOverview()
 /* ===== 通用区块卡片 ===== */
 .row-gap { margin-bottom: 16px; }
 .section-card {
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(31, 45, 61, 0.06);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
   margin-bottom: 16px;
 }
 
@@ -480,7 +481,7 @@ loadOverview()
 }
 .section-card :deep(.el-card__header) {
   padding: 14px 18px;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 .section-card :deep(.el-card__body) { padding: 16px 18px; }
 .section-header {
@@ -494,9 +495,9 @@ loadOverview()
   gap: 8px;
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
 }
-.header-note { font-size: 12px; color: #c0c4cc; }
+.header-note { font-size: 12px; color: #64748b; }
 
 /* ===== 环境聚合 ===== */
 .env-grid {
@@ -506,19 +507,20 @@ loadOverview()
 }
 .env-item {
   text-align: center;
-  background: #f7f9fc;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   padding: 14px 8px;
 }
-.env-label { font-size: 13px; color: #909399; }
+.env-label { font-size: 13px; color: #94a3b8; }
 .env-value {
   font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: #e0e6ed;
   margin-top: 6px;
   font-variant-numeric: tabular-nums;
 }
-.env-note { margin-top: 12px; font-size: 12px; color: #c0c4cc; }
+.env-note { margin-top: 12px; font-size: 12px; color: #64748b; }
 
 /* ===== 预警总览 ===== */
 .alert-overview {
@@ -538,7 +540,7 @@ loadOverview()
   color: #F56C6C;
   font-variant-numeric: tabular-nums;
 }
-.big-unit { font-size: 13px; color: #909399; }
+.big-unit { font-size: 13px; color: #94a3b8; }
 .alert-levels {
   flex: 1;
   display: flex;
@@ -558,7 +560,7 @@ loadOverview()
 .alert-level.critical .level-dot { background: #F56C6C; }
 .alert-level.warning .level-dot { background: #E6A23C; }
 .alert-level.info .level-dot { background: #909399; }
-.level-label { width: 40px; font-size: 13px; color: #606266; }
+.level-label { width: 40px; font-size: 13px; color: #a0aec0; }
 .level-count {
   margin-left: auto;
   min-width: 36px;
@@ -568,14 +570,14 @@ loadOverview()
   border-radius: 10px;
   padding: 2px 10px;
 }
-.alert-level.critical .level-count { background: #fde2e2; color: #F56C6C; }
-.alert-level.warning .level-count { background: #fdf0e0; color: #E6A23C; }
-.alert-level.info .level-count { background: #f0f2f5; color: #909399; }
+.alert-level.critical .level-count { background: rgba(245, 108, 108, 0.16); color: #F56C6C; }
+.alert-level.warning .level-count { background: rgba(230, 162, 60, 0.16); color: #E6A23C; }
+.alert-level.info .level-count { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
 
 /* ===== 天气 ===== */
 .weather-card .weather-info { text-align: center; padding: 10px 0 4px; }
 .weather-card :deep(.el-card__body) {
-  background: linear-gradient(135deg, #eef7fd 0%, #f7fbff 100%);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(15, 23, 42, 0.35) 100%);
 }
 .weather-icon {
   width: 64px;
@@ -595,14 +597,14 @@ loadOverview()
   font-variant-numeric: tabular-nums;
 }
 .temp-unit { font-size: 18px; font-weight: 500; color: #FFB74D; }
-.weather-desc { font-size: 15px; color: #606266; margin: 8px 0 4px; }
-.weather-loc { font-size: 12px; color: #909399; margin: 0 0 10px; }
+.weather-desc { font-size: 15px; color: #a0aec0; margin: 8px 0 4px; }
+.weather-loc { font-size: 12px; color: #94a3b8; margin: 0 0 10px; }
 .weather-details {
   display: flex;
   justify-content: center;
   gap: 20px;
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
 }
 .wd-item { display: inline-flex; align-items: center; gap: 4px; }
 
@@ -613,7 +615,8 @@ loadOverview()
   gap: 16px;
 }
 .monitor-block {
-  background: #f7f9fc;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 10px;
   padding: 16px;
 }
@@ -622,7 +625,7 @@ loadOverview()
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #606266;
+  color: #a0aec0;
   font-weight: 600;
   margin-bottom: 14px;
 }
@@ -631,17 +634,17 @@ loadOverview()
   height: 12px;
   border-radius: 6px;
   overflow: hidden;
-  background: #eef0f4;
+  background: rgba(255, 255, 255, 0.1);
 }
 .bar-online { background: linear-gradient(90deg, #67C23A, #95d475); }
-.bar-offline { background: #d3d8e0; }
+.bar-offline { background: rgba(255, 255, 255, 0.18); }
 .bar-alarm { background: linear-gradient(90deg, #E6A23C, #f3c97c); }
 .bar-legend {
   display: flex;
   gap: 14px;
   margin-top: 10px;
   font-size: 12px;
-  color: #606266;
+  color: #a0aec0;
   flex-wrap: wrap;
 }
 .lg-dot {
@@ -665,7 +668,7 @@ loadOverview()
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #303133;
+  color: #e0e6ed;
 }
 .svc-dot { width: 10px; height: 10px; border-radius: 50%; }
 .svc-dot.ok { background: #67C23A; }
@@ -683,9 +686,9 @@ loadOverview()
 .ov-value {
   font-size: 22px;
   font-weight: 700;
-  color: #303133;
+  color: #e0e6ed;
   font-variant-numeric: tabular-nums;
 }
-.ov-label { font-size: 12px; color: #909399; margin-top: 2px; }
+.ov-label { font-size: 12px; color: #94a3b8; margin-top: 2px; }
 .monitor-card { margin-bottom: 0; }
 </style>

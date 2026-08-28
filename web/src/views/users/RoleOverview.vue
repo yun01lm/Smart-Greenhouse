@@ -77,9 +77,11 @@ onMounted(() => {
 
 <style scoped>
 .role-overview {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .role-cards {

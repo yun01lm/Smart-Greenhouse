@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="admin-device-page">
     <!-- 地区 + 搜索 -->
     <el-card class="filter-card" shadow="never">
@@ -45,7 +45,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #909399">{{ stats.greenhouseCount }}</div>
+          <div class="stat-value" style="color: #94a3b8">{{ stats.greenhouseCount }}</div>
           <div class="stat-label">大棚数（当前范围）</div>
         </el-card>
       </el-col>
@@ -390,22 +390,22 @@ loadData()
 .admin-device-page { padding: 0; }
 .filter-card { margin-bottom: 16px; }
 .filter-row { display: flex; align-items: center; }
-.filter-label { font-size: 14px; color: #606266; white-space: nowrap; }
-.filter-text { margin-left: 12px; font-size: 13px; color: #909399; }
+.filter-label { font-size: 14px; color: #a0aec0; white-space: nowrap; }
+.filter-text { margin-left: 12px; font-size: 13px; color: #94a3b8; }
 .stat-row { margin-bottom: 16px; }
 .stat-card { text-align: center; }
 .stat-value { font-size: 32px; font-weight: 700; }
-.stat-sub { font-size: 14px; font-weight: 400; color: #909399; }
-.stat-label { margin-top: 4px; font-size: 13px; color: #909399; }
+.stat-sub { font-size: 14px; font-weight: 400; color: #94a3b8; }
+.stat-label { margin-top: 4px; font-size: 13px; color: #94a3b8; }
 .owner-card { margin-bottom: 16px; }
 .card-header { display: flex; align-items: center; justify-content: space-between; }
-.header-sub { font-size: 13px; color: #909399; }
+.header-sub { font-size: 13px; color: #94a3b8; }
 .owner-devices { max-height: 62vh; overflow-y: auto; }
 .gh-block { margin-bottom: 16px; }
 .gh-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .gh-title { display: flex; align-items: center; font-size: 15px; font-weight: 600; }
-.gh-loc { margin-left: 10px; font-size: 12px; font-weight: 400; color: #909399; }
+.gh-loc { margin-left: 10px; font-size: 12px; font-weight: 400; color: #94a3b8; }
 .gh-actions { display: flex; align-items: center; gap: 10px; }
-.text-muted { color: #c0c4cc; }
+.text-muted { color: #64748b; }
 .last-value { font-weight: 600; color: #409EFF; }
 </style>

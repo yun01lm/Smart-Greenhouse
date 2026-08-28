@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="knowledge-page">
     <el-tabs v-model="activeTab" type="border-card">
       <!-- Tab 1: 文档管理 -->
@@ -181,7 +181,7 @@
           <div v-if="testAnswer" class="test-result">
             <el-card shadow="never">
               <template #header>
-                <span class="result-header">🤖 AI 回答</span>
+                <span class="result-header">AI 回答</span>
               </template>
               <div class="answer-text">{{ testAnswer }}</div>
             </el-card>
@@ -189,7 +189,7 @@
 
           <!-- 检索片段 -->
           <div v-if="testChunks.length > 0" class="retrieved-chunks">
-            <h4>📚 检索到的知识库片段</h4>
+            <h4>检索到的知识库片段</h4>
             <el-card
               v-for="(chunk, index) in testChunks"
               :key="index"
@@ -774,7 +774,7 @@ onMounted(() => {
 
 .doc-title {
   font-weight: 500;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 .pagination-wrap {
@@ -789,7 +789,7 @@ onMounted(() => {
 }
 
 .doc-desc {
-  color: #606266;
+  color: #a0aec0;
 }
 
 .cat-toolbar {
@@ -799,7 +799,7 @@ onMounted(() => {
 
 .cat-tip {
   margin-top: 10px;
-  color: #909399;
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -814,7 +814,7 @@ onMounted(() => {
 
 .response-time {
   margin-left: 16px;
-  color: #909399;
+  color: #94a3b8;
   font-size: 13px;
 }
 
@@ -830,14 +830,14 @@ onMounted(() => {
 .answer-text {
   white-space: pre-wrap;
   line-height: 1.8;
-  color: #303133;
+  color: #e0e6ed;
   font-size: 14px;
 }
 
 .retrieved-chunks h4 {
   margin: 0 0 12px 0;
   font-size: 15px;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 .chunk-card {
@@ -852,12 +852,12 @@ onMounted(() => {
 }
 
 .chunk-score {
-  color: #909399;
+  color: #94a3b8;
   font-size: 12px;
 }
 
 .chunk-content {
-  color: #606266;
+  color: #a0aec0;
   font-size: 13px;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -870,13 +870,13 @@ onMounted(() => {
 }
 .preview-desc {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin-left: 4px;
 }
 .preview-body {
   max-height: 60vh;
   overflow: auto;
-  background: #f7f9fc;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   padding: 16px;
 }
@@ -884,7 +884,7 @@ onMounted(() => {
   margin: 0;
   font-size: 13px;
   line-height: 1.8;
-  color: #303133;
+  color: #e0e6ed;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;

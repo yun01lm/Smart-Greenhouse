@@ -22,7 +22,7 @@
       </el-col>
       <el-col :span="6">
         <el-card shadow="hover" class="stat-card">
-          <div class="stat-value" style="color: #909399">{{ stats.convTotal }}</div>
+          <div class="stat-value" style="color: #94a3b8">{{ stats.convTotal }}</div>
           <div class="stat-label">咨询会话</div>
         </el-card>
       </el-col>
@@ -442,7 +442,7 @@ onMounted(() => {
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin-top: 4px;
 }
 
@@ -482,7 +482,7 @@ onMounted(() => {
 /* ===== R9 对话明细 ===== */
 .drawer-empty {
   text-align: center;
-  color: #909399;
+  color: #94a3b8;
   padding: 40px 0;
 }
 .msg-list {
@@ -498,20 +498,20 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   margin-bottom: 4px;
 }
 .msg-sender {
   font-weight: 600;
-  color: #606266;
+  color: #a0aec0;
 }
 .msg-bubble {
-  background: #f4f4f5;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
   line-height: 1.6;
-  color: #303133;
+  color: #e0e6ed;
   white-space: pre-wrap;
   word-break: break-word;
 }

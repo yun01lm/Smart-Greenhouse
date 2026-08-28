@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="expert-chat-page">
     <el-card shadow="never" class="chat-card">
       <div class="chat-layout">
@@ -370,7 +370,7 @@ onUnmounted(() => {
 .conv-panel {
   width: 340px;
   flex-shrink: 0;
-  border-right: 1px solid #ebeef5;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
 }
@@ -383,7 +383,7 @@ onUnmounted(() => {
 .conv-title {
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
 }
 .conv-tabs {
   padding: 0 12px;
@@ -394,12 +394,12 @@ onUnmounted(() => {
   padding: 4px 12px 12px;
 }
 .conv-item {
-  border: 1px solid #ebeef5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 8px;
   cursor: pointer;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.05);
   transition: all .15s;
 }
 .conv-item:hover {
@@ -418,7 +418,7 @@ onUnmounted(() => {
 .conv-subject {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -430,7 +430,7 @@ onUnmounted(() => {
   gap: 8px;
   margin-top: 4px;
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
 }
 .conv-user {
   overflow: hidden;
@@ -450,12 +450,12 @@ onUnmounted(() => {
 }
 .conv-preview {
   font-size: 12px;
-  color: #606266;
+  color: #a0aec0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.conv-preview.muted { color: #c0c4cc; }
+.conv-preview.muted { color: #64748b; }
 .conv-status { flex-shrink: 0; }
 .conv-pager {
   padding: 8px 12px;
@@ -473,17 +473,17 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 .msg-title {
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
 }
 .msg-sub {
   margin-left: 10px;
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
 }
 .msg-actions {
   display: flex;
@@ -494,7 +494,7 @@ onUnmounted(() => {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background: #f7f9fc;
+  background: rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -510,28 +510,28 @@ onUnmounted(() => {
   display: flex;
   gap: 8px;
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   margin-bottom: 4px;
 }
 .msg-sender { font-weight: 600; }
 .msg-bubble {
-  background: #fff;
-  border: 1px solid #ebeef5;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
   line-height: 1.6;
-  color: #303133;
+  color: #e0e6ed;
   white-space: pre-wrap;
   word-break: break-word;
 }
 .msg-item.from-expert .msg-bubble {
-  background: #ecf5ff;
-  border-color: #b3d8ff;
+  background: rgba(64, 158, 255, 0.14);
+  border-color: rgba(64, 158, 255, 0.4);
 }
 .msg-attach-text { margin-left: 6px; }
 .msg-input {
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 12px 16px;
 }
 .input-actions {
@@ -540,14 +540,14 @@ onUnmounted(() => {
   justify-content: space-between;
   margin-top: 8px;
 }
-.input-tip { font-size: 12px; color: #c0c4cc; }
+.input-tip { font-size: 12px; color: #64748b; }
 .msg-closed {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   padding: 16px;
-  color: #909399;
+  color: #94a3b8;
 }
 .msg-empty {
   flex: 1;
@@ -555,7 +555,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #c0c4cc;
+  color: #64748b;
 }
 .msg-empty p { margin-top: 8px; font-size: 14px; }
 </style>

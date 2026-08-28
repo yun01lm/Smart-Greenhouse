@@ -3,16 +3,22 @@
     <div class="chart-header">
       <h3>环境趋势与短期预测</h3>
       <div class="chart-header-right">
-        <el-checkbox-group v-model="selected" class="metric-checks">
+        <!-- 自定义图例/指标勾选：颜色点 + 名称（顺序固定为定义顺序，不受勾选顺序影响） -->
+        <div class="metric-checks">
           <el-checkbox
-            v-for="m in props.metricOptions"
+            v-for="(m, idx) in props.metricOptions"
             :key="m.type"
-            :value="m.type"
+            :model-value="selected.includes(m.type)"
+            :disabled="!selected.includes(m.type) && selected.length >= MAX_METRICS"
             size="small"
             class="metric-check"
-          >{{ m.label }}</el-checkbox>
-        </el-checkbox-group>
-        <span class="chart-note">{{ RANGE_LABEL[props.historyRange] || '近24小时' }} · 预测未来2小时</span>
+            @change="(val) => onToggle(m, idx, val)"
+          >
+            <span class="metric-dot" :style="{ background: m.color }"></span>
+            <span class="metric-name">{{ m.label }}</span>
+          </el-checkbox>
+        </div>
+        <span class="chart-note">{{ RANGE_LABEL[props.historyRange] || '近24小时' }} · {{ hasForecast ? '预测未来2小时' : '暂无预测数据' }}</span>
       </div>
     </div>
     <div ref="chartRef" class="chart-body"></div>
@@ -21,6 +27,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 
 const props = defineProps({
@@ -35,25 +42,70 @@ const props = defineProps({
 const emit = defineEmits(['update:selectedMetrics'])
 
 const RANGE_LABEL = { '24h': '近24小时', '7d': '近7天', '30d': '近30天' }
+/** 同时最多显示的指标数（多轴可读性上限） */
+const MAX_METRICS = 4
 
 const chartRef = ref(null)
 let chart = null
 
-/** 勾选状态：受控于父级，至少保留 1 项 */
-const selected = computed({
-  get: () => props.selectedMetrics,
-  set: (v) => {
-    if (!v || v.length === 0) return
-    emit('update:selectedMetrics', v)
+// ===== 结构缓存：用于增量渲染判定 =====
+let lastStructureKey = ''
+let mockCache = null   // 模拟数据缓存（key 变化时重建，避免每 30s 随机重生成）
+let mockCacheKey = ''
+
+/**
+ * 选择状态以组件内部 ref 为准（同步更新，竞态免疫）：
+ * 快速连点时父级 prop 回传存在延迟，若直接读 prop 会导致前几次点击丢失。
+ * pendingEmit 记录自己发出的最新值：prop 回传与它一致时忽略（避免旧 prop 覆盖新状态），
+ * 不一致时才认为来自外部（如父级重置）并同步进来。
+ */
+const selRef = ref([...(props.selectedMetrics || [])])
+let pendingEmit = null
+
+watch(() => props.selectedMetrics, (v) => {
+  const next = (v || []).join(',')
+  if (pendingEmit === next) {
+    pendingEmit = null
+    return
   }
+  const cur = selRef.value.join(',')
+  if (cur !== next) selRef.value = [...(v || [])]
 })
 
-/** 当前选中的指标元信息 */
-function selectedMeta() {
-  return props.metricOptions.filter(m => selected.value.includes(m.type))
+/** 是否勾选了某指标（数组顺序无意义，按定义顺序展示） */
+const selected = computed(() => selRef.value)
+
+const hasForecast = computed(() => (props.forecastData || []).length > 0)
+
+/** 勾选切换：限制最多 MAX_METRICS 项、至少保留 1 项，顺序始终按定义顺序 */
+function onToggle(metric, idx, val) {
+  const set = new Set(selRef.value)
+  if (val) {
+    if (set.size >= MAX_METRICS) {
+      ElMessage.warning(`最多同时显示 ${MAX_METRICS} 个指标`)
+      return
+    }
+    set.add(metric.type)
+  } else {
+    if (set.size <= 1) {
+      ElMessage.warning('至少保留一个指标')
+      return
+    }
+    set.delete(metric.type)
+  }
+  const ordered = props.metricOptions.filter(m => set.has(m.type)).map(m => m.type)
+  selRef.value = ordered
+  pendingEmit = ordered.join(',')
+  emit('update:selectedMetrics', ordered)
 }
 
-/** 计算 y 轴刻度范围：以数据 min/max 收缩并留少量内边距，放大曲线波动 */
+/** 当前选中的指标元信息（始终按 metricOptions 定义顺序） */
+function selectedMeta() {
+  const set = new Set(selected.value)
+  return props.metricOptions.filter(m => set.has(m.type))
+}
+
+/** 计算 y 轴刻度范围 */
 function axisRange(values) {
   const all = (values || []).filter(v => v != null && !Number.isNaN(v))
   if (all.length === 0) return null
@@ -71,14 +123,21 @@ function areaGradient(color) {
   ])
 }
 
-/** 构建 Y 轴：每个选中指标独立一轴（同单位不再共轴，避免曲线重叠），左右交替 + 偏移 */
+/**
+ * 构建 Y 轴布局：轴位置由指标在 metricOptions 定义表中的固定序号决定
+ * （第 1 个恒左、第 2 个恒右、第 3 个左偏移、第 4 个右偏移），
+ * 与勾选顺序、勾选组合无关 —— 修复"轴标识左右跳变"。
+ */
 function buildAxes(metrics) {
-  const axes = (metrics || []).map((m, i) => ({
-    unit: m.unit,
-    metricType: m.type,
-    position: i % 2 === 0 ? 'left' : 'right',
-    offset: Math.floor(i / 2) * 50
-  }))
+  const axes = metrics.map(m => {
+    const defIdx = Math.max(0, props.metricOptions.findIndex(o => o.type === m.type))
+    return {
+      unit: m.unit,
+      metricType: m.type,
+      position: defIdx % 2 === 0 ? 'left' : 'right',
+      offset: Math.floor(defIdx / 2) * 50
+    }
+  })
   const unitIndex = {}
   axes.forEach((a, i) => {
     unitIndex[a.metricType] = i
@@ -86,16 +145,11 @@ function buildAxes(metrics) {
   return { axes, unitIndex }
 }
 
-function buildOption() {
-  const metrics = selectedMeta()
-  const history = Array.isArray(props.historyData) ? props.historyData : []
-  const future = Array.isArray(props.forecastData) ? props.forecastData : []
+/** 组装系列（历史 + 预测虚线）与轴数据 */
+function assemble(metrics, history, future) {
   const { axes, unitIndex } = buildAxes(metrics)
-
-  const legendData = metrics.flatMap(m => [`${m.label} (${m.unit})`, `预测${m.label} (${m.unit})`])
-  const times = [...history.map(d => d.time), ...future.map(d => d.time)]
   const boundary = history.length - 1
-  const hasForecast = future.length > 0
+  const hasFc = future.length > 0
 
   const series = []
   const axisValues = axes.map(() => [])
@@ -103,7 +157,7 @@ function buildOption() {
     const key = m.key
     const histVals = history.map(d => (d[key] != null ? d[key] : null))
     let fcVals = []
-    if (hasForecast) {
+    if (hasFc) {
       fcVals = [
         ...Array(Math.max(0, boundary)).fill(null),
         histVals[boundary],
@@ -132,7 +186,7 @@ function buildOption() {
       itemStyle: { color: m.color },
       symbol: 'circle',
       symbolSize: 5,
-      markLine: hasForecast
+      markLine: hasFc
         ? {
             silent: true,
             symbol: 'none',
@@ -143,40 +197,31 @@ function buildOption() {
         : { data: [] }
     })
   }
+  return { axes, unitIndex, series, axisValues }
+}
 
-  const yAxis = axes.map((a, i) => {
-    const r = axisRange(axisValues[i])
-    return {
-      type: 'value',
-      name: a.unit,
-      nameTextStyle: { color: '#94a3b8' },
-      position: a.position,
-      offset: a.offset,
-      axisLabel: { color: '#94a3b8' },
-      splitLine: i < 2 ? { lineStyle: { color: '#1e293b' } } : { show: false },
-      min: r?.min ?? null,
-      max: r?.max ?? null
-    }
-  })
-
-  return {
+/** 全量渲染（指标组合 / 时间范围 / 预测有无 / 空态 等结构变化时） */
+function fullRender(history, future, metrics) {
+  if (!chart) return
+  if (history.length === 0) {
+    chart.setOption({ xAxis: { data: [] }, yAxis: [], series: [] }, { notMerge: true })
+    return
+  }
+  const times = [...history.map(d => d.time), ...future.map(d => d.time)]
+  const { axes, series, axisValues } = assemble(metrics, history, future)
+  chart.setOption({
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(0,0,0,0.8)',
       borderColor: 'transparent',
       textStyle: { color: '#fff', fontSize: 12 }
     },
-    legend: {
-      data: legendData,
-      textStyle: { color: '#a0aec0' },
-      top: 0,
-      type: 'scroll'
-    },
+    legend: { show: false },
     grid: {
       left: '4%',
       right: '10%',
       bottom: '3%',
-      top: '52px',
+      top: '16px',
       containLabel: true
     },
     xAxis: {
@@ -185,21 +230,45 @@ function buildOption() {
       axisLine: { lineStyle: { color: '#334155' } },
       axisLabel: { color: '#94a3b8', fontSize: 11 }
     },
-    yAxis,
+    yAxis: axes.map((a, i) => {
+      const r = axisRange(axisValues[i])
+      return {
+        type: 'value',
+        name: a.unit,
+        nameTextStyle: { color: '#94a3b8' },
+        position: a.position,
+        offset: a.offset,
+        axisLabel: { color: '#94a3b8' },
+        splitLine: i < 2 ? { lineStyle: { color: '#1e293b' } } : { show: false },
+        min: r?.min ?? null,
+        max: r?.max ?? null
+      }
+    }),
     series
-  }
-}
-
-function renderEmpty() {
-  chart.setOption({
-    xAxis: { data: [] },
-    yAxis: [],
-    series: []
   }, { notMerge: true })
 }
 
-/** 无数据时生成模拟曲线（按范围生成对应天数/小时数） */
-function buildMock(metrics, axes, unitIndex) {
+/** 增量渲染：仅数据更新（轮询/范围切换）时合并更新，不重置图例与轴状态 */
+function dataRender(history, future, metrics) {
+  if (!chart) return
+  const times = [...history.map(d => d.time), ...future.map(d => d.time)]
+  const { axes, series, axisValues } = assemble(metrics, history, future)
+  chart.setOption({
+    xAxis: { data: times },
+    yAxis: axes.map((a, i) => {
+      const r = axisRange(axisValues[i])
+      return { min: r?.min ?? null, max: r?.max ?? null }
+    }),
+    series: series.map(s => ({ name: s.name, data: s.data, markLine: s.markLine }))
+  }, { notMerge: false })
+}
+
+/** 模拟数据（缓存：同一结构 key 下不重新随机生成，曲线保持稳定） */
+function getMock(metrics) {
+  const key = `${props.historyRange}|${metrics.map(m => m.type).join(',')}`
+  if (mockCache && mockCacheKey === key) return mockCache
+
+  const { axes, unitIndex } = buildAxes(metrics)
   const now = new Date()
   const pad = (n) => String(n).padStart(2, '0')
   const is24h = props.historyRange === '24h'
@@ -224,53 +293,106 @@ function buildMock(metrics, axes, unitIndex) {
     const yi = unitIndex[m.type]
     for (const p of points) axisValues[yi].push(p[m.key])
   }
-  return { points, axisValues }
+  mockCache = { points, axisValues }
+  mockCacheKey = key
+  return mockCache
+}
+
+/** 当前渲染的结构 key：指标组合 / 时间范围 / 预测有无 / 数据有无 */
+function structureKey(metrics, history, future) {
+  return [
+    metrics.map(m => m.type).join(','),
+    props.historyRange,
+    future.length > 0 ? 'fc' : 'nofc',
+    history.length === 0 ? 'empty' : 'data'
+  ].join('|')
 }
 
 function render() {
   if (!chart) return
   const metrics = selectedMeta()
-  const history = Array.isArray(props.historyData) ? props.historyData : []
+  let history = Array.isArray(props.historyData) ? props.historyData : []
+  const future = Array.isArray(props.forecastData) ? props.forecastData : []
 
-  if (history.length === 0) {
-    if (!props.allowMock || metrics.length === 0) {
-      renderEmpty()
-      return
+  // 无真实数据：允许模拟时用缓存模拟数据填充
+  if (history.length === 0 && props.allowMock && metrics.length > 0) {
+    const mock = getMock(metrics)
+    history = mock.points
+    // 模拟曲线不画预测段，保持"现在"线不出现
+    const key = structureKey(metrics, history, [])
+    if (lastStructureKey !== key) {
+      mockRender(metrics, mock)
+      lastStructureKey = key
     }
-    const { axes, unitIndex } = buildAxes(metrics)
-    const { points, axisValues } = buildMock(metrics, axes, unitIndex)
-    const times = points.map(p => p.time)
-    const option = buildOption()
-    // 用模拟数据填充序列
-    const filled = option.series.map(s => {
-      const meta = metrics.find(m => `${m.label} (${m.unit})` === s.name || `预测${m.label} (${m.unit})` === s.name)
-      const isForecast = s.name.startsWith('预测')
-      const vals = meta ? points.map(p => (p[meta.key] != null ? p[meta.key] : null)) : []
-      return { ...s, data: isForecast ? [] : vals, markLine: { data: [] } }
-    })
-    chart.setOption({
-      ...option,
-      xAxis: { data: times },
-      yAxis: axes.map((a, i) => {
-        const r = axisRange(axisValues[i])
-        return {
-          type: 'value',
-          name: a.unit,
-          nameTextStyle: { color: '#94a3b8' },
-          position: a.position,
-          offset: a.offset,
-          axisLabel: { color: '#94a3b8' },
-          splitLine: i < 2 ? { lineStyle: { color: '#1e293b' } } : { show: false },
-          min: r?.min ?? null,
-          max: r?.max ?? null
-        }
-      }),
-      series: filled
-    }, { notMerge: true })
     return
   }
 
-  chart.setOption(buildOption(), { notMerge: true })
+  const key = structureKey(metrics, history, future)
+  if (lastStructureKey !== key) {
+    fullRender(history, future, metrics)
+    lastStructureKey = key
+  } else {
+    dataRender(history, future, metrics)
+  }
+}
+
+/** 模拟数据全量渲染（无预测段） */
+function mockRender(metrics, mock) {
+  if (!chart) return
+  const times = mock.points.map(p => p.time)
+  const { axes, unitIndex } = buildAxes(metrics)
+  const series = []
+  for (const m of metrics) {
+    const yi = unitIndex[m.type]
+    const vals = mock.points.map(p => (p[m.key] != null ? p[m.key] : null))
+    series.push({
+      name: `${m.label} (${m.unit})`,
+      type: 'line',
+      smooth: true,
+      yAxisIndex: yi,
+      data: vals,
+      lineStyle: { color: m.color, width: 2 },
+      itemStyle: { color: m.color },
+      areaStyle: { color: areaGradient(m.color) }
+    })
+  }
+  chart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      borderColor: 'transparent',
+      textStyle: { color: '#fff', fontSize: 12 }
+    },
+    legend: { show: false },
+    grid: {
+      left: '4%',
+      right: '10%',
+      bottom: '3%',
+      top: '16px',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: times,
+      axisLine: { lineStyle: { color: '#334155' } },
+      axisLabel: { color: '#94a3b8', fontSize: 11 }
+    },
+    yAxis: axes.map((a, i) => {
+      const r = axisRange(mock.axisValues[i])
+      return {
+        type: 'value',
+        name: a.unit,
+        nameTextStyle: { color: '#94a3b8' },
+        position: a.position,
+        offset: a.offset,
+        axisLabel: { color: '#94a3b8' },
+        splitLine: i < 2 ? { lineStyle: { color: '#1e293b' } } : { show: false },
+        min: r?.min ?? null,
+        max: r?.max ?? null
+      }
+    }),
+    series
+  }, { notMerge: true })
 }
 
 watch(
@@ -326,12 +448,26 @@ onUnmounted(() => {
 .metric-checks {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px 8px;
+  gap: 2px 10px;
 }
 
 .metric-check {
   --el-checkbox-font-size: 12px;
   margin-right: 0;
+}
+
+/* 颜色点：让勾选行同时充当图例（颜色与曲线一致） */
+.metric-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 4px 0 2px;
+  vertical-align: 1px;
+}
+
+.metric-name {
+  color: #cbd5e1;
 }
 
 .chart-note {

@@ -1,7 +1,10 @@
 <template>
   <div class="login-page">
     <div class="login-box">
-      <h1 class="login-title">🌱 智慧大棚AIoT系统</h1>
+      <div class="login-brand">
+        <el-icon class="login-brand-icon" :size="44"><Grape /></el-icon>
+      </div>
+      <h1 class="login-title">智慧大棚AIoT系统</h1>
       <p class="login-subtitle">Smart Greenhouse Management</p>
       <el-form
         ref="formRef"
@@ -47,7 +50,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, Grape } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -87,22 +90,37 @@ async function handleLogin() {
 <style scoped>
 .login-box {
   width: 400px;
+  max-width: calc(100vw - 48px);
   padding: 40px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+
+.login-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.login-brand-icon {
+  color: #67C23A;
+  filter: drop-shadow(0 0 10px rgba(103, 194, 58, 0.5));
 }
 
 .login-title {
   text-align: center;
   font-size: 24px;
-  color: #303133;
+  color: #e0e6ed;
   margin-bottom: 4px;
 }
 
 .login-subtitle {
   text-align: center;
-  color: #909399;
+  color: #94a3b8;
   font-size: 14px;
   margin-bottom: 32px;
 }

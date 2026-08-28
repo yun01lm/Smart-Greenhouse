@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="owner-page">
     <div class="page-header">
       <h3>棚主管理</h3>
@@ -242,9 +242,11 @@ onMounted(() => {
 
 <style scoped>
 .owner-page {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .page-header {
@@ -259,7 +261,7 @@ onMounted(() => {
 
 .page-desc {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin: 0;
 }
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="alert-rule-page">
     <el-tabs v-model="activeTab" type="border-card">
       <!-- Tab 1: 预警规则管理 -->
@@ -40,7 +40,7 @@
           </div>
 
           <!-- 规则表格 -->
-          <el-table v-loading="ruleLoading" :data="filteredRules" stripe border>
+          <el-table v-loading="ruleLoading" :data="pageRules" stripe border>
             <el-table-column prop="id" label="ID" width="70" align="center" />
             <el-table-column label="大棚" min-width="120">
               <template #default="{ row }">
@@ -101,8 +101,14 @@
             </el-table-column>
           </el-table>
 
-          <div class="pagination-wrapper" v-if="rules.length > 0">
-            <span class="total-info">共 {{ filteredRules.length }} 条</span>
+          <div class="pagination-wrapper" v-if="filteredRules.length > RULE_PAGE_SIZE">
+            <el-pagination
+              v-model:current-page="rulePage"
+              :page-size="RULE_PAGE_SIZE"
+              :total="filteredRules.length"
+              layout="total, prev, pager, next"
+              background
+            />
           </div>
 
           <!-- 空状态 -->
@@ -282,7 +288,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getGreenhouses } from '@/api/greenhouse'
@@ -314,6 +320,15 @@ const filteredRules = computed(() => {
   }
   return list
 })
+
+// 客户端分页（与其他页面统一使用 el-pagination）
+const rulePage = ref(1)
+const RULE_PAGE_SIZE = 10
+const pageRules = computed(() => {
+  const start = (rulePage.value - 1) * RULE_PAGE_SIZE
+  return filteredRules.value.slice(start, start + RULE_PAGE_SIZE)
+})
+watch(() => [ruleFilter.greenhouseId, ruleFilter.sensorType], () => { rulePage.value = 1 })
 
 // 规则对话框
 const ruleDialogVisible = ref(false)
@@ -443,9 +458,19 @@ async function loadScenes(greenhouseId) {
 
 function getSceneName(sceneId) {
   const scene = scenes.value.find(s => s.id === sceneId)
-  if (scene) return scene.name
+  if (scene) return sceneNameLabel(scene.name)
   // 规则列表页展示时尝试按大棚加载的场景缓存
-  return sceneNames.value[sceneId] || ''
+  return sceneNameLabel(sceneNames.value[sceneId] || '')
+}
+
+// 后端场景名内部编码 → 中文展示名映射（选项①：前端映射，不改数据库）
+const SCENE_NAME_MAP = {
+  fnvcc: '水泵+风机联动'
+}
+
+function sceneNameLabel(name) {
+  if (!name) return ''
+  return SCENE_NAME_MAP[name] || name
 }
 
 // 规则列表展示用：按大棚聚合场景名（行内不逐个发请求）
@@ -609,9 +634,11 @@ onMounted(async () => {
 
 <style scoped>
 .alert-rule-page {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .tab-content {
@@ -633,31 +660,31 @@ onMounted(async () => {
 
 .condition-code {
   font-size: 12px;
-  background: #f5f7fa;
+  background: rgba(255, 255, 255, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #606266;
+  color: #a0aec0;
   word-break: break-all;
 }
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   margin-top: 4px;
 }
 
 .text-muted {
-  color: #c0c4cc;
+  color: #64748b;
 }
 
 .muted-text {
-  color: #c0c4cc;
+  color: #64748b;
   font-size: 13px;
 }
 
 .scene-option-desc {
   float: right;
-  color: #909399;
+  color: #94a3b8;
   font-size: 12px;
   margin-left: 16px;
 }
@@ -670,6 +697,6 @@ onMounted(async () => {
 
 .total-info {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
 }
 </style>

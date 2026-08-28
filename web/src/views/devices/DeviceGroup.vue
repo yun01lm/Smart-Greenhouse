@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="device-group">
     <div class="group-layout">
       <!-- 左侧：分组列表 -->
@@ -385,10 +385,12 @@ watch(() => props.greenhouseId, () => {
 
 <style scoped>
 .device-group {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
   min-height: calc(100vh - 200px);
+  backdrop-filter: blur(10px);
 }
 
 .group-layout {
@@ -400,7 +402,7 @@ watch(() => props.greenhouseId, () => {
 .group-panel {
   width: 280px;
   flex-shrink: 0;
-  border-right: 1px solid #ebeef5;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding-right: 16px;
 }
 
@@ -433,11 +435,11 @@ watch(() => props.greenhouseId, () => {
 }
 
 .group-item:hover {
-  background: #f5f7fa;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .group-item.active {
-  background: #ecf5ff;
+  background: rgba(64, 158, 255, 0.18);
   border-left: 3px solid #409eff;
 }
 
@@ -472,7 +474,7 @@ watch(() => props.greenhouseId, () => {
   align-items: center;
   justify-content: center;
   height: 300px;
-  color: #c0c4cc;
+  color: #64748b;
 }
 
 .empty-state p {
@@ -486,13 +488,13 @@ watch(() => props.greenhouseId, () => {
 }
 
 .group-desc {
-  color: #909399;
+  color: #94a3b8;
   font-size: 13px;
   margin: 0 0 4px 0;
 }
 
 .group-meta {
-  color: #c0c4cc;
+  color: #64748b;
   font-size: 12px;
   margin: 0;
 }
@@ -511,7 +513,7 @@ watch(() => props.greenhouseId, () => {
 
 .empty-hint {
   text-align: center;
-  color: #c0c4cc;
+  color: #64748b;
   font-size: 13px;
   padding: 32px 0;
 }

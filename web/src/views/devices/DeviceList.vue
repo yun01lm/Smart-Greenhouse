@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="device-list">
     <!-- 顶部操作栏 -->
     <div class="toolbar">
@@ -371,9 +371,11 @@ watch(() => props.greenhouseId, () => {
 
 <style scoped>
 .device-list {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .toolbar {
@@ -400,10 +402,10 @@ watch(() => props.greenhouseId, () => {
 
 .last-value {
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 .text-muted {
-  color: #c0c4cc;
+  color: #64748b;
 }
 </style>

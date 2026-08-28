@@ -3,7 +3,10 @@
     <!-- 顶部导航 -->
     <el-header class="layout-header">
       <div class="header-left">
-        <h2>🌱 智慧大棚AIoT系统</h2>
+        <h2>
+          <el-icon class="brand-icon" :size="22"><Grape /></el-icon>
+          智慧大棚AIoT系统
+        </h2>
       </div>
       <div class="header-right">
         <!-- 棚主视角提示（R10：管理员进入棚主视角后显示，可一键切回） -->
@@ -94,7 +97,7 @@ import { getGreenhouses } from '@/api/greenhouse'
 import { ElMessage } from 'element-plus'
 import {
   ChatDotRound, DataAnalysis, Cpu, UserFilled, Document, WarningFilled,
-  Download, Microphone, Avatar, HomeFilled, ArrowDown, Lock
+  Download, Microphone, Avatar, HomeFilled, ArrowDown, Lock, Grape
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -269,6 +272,14 @@ onMounted(async () => {
 .header-left h2 {
   font-size: 18px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  color: #67C23A;
+  filter: drop-shadow(0 0 6px rgba(103, 194, 58, 0.45));
 }
 
 .header-right {
@@ -315,7 +326,7 @@ onMounted(async () => {
 }
 
 .layout-main {
-  background: #f0f2f5;
+  background: transparent;
   padding: 16px;
   overflow-y: auto;
 }

@@ -2,7 +2,7 @@
   <div class="qa-page">
     <div class="qa-header">
       <div class="qa-header-top">
-        <h3>🤖 AI 智能问答</h3>
+        <h3><el-icon class="qa-brand-icon"><ChatDotRound /></el-icon>AI 智能问答</h3>
         <span class="qa-hint">基于知识库的 RAG 智能问答，支持引用来源追溯</span>
       </div>
       <div class="qa-toolbar">
@@ -35,7 +35,7 @@
           <template v-if="msg.role === 'user'">
             <div class="msg-bubble user-bubble">
               <div class="msg-text">{{ msg.content }}</div>
-              <div v-if="msg.isVoice" class="msg-voice-tag">🎤 语音输入</div>
+              <div v-if="msg.isVoice" class="msg-voice-tag">语音输入</div>
             </div>
             <div class="msg-time">{{ msg.timeText }}</div>
           </template>
@@ -44,7 +44,7 @@
             <div class="msg-bubble ai-bubble">
               <div class="msg-text">{{ msg.content }}</div>
               <div v-if="msg.sources && msg.sources.length > 0" class="msg-sources">
-                <div class="sources-title">📚 参考来源：</div>
+                <div class="sources-title">参考来源：</div>
                 <div v-for="(src, si) in msg.sources" :key="si" class="source-item">
                   • {{ src.title }}
                   <el-tag size="small" type="info">{{ src.category }}</el-tag>
@@ -57,7 +57,7 @@
                 text
                 @click="toggleTts(msg.content, idx)"
               >
-                {{ speakingIdx === idx ? '⏹ 停止' : '🔊 播放' }}
+                {{ speakingIdx === idx ? '停止' : '播放' }}
               </el-button>
             </div>
             <div class="msg-time">{{ msg.timeText }}</div>
@@ -269,30 +269,40 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.qa-page { display: flex; flex-direction: column; height: calc(100vh - 120px); background: #fff; border-radius: 8px; overflow: hidden; }
-.qa-header { padding: 14px 20px; border-bottom: 1px solid #ebeef5; background: #fafafa; }
+.qa-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 120px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+.qa-header { padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); }
 .qa-header-top { display: flex; align-items: center; gap: 12px; }
-.qa-header h3 { margin: 0; font-size: 16px; }
-.qa-hint { font-size: 12px; color: #909399; }
+.qa-header h3 { margin: 0; font-size: 16px; color: #e0e6ed; display: flex; align-items: center; gap: 8px; }
+.qa-brand-icon { color: #409EFF; }
+.qa-hint { font-size: 12px; color: #94a3b8; }
 .qa-toolbar { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
 .qa-chat { flex: 1; overflow-y: auto; padding: 8px 20px 16px; }
-.qa-empty { text-align: center; color: #909399; padding-top: 80px; }
+.qa-empty { text-align: center; color: #94a3b8; padding-top: 80px; }
 .qa-empty p { margin: 8px 0; font-size: 14px; }
-.qa-date-divider { text-align: center; color: #909399; font-size: 12px; margin: 12px 0 10px; }
-.qa-date-divider::before, .qa-date-divider::after { content: ''; display: inline-block; width: 24px; height: 1px; background: #e4e7ed; vertical-align: middle; margin: 0 8px; }
+.qa-date-divider { text-align: center; color: #64748b; font-size: 12px; margin: 12px 0 10px; }
+.qa-date-divider::before, .qa-date-divider::after { content: ''; display: inline-block; width: 24px; height: 1px; background: rgba(255, 255, 255, 0.15); vertical-align: middle; margin: 0 8px; }
 .qa-message { margin-bottom: 14px; display: flex; flex-direction: column; }
 .qa-message.user { align-items: flex-end; }
 .qa-message.ai, .qa-message.error { align-items: flex-start; }
 .msg-bubble { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; word-break: break-word; }
 .user-bubble { background: #409eff; color: #fff; border-bottom-right-radius: 4px; }
-.ai-bubble { background: #f0f2f5; color: #303133; border-bottom-left-radius: 4px; }
-.error-bubble { background: #fef0f0; color: #f56c6c; border-bottom-left-radius: 4px; }
-.msg-time { font-size: 11px; color: #c0c4cc; margin-top: 4px; }
+.ai-bubble { background: rgba(255, 255, 255, 0.08); color: #e0e6ed; border-bottom-left-radius: 4px; }
+.error-bubble { background: rgba(245, 108, 108, 0.15); color: #f56c6c; border-bottom-left-radius: 4px; }
+.msg-time { font-size: 11px; color: #64748b; margin-top: 4px; }
 .msg-voice-tag { font-size: 11px; margin-top: 4px; opacity: 0.7; }
-.msg-sources { margin-top: 10px; padding: 8px 10px; background: #fff; border-radius: 6px; font-size: 12px; color: #606266; }
+.msg-sources { margin-top: 10px; padding: 8px 10px; background: rgba(255, 255, 255, 0.06); border-radius: 6px; font-size: 12px; color: #a0aec0; }
 .sources-title { font-weight: 600; margin-bottom: 4px; }
 .source-item { padding: 2px 0; display: flex; align-items: center; gap: 6px; }
 .btn-tts { margin-top: 6px; font-size: 12px; }
-.qa-loading { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: #909399; font-size: 13px; }
-.qa-input { padding: 12px 20px; border-top: 1px solid #ebeef5; background: #fafafa; }
+.qa-loading { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: #94a3b8; font-size: 13px; }
+.qa-input { padding: 12px 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); }
 </style>

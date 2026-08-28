@@ -56,8 +56,13 @@
       </div>
 
       <template v-else-if="!isExpert || expertGhOptions.length > 0">
-      <!-- 传感器卡片 -->
-      <SensorCards :data="realtimeData" />
+      <!-- 传感器卡片：有数据或加载中显示卡片网格；确认无数据时显示聚合空态 -->
+      <SensorCards v-if="!realtimeReady || hasAnySensorData" :data="realtimeData" />
+      <div v-else class="sensor-empty-card dashboard-card">
+        <el-icon :size="36" color="#64748b"><DataLine /></el-icon>
+        <p class="sensor-empty-text">当前大棚暂无传感器数据</p>
+        <p class="sensor-empty-hint">请确认设备已接入并正常上报数据</p>
+      </div>
 
       <!-- 历史数据时间范围（R27） -->
       <div v-if="!isAdmin" class="range-toolbar">
@@ -97,7 +102,7 @@
             <div v-if="weatherData" class="weather-info">
               <div class="weather-temp">{{ weatherData.temperature }}°C</div>
               <div class="weather-desc">{{ weatherData.weatherText }}</div>
-              <div class="weather-loc">📍 {{ weatherData.location }}</div>
+              <div class="weather-loc">{{ weatherData.location }}</div>
               <div class="weather-details">
                 <span>湿度 {{ weatherData.humidity }}%</span>
                 <span>风速 {{ weatherData.windSpeed }}m/s</span>
@@ -179,7 +184,7 @@ import { getGreenhouses } from '@/api/greenhouse'
 import { getApplyAvailable, requestAuthorization, getMyAuthorizations } from '@/api/expert'
 import { ElMessage } from 'element-plus'
 import realtimeClient from '@/utils/websocket'
-import { Cloudy, Location, Lock } from '@element-plus/icons-vue'
+import { Cloudy, Location, Lock, DataLine } from '@element-plus/icons-vue'
 
 const props = defineProps({
   greenhouseId: { type: Number, default: 1 }
@@ -296,6 +301,11 @@ const selectedMetrics = ref(['TEMPERATURE', 'HUMIDITY'])
 const effectiveGreenhouseId = computed(() => (isExpert.value ? selectedGhId.value : props.greenhouseId))
 
 const realtimeData = ref({})
+const realtimeReady = ref(false)
+/** 实时数据里是否已有任一传感器读数（用于无数据时聚合空态） */
+const hasAnySensorData = computed(() =>
+  Object.values(TYPE_TO_KEY).some(k => realtimeData.value[k] != null)
+)
 const historyData = ref([])
 const forecastData = ref([])
 const healthData = ref(null)
@@ -478,6 +488,7 @@ async function loadAll() {
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
       realtimeData.value = flattenRealtime(sensorRes.value.data)
     }
+    realtimeReady.value = true
     if (healthRes.status === 'fulfilled' && healthRes.value?.data) {
       healthData.value = healthRes.value.data
     }
@@ -557,6 +568,25 @@ onUnmounted(() => {
 <style scoped>
 .dashboard-page {
   padding: 0;
+}
+
+/* 无数据聚合空态卡片 */
+.sensor-empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 20px;
+  text-align: center;
+}
+.sensor-empty-text {
+  font-size: 15px;
+  color: #a0aec0;
+}
+.sensor-empty-hint {
+  font-size: 13px;
+  color: #64748b;
 }
 
 .expert-region-row {

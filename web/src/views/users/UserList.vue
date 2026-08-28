@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="user-list">
     <!-- 顶部操作栏 -->
     <div class="toolbar">
@@ -519,9 +519,11 @@ onMounted(() => {
 
 <style scoped>
 .user-list {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .toolbar {
@@ -553,6 +555,6 @@ onMounted(() => {
 }
 
 .text-muted {
-  color: #c0c4cc;
+  color: #64748b;
 }
 </style>

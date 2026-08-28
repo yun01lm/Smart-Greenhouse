@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="corpus-page">
     <!-- 用途说明 -->
     <div class="page-desc">
@@ -385,16 +385,18 @@ onUnmounted(() => {
 
 <style scoped>
 .corpus-page {
-  background: #fff;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   padding: 16px;
+  backdrop-filter: blur(10px);
 }
 
 .page-desc {
-  background: #f4f8ff;
-  border: 1px solid #d9e6ff;
+  background: rgba(64, 158, 255, 0.12);
+  border: 1px solid rgba(64, 158, 255, 0.3);
   border-radius: 6px;
-  color: #4a6fa5;
+  color: #9cc3f0;
   font-size: 13px;
   line-height: 1.7;
   padding: 10px 14px;
@@ -421,7 +423,7 @@ onUnmounted(() => {
 
 .audio-name {
   font-size: 13px;
-  color: #303133;
+  color: #e0e6ed;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -430,7 +432,7 @@ onUnmounted(() => {
 
 .audio-size {
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -456,7 +458,7 @@ onUnmounted(() => {
 
 .upload-text {
   font-size: 13px;
-  color: #606266;
+  color: #a0aec0;
   margin-top: 8px;
 }
 
@@ -467,7 +469,7 @@ onUnmounted(() => {
 
 .upload-tip {
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
   margin-top: 4px;
 }
 </style>

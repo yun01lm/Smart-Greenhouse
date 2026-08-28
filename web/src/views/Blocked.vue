@@ -27,6 +27,6 @@ function logout() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fa;
+  background: linear-gradient(135deg, #0a1628 0%, #16263f 100%);
 }
 </style>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="monitor-page">
     <div class="page-header">
       <h3>系统监控</h3>
@@ -230,7 +230,7 @@ onMounted(() => {
 .page-desc {
   flex: 1;
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin: 0;
 }
 
@@ -279,7 +279,7 @@ onMounted(() => {
 
 .status-text {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
 }
 
 /* 区块卡片 */
@@ -309,12 +309,12 @@ onMounted(() => {
 
 .stat-value.total { color: #409EFF; }
 .stat-value.online { color: #67C23A; }
-.stat-value.offline { color: #909399; }
+.stat-value.offline { color: #94a3b8; }
 .stat-value.alarm { color: #F56C6C; }
 
 .stat-label {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin-top: 4px;
 }
 
@@ -328,7 +328,7 @@ onMounted(() => {
   height: 20px;
   border-radius: 10px;
   overflow: hidden;
-  background: #f0f2f5;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .bar-segment {
@@ -344,7 +344,7 @@ onMounted(() => {
   gap: 20px;
   margin-top: 8px;
   font-size: 12px;
-  color: #606266;
+  color: #a0aec0;
 }
 
 .legend-item {
@@ -379,12 +379,12 @@ onMounted(() => {
 .big-number {
   font-size: 42px;
   font-weight: 700;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 .big-unit {
   font-size: 16px;
-  color: #909399;
+  color: #94a3b8;
   margin-left: 4px;
 }
 
@@ -414,12 +414,12 @@ onMounted(() => {
 
 .level-label {
   width: 36px;
-  color: #606266;
+  color: #a0aec0;
 }
 
 .level-count {
   font-weight: 600;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 /* 系统概览网格 */
@@ -439,11 +439,11 @@ onMounted(() => {
 .overview-value {
   font-size: 24px;
   font-weight: 700;
-  color: #303133;
+  color: #e0e6ed;
 }
 
 .overview-label {
   font-size: 12px;
-  color: #909399;
+  color: #94a3b8;
 }
 </style>

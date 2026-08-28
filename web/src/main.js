@@ -1,12 +1,16 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'dayjs/locale/zh-cn'
+// Element Plus 深色主题变量（配合 <html class="dark">）
+import 'element-plus/theme-chalk/dark/css-vars.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
 import './assets/main.css'
+
+// 全站统一深色主题（方案丙：深色玻璃拟态）
+document.documentElement.classList.add('dark')
 
 const app = createApp(App)
 

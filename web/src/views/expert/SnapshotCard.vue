@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="snapshot-card">
     <div class="snap-title">
       <el-icon><Odometer /></el-icon>
@@ -50,8 +50,8 @@ const items = computed(() => {
 <style scoped>
 .snapshot-card {
   min-width: 260px;
-  background: #f7f9fc;
-  border: 1px solid #e4e7ed;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -65,7 +65,7 @@ const items = computed(() => {
 }
 .snap-gh {
   font-weight: 400;
-  color: #909399;
+  color: #94a3b8;
 }
 .snap-grid {
   display: grid;
@@ -75,29 +75,29 @@ const items = computed(() => {
 }
 .snap-item {
   text-align: center;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   padding: 6px 4px;
 }
 .snap-label {
   font-size: 11px;
-  color: #909399;
+  color: #94a3b8;
 }
 .snap-value {
   font-size: 15px;
   font-weight: 700;
-  color: #303133;
+  color: #e0e6ed;
   margin-top: 2px;
 }
 .snap-unit {
   font-size: 11px;
   font-weight: 400;
-  color: #909399;
+  color: #94a3b8;
   margin-left: 2px;
 }
 .snap-empty {
   margin-top: 8px;
   font-size: 12px;
-  color: #c0c4cc;
+  color: #64748b;
 }
 </style>

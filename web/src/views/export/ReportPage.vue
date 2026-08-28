@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="report-page">
     <div class="page-header">
       <h3>数据导出报表</h3>
@@ -295,7 +295,7 @@ onMounted(async () => {
 
 .page-desc {
   font-size: 13px;
-  color: #909399;
+  color: #94a3b8;
   margin: 0;
 }
 
@@ -310,7 +310,7 @@ onMounted(async () => {
 
 .filter-label {
   font-size: 14px;
-  color: #606266;
+  color: #a0aec0;
   white-space: nowrap;
 }
 
@@ -345,7 +345,7 @@ onMounted(async () => {
 
 .card-desc {
   font-size: 13px;
-  color: #606266;
+  color: #a0aec0;
   margin: 0 0 12px 0;
   line-height: 1.6;
 }
@@ -353,11 +353,11 @@ onMounted(async () => {
 .card-footer {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .info-card {
-  background: #fafbfc;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .info-list {
@@ -367,12 +367,12 @@ onMounted(async () => {
 
 .info-list li {
   font-size: 13px;
-  color: #606266;
+  color: #a0aec0;
   line-height: 2;
 }
 
 .info-list code {
-  background: #f0f2f5;
+  background: rgba(255, 255, 255, 0.1);
   padding: 1px 6px;
   border-radius: 3px;
   font-size: 12px;

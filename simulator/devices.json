@@ -1,214 +1,934 @@
 {
-    "_description":  "设备模拟器配置文件 — 定义模拟的传感器设备及其参数",
-    "_protocol_note":  "MQTT Topic 格式必须与 MqttTopicConstants.java 保持一致：greenhouse/{greenhouseId}/device/{deviceSn}",
-    "mqtt":  {
-                 "broker":  "localhost",
-                 "port":  1883,
-                 "username":  "greenhouse",
-                 "password":  "greenhouse_dev",
-                 "client_id":  "simulator-greenhouse-01"
-             },
-    "greenhouses":  [
-                        {
-                            "id":  1,
-                            "name":  "一号番茄大棚",
-                            "devices":  [
-                                            {
-                                                "id":  1,
-                                                "sn":  "TEMP-001",
-                                                "name":  "1号温度传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "TEMPERATURE",
-                                                "interval_seconds":  10,
-                                                "normal":  {
-                                                               "min":  20.0,
-                                                               "max":  28.0,
-                                                               "noise":  0.5
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  8.0,
-                                                                 "max":  42.0,
-                                                                 "noise":  2.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  30.0,
-                                                                     "max":  38.0,
-                                                                     "noise":  1.0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  2,
-                                                "sn":  "HUM-001",
-                                                "name":  "1号湿度传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "HUMIDITY",
-                                                "interval_seconds":  10,
-                                                "normal":  {
-                                                               "min":  55.0,
-                                                               "max":  80.0,
-                                                               "noise":  2.0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  20.0,
-                                                                 "max":  98.0,
-                                                                 "noise":  5.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  80.0,
-                                                                     "max":  98.0,
-                                                                     "noise":  3.0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  3,
-                                                "sn":  "LIGHT-001",
-                                                "name":  "1号光照传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "LIGHT",
-                                                "interval_seconds":  15,
-                                                "normal":  {
-                                                               "min":  20000.0,
-                                                               "max":  60000.0,
-                                                               "noise":  2000.0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  1000.0,
-                                                                 "max":  90000.0,
-                                                                 "noise":  5000.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  5000.0,
-                                                                     "max":  20000.0,
-                                                                     "noise":  1000.0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  4,
-                                                "sn":  "CO2-001",
-                                                "name":  "1号CO2传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "CO2",
-                                                "interval_seconds":  15,
-                                                "normal":  {
-                                                               "min":  350.0,
-                                                               "max":  800.0,
-                                                               "noise":  20.0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  200.0,
-                                                                 "max":  2000.0,
-                                                                 "noise":  50.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  200.0,
-                                                                     "max":  400.0,
-                                                                     "noise":  15.0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  5,
-                                                "sn":  "SOILM-001",
-                                                "name":  "1号土壤湿度传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "SOIL_MOISTURE",
-                                                "interval_seconds":  30,
-                                                "normal":  {
-                                                               "min":  40.0,
-                                                               "max":  70.0,
-                                                               "noise":  2.0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  10.0,
-                                                                 "max":  95.0,
-                                                                 "noise":  5.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  80.0,
-                                                                     "max":  95.0,
-                                                                     "noise":  3.0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  6,
-                                                "sn":  "SOILT-001",
-                                                "name":  "1号土壤温度传感器",
-                                                "type":  "SENSOR",
-                                                "sensor_type":  "SOIL_TEMP",
-                                                "interval_seconds":  30,
-                                                "normal":  {
-                                                               "min":  18.0,
-                                                               "max":  26.0,
-                                                               "noise":  0.3
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  5.0,
-                                                                 "max":  38.0,
-                                                                 "noise":  1.0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  26.0,
-                                                                     "max":  38.0,
-                                                                     "noise":  0.5
-                                                                 }
-                                            },
-                                            {
-                                                "id":  7,
-                                                "sn":  "PUMP-001",
-                                                "name":  "1号水泵控制器",
-                                                "type":  "CONTROLLER",
-                                                "sensor_type":  null,
-                                                "interval_seconds":  30,
-                                                "normal":  {
-                                                               "min":  0,
-                                                               "max":  0,
-                                                               "noise":  0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  0,
-                                                                 "max":  0,
-                                                                 "noise":  0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  0,
-                                                                     "max":  0,
-                                                                     "noise":  0
-                                                                 }
-                                            },
-                                            {
-                                                "id":  8,
-                                                "sn":  "FAN-001",
-                                                "name":  "1号风机控制器",
-                                                "type":  "CONTROLLER",
-                                                "sensor_type":  null,
-                                                "interval_seconds":  30,
-                                                "normal":  {
-                                                               "min":  0,
-                                                               "max":  0,
-                                                               "noise":  0
-                                                           },
-                                                "abnormal":  {
-                                                                 "min":  0,
-                                                                 "max":  0,
-                                                                 "noise":  0
-                                                             },
-                                                "disease_risk":  {
-                                                                     "min":  0,
-                                                                     "max":  0,
-                                                                     "noise":  0
-                                                                 }
-                                            }
-                                        ]
-                        }
-                    ],
-    "modes":  {
-                  "normal":  {
-                                 "description":  "正常环境模式 — 所有传感器值在适宜范围内，用于日常演示和基础功能测试"
-                             },
-                  "abnormal":  {
-                                   "description":  "异常环境模式 — 传感器值偏离适宜范围，触发告警，用于告警引擎和联动测试"
-                               },
-                  "disease_risk":  {
-                                       "description":  "病害风险模式 — 模拟高温高湿+低光照，创造病害易发环境，用于 AI 诊断和多模态融合测试"
-                                   }
-              }
+  "_description": "设备模拟器配置文件 — 定义模拟的传感器设备及其参数",
+  "_protocol_note": "MQTT Topic 格式必须与 MqttTopicConstants.java 保持一致：greenhouse/{greenhouseId}/device/{deviceSn}",
+  "mqtt": {
+    "broker": "localhost",
+    "port": 1883,
+    "username": "greenhouse",
+    "password": "greenhouse_dev",
+    "client_id": "simulator-greenhouse-01"
+  },
+  "greenhouses": [
+    {
+      "id": 1,
+      "name": "一号番茄大棚",
+      "devices": [
+        {
+          "id": 1,
+          "sn": "TEMP-001",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 20.0,
+            "max": 28.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 8.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 2,
+          "sn": "HUM-001",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 55.0,
+            "max": 80.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 3,
+          "sn": "LIGHT-001",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 20000.0,
+            "max": 60000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 4,
+          "sn": "CO2-001",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 5,
+          "sn": "SOILM-001",
+          "name": "1号土壤湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "SOIL_MOISTURE",
+          "interval_seconds": 30,
+          "normal": {
+            "min": 40.0,
+            "max": 70.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 10.0,
+            "max": 95.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 95.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 6,
+          "sn": "SOILT-001",
+          "name": "1号土壤温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "SOIL_TEMP",
+          "interval_seconds": 30,
+          "normal": {
+            "min": 18.0,
+            "max": 26.0,
+            "noise": 0.3
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 38.0,
+            "noise": 1.0
+          },
+          "disease_risk": {
+            "min": 26.0,
+            "max": 38.0,
+            "noise": 0.5
+          }
+        },
+        {
+          "id": 7,
+          "sn": "PUMP-001",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 8,
+          "sn": "FAN-001",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "测试大棚-济南历城",
+      "devices": [
+        {
+          "id": 9,
+          "sn": "TEMP-101",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 18.0,
+            "max": 30.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 16,
+          "sn": "HUM-101",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 50.0,
+            "max": 85.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 23,
+          "sn": "CO2-101",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 30,
+          "sn": "LIGHT-101",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 15000.0,
+            "max": 55000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 37,
+          "sn": "PUMP-101",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 44,
+          "sn": "FAN-101",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "测试大棚-郑州中牟",
+      "devices": [
+        {
+          "id": 10,
+          "sn": "TEMP-201",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 20.0,
+            "max": 32.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 17,
+          "sn": "HUM-201",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 45.0,
+            "max": 80.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 24,
+          "sn": "CO2-201",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 31,
+          "sn": "LIGHT-201",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 15000.0,
+            "max": 55000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 38,
+          "sn": "PUMP-201",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 45,
+          "sn": "FAN-201",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "测试大棚-广州番禺",
+      "devices": [
+        {
+          "id": 11,
+          "sn": "TEMP-301",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 22.0,
+            "max": 33.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 18,
+          "sn": "HUM-301",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 55.0,
+            "max": 90.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 25,
+          "sn": "CO2-301",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 32,
+          "sn": "LIGHT-301",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 12,
+          "normal": {
+            "min": 15000.0,
+            "max": 55000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 39,
+          "sn": "PUMP-301",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 46,
+          "sn": "FAN-301",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "测试大棚-成都双流",
+      "devices": [
+        {
+          "id": 12,
+          "sn": "TEMP-401",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 15.0,
+            "max": 28.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 19,
+          "sn": "HUM-401",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 50.0,
+            "max": 85.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 26,
+          "sn": "CO2-401",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 33,
+          "sn": "LIGHT-401",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 12,
+          "normal": {
+            "min": 15000.0,
+            "max": 55000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 40,
+          "sn": "PUMP-401",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 47,
+          "sn": "FAN-401",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "黄瓜种植大棚",
+      "devices": [
+        {
+          "id": 13,
+          "sn": "TEMP-501",
+          "name": "1号温度传感器",
+          "type": "SENSOR",
+          "sensor_type": "TEMPERATURE",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 18.0,
+            "max": 30.0,
+            "noise": 0.5
+          },
+          "abnormal": {
+            "min": 5.0,
+            "max": 42.0,
+            "noise": 2.0
+          },
+          "disease_risk": {
+            "min": 30.0,
+            "max": 38.0,
+            "noise": 1.0
+          }
+        },
+        {
+          "id": 20,
+          "sn": "HUM-501",
+          "name": "1号湿度传感器",
+          "type": "SENSOR",
+          "sensor_type": "HUMIDITY",
+          "interval_seconds": 10,
+          "normal": {
+            "min": 55.0,
+            "max": 85.0,
+            "noise": 2.0
+          },
+          "abnormal": {
+            "min": 20.0,
+            "max": 98.0,
+            "noise": 5.0
+          },
+          "disease_risk": {
+            "min": 80.0,
+            "max": 98.0,
+            "noise": 3.0
+          }
+        },
+        {
+          "id": 27,
+          "sn": "CO2-501",
+          "name": "1号CO2传感器",
+          "type": "SENSOR",
+          "sensor_type": "CO2",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 350.0,
+            "max": 800.0,
+            "noise": 20.0
+          },
+          "abnormal": {
+            "min": 200.0,
+            "max": 2000.0,
+            "noise": 50.0
+          },
+          "disease_risk": {
+            "min": 200.0,
+            "max": 400.0,
+            "noise": 15.0
+          }
+        },
+        {
+          "id": 34,
+          "sn": "LIGHT-501",
+          "name": "1号光照传感器",
+          "type": "SENSOR",
+          "sensor_type": "LIGHT",
+          "interval_seconds": 15,
+          "normal": {
+            "min": 15000.0,
+            "max": 55000.0,
+            "noise": 2000.0
+          },
+          "abnormal": {
+            "min": 1000.0,
+            "max": 90000.0,
+            "noise": 5000.0
+          },
+          "disease_risk": {
+            "min": 5000.0,
+            "max": 20000.0,
+            "noise": 1000.0
+          }
+        },
+        {
+          "id": 41,
+          "sn": "PUMP-501",
+          "name": "1号水泵控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        },
+        {
+          "id": 48,
+          "sn": "FAN-501",
+          "name": "1号风机控制器",
+          "type": "CONTROLLER",
+          "sensor_type": null,
+          "interval_seconds": 30,
+          "normal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "abnormal": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          },
+          "disease_risk": {
+            "min": 0,
+            "max": 0,
+            "noise": 0
+          }
+        }
+      ]
+    }
+  ],
+  "modes": {
+    "normal": {
+      "description": "正常环境模式 — 所有传感器值在适宜范围内，用于日常演示和基础功能测试"
+    },
+    "abnormal": {
+      "description": "异常环境模式 — 传感器值偏离适宜范围，触发告警，用于告警引擎和联动测试"
+    },
+    "disease_risk": {
+      "description": "病害风险模式 — 模拟高温高湿+低光照，创造病害易发环境，用于 AI 诊断和多模态融合测试"
+    }
+  }
 }
