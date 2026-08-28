@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 统一卡片：16dp 圆角 + 柔和阴影 -->
+    <style name="Style.Card" parent="">
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardBackgroundColor">@color/surface</item>
+    </style>
+
+    <!-- 主按钮：胶囊圆角 + 渐变底 -->
+    <style name="Style.ButtonPrimary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/on_primary</item>
+        <item name="cornerRadius">24dp</item>
+        <item name="backgroundTint">@color/primary</item>
+    </style>
+
+    <!-- 数值文本：等宽数字（动态刷新对齐） -->
+    <style name="TextAppearance.Metric" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:fontFeatureSettings">tnum</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 健康评分圆形 -->
+    <style name="Style.HealthCircle" parent="">
+        <item name="android:background">@drawable/bg_score_gradient</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>
