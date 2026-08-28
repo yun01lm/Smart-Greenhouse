@@ -38,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
         // 启动离线/告警推送监控（F2）
         startService(new Intent(this, MonitorService.class));
 
+        // 首启引导（第 6 项体验类）
+        showFirstLaunchGuideIfNeeded();
+
         // 默认显示看板
         if (savedInstanceState == null) {
             loadFragment(new DashboardFragment());
@@ -96,6 +99,23 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.fragment_container, fragment)
                 .commit();
+    }
+
+    /** 首启引导（第 6 项）：首次打开显示功能简介，关闭后不再弹出 */
+    private void showFirstLaunchGuideIfNeeded() {
+        android.content.SharedPreferences sp = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        if (sp.getBoolean("guide_shown", false)) return;
+        sp.edit().putBoolean("guide_shown", true).apply();
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("欢迎使用智慧大棚")
+                .setMessage("四个功能页：\n" +
+                        "看板 — 大棚环境实时数据、健康评分、趋势曲线\n" +
+                        "AI助手 — 病虫害诊断与 AI 智能问答\n" +
+                        "设备控制 — 设备开关、场景联动、控制记录\n" +
+                        "我的 — 员工管理、专家咨询、农事提醒、多棚对比")
+                .setPositiveButton("开始使用", null)
+                .show();
     }
 
     @Override
