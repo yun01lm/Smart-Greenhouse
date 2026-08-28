@@ -149,6 +149,15 @@ public class DashboardFragment extends Fragment {
                     .commit();
         });
 
+        // 健康详情入口（2×2 第 4 格）→ 跳转 HealthActivity
+        binding.cardHealthEntry.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), HealthActivity.class);
+            intent.putExtra("greenhouse_id",
+                    viewModel.getSelectedGreenhouseId().getValue() != null
+                            ? viewModel.getSelectedGreenhouseId().getValue() : 1);
+            startActivity(intent);
+        });
+
         // ===== F11 角色适配：员工按权限隐藏无权限卡片 =====
         applyRoleAdapter();
     }
