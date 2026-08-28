@@ -45,6 +45,8 @@ public class DashboardViewModel extends ViewModel {
     private final MutableLiveData<Map<String, Double>> sensorData = new MutableLiveData<>(new HashMap<>());
     // 原始数据点列表
     private final MutableLiveData<List<SensorDataPoint>> dataPoints = new MutableLiveData<>(new ArrayList<>());
+    // 迷你趋势数据（F1 数据可视化：sensorType -> 最近 N 个值）
+    private final MutableLiveData<Map<String, float[]>> sparkData = new MutableLiveData<>(new HashMap<>());
 
     // 健康评分
     private final MutableLiveData<HealthScoreData> healthScore = new MutableLiveData<>();
@@ -68,6 +70,7 @@ public class DashboardViewModel extends ViewModel {
     public LiveData<Long> getSelectedGreenhouseId() { return selectedGreenhouseId; }
     public LiveData<Map<String, Double>> getSensorData() { return sensorData; }
     public LiveData<List<SensorDataPoint>> getDataPoints() { return dataPoints; }
+    public LiveData<Map<String, float[]>> getSparkData() { return sparkData; }
     public LiveData<HealthScoreData> getHealthScore() { return healthScore; }
     public LiveData<Boolean> getIsLoading() { return isLoading; }
     public LiveData<String> getErrorMessage() { return errorMessage; }
@@ -127,6 +130,8 @@ public class DashboardViewModel extends ViewModel {
 
                 sensorData.postValue(latestValues);
                 dataPoints.postValue(allPoints);
+                // 拉取各传感器类型迷你趋势（F1）
+                loadTrendData(greenhouseId, new ArrayList<>(latestValues.keySet()));
             }
 
             @Override
@@ -134,6 +139,35 @@ public class DashboardViewModel extends ViewModel {
                 Log.w(TAG, "加载实时数据失败: " + message);
             }
         });
+    }
+
+    /** 拉取每种传感器的最近一段历史值，供卡片迷你趋势曲线使用（F1） */
+    private void loadTrendData(long greenhouseId, List<String> types) {
+        if (types == null || types.isEmpty()) return;
+        Map<String, float[]> result = new HashMap<>();
+        long end = System.currentTimeMillis();
+        long start = end - 6L * 3600 * 1000; // 近 6 小时
+        for (String type : types) {
+            sensorRepo.getHistory(greenhouseId, type, start, end, "30m",
+                    new SensorRepository.Callback<List<SensorDataPoint>>() {
+                        @Override
+                        public void onSuccess(List<SensorDataPoint> data) {
+                            if (data != null && data.size() >= 2) {
+                                float[] vals = new float[data.size()];
+                                for (int i = 0; i < data.size(); i++) {
+                                    vals[i] = (float) data.get(i).getValue();
+                                }
+                                result.put(type, vals);
+                            }
+                            sparkData.postValue(new HashMap<>(result));
+                        }
+
+                        @Override
+                        public void onError(String message) {
+                            Log.w(TAG, "加载趋势数据失败(" + type + "): " + message);
+                        }
+                    });
+        }
     }
 
     private void loadHealthScore(long greenhouseId) {

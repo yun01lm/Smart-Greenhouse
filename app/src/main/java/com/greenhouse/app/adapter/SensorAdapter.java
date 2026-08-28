@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.greenhouse.app.R;
 import com.greenhouse.app.data.model.SensorDataPoint;
+import com.greenhouse.app.ui.dashboard.SparklineView;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,21 @@ import java.util.Map;
 public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder> {
 
     private final List<SensorDataPoint> items = new ArrayList<>();
+    /** 传感器类型 → 迷你趋势点（F1 数据可视化，键为后端枚举） */
+    private final Map<String, float[]> sparkData = new HashMap<>();
+
+    /** 传感器类型语义色（与后端枚举一致） */
+    private static final Map<String, Integer> COLOR_MAP = new HashMap<>();
+    static {
+        COLOR_MAP.put("TEMPERATURE", Color.parseColor("#FF9E3D"));
+        COLOR_MAP.put("HUMIDITY", Color.parseColor("#4DD0E1"));
+        COLOR_MAP.put("LIGHT", Color.parseColor("#FFD54F"));
+        COLOR_MAP.put("CO2", Color.parseColor("#3DDC84"));
+        COLOR_MAP.put("SOIL_TEMP", Color.parseColor("#A1887F"));
+        COLOR_MAP.put("SOIL_MOISTURE", Color.parseColor("#26C6DA"));
+        COLOR_MAP.put("SOIL_PH", Color.parseColor("#CE93D8"));
+        COLOR_MAP.put("WIND_SPEED", Color.parseColor("#90A4AE"));
+    }
 
     /** 传感器类型中文名映射（键与后端 SensorType 枚举一致） */
     private static final Map<String, String> NAME_MAP = new HashMap<>();
@@ -47,6 +63,13 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
         if (newItems != null) {
             items.addAll(newItems);
         }
+        notifyDataSetChanged();
+    }
+
+    /** 设置迷你趋势数据（F1）：type → 最近 N 个值 */
+    public void setSparkData(Map<String, float[]> data) {
+        sparkData.clear();
+        if (data != null) sparkData.putAll(data);
         notifyDataSetChanged();
     }
 
@@ -72,7 +95,17 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
         // 值颜色：正常绿色 / 异常红色（简化判断）
         boolean abnormal = isAbnormal(point.getSensorType(), point.getValue());
-        holder.tvValue.setTextColor(abnormal ? Color.parseColor("#F44336") : Color.parseColor("#4CAF50"));
+        holder.tvValue.setTextColor(abnormal ? Color.parseColor("#FF6B6B") : Color.parseColor("#3DDC84"));
+
+        // 迷你趋势曲线（F1）：语义色 + 数据
+        float[] trend = sparkData.get(point.getSensorType());
+        if (trend != null && trend.length >= 2) {
+            Integer c = COLOR_MAP.get(point.getSensorType());
+            holder.vSparkline.setLineColor(c != null ? c : Color.parseColor("#3DDC84"));
+            holder.vSparkline.setValues(trend);
+        } else {
+            holder.vSparkline.setValues(null);
+        }
     }
 
     @Override
@@ -99,6 +132,7 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvDevice, tvValue, tvUnit;
+        SparklineView vSparkline;
 
         ViewHolder(View itemView) {
             super(itemView);
@@ -106,6 +140,7 @@ public class SensorAdapter extends RecyclerView.Adapter<SensorAdapter.ViewHolder
             tvDevice = itemView.findViewById(R.id.tv_sensor_device);
             tvValue = itemView.findViewById(R.id.tv_sensor_value);
             tvUnit = itemView.findViewById(R.id.tv_sensor_unit);
+            vSparkline = itemView.findViewById(R.id.v_sparkline);
         }
     }
 }

@@ -102,6 +102,11 @@ public class DashboardFragment extends Fragment {
             sensorAdapter.setData(points);
         });
 
+        // 观察迷你趋势数据（F1 数据可视化）
+        viewModel.getSparkData().observe(getViewLifecycleOwner(), spark -> {
+            sensorAdapter.setSparkData(spark);
+        });
+
         // 观察健康评分
         viewModel.getHealthScore().observe(getViewLifecycleOwner(), this::updateHealthScore);
 

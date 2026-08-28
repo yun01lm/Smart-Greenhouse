@@ -47,23 +47,45 @@
                 android:textSize="11sp" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tv_sensor_value"
+        <!-- 数值 + 迷你趋势曲线（F1 数据可视化） -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="--"
-            android:textColor="@color/sensor_normal"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:fontFeatureSettings="tnum" />
+            android:orientation="vertical"
+            android:gravity="end"
+            android:layout_marginStart="8dp">
 
-        <TextView
-            android:id="@+id/tv_sensor_unit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="°C"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginStart="3dp" />
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tv_sensor_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="--"
+                    android:textColor="@color/sensor_normal"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:fontFeatureSettings="tnum" />
+
+                <TextView
+                    android:id="@+id/tv_sensor_unit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="°C"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:layout_marginStart="3dp" />
+            </LinearLayout>
+
+            <com.greenhouse.app.ui.dashboard.SparklineView
+                android:id="@+id/v_sparkline"
+                android:layout_width="72dp"
+                android:layout_height="32dp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>
