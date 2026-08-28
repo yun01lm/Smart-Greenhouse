@@ -126,8 +126,20 @@ public class DiagnosisHistoryAdapter extends RecyclerView.Adapter<DiagnosisHisto
             }
             vConfidenceDot.setBackgroundResource(colorRes);
 
-            // 时间
-            tvTime.setText(item.getCreatedAt() != null ? item.getCreatedAt() : "");
+            // 时间（ISO → 易读格式，如 2026-08-10T01:11:43.199186 → 2026-08-10 01:11）
+            tvTime.setText(formatTime(item.getCreatedAt()));
         }
+    }
+
+    /** ISO-8601 时间 → 易读格式（2026-08-10T01:11:43.199186 → 2026-08-10 01:11） */
+    private String formatTime(String raw) {
+        if (raw == null || raw.isEmpty()) return "";
+        String t = raw;
+        int dotIdx = t.indexOf('.');
+        if (dotIdx > 0) t = t.substring(0, dotIdx);
+        if (t.length() >= 16) {
+            return t.substring(0, 10) + " " + t.substring(11, 16);
+        }
+        return t;
     }
 }

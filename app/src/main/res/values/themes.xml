@@ -10,5 +10,7 @@
         <item name="android:windowBackground">@color/background</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:forceDarkAllowed">false</item>
+        <item name="cardViewStyle">@style/CardView.SmartGreenhouse</item>
+        <item name="materialButtonStyle">@style/Button.SmartGreenhouse</item>
     </style>
 </resources>
