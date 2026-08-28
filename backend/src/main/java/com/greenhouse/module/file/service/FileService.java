@@ -32,8 +32,8 @@ public class FileService {
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
     /** 音频文件最大大小 */
     private static final long MAX_AUDIO_SIZE = 30 * 1024 * 1024; // 30MB
-    /** 允许的音频类型 */
-    private static final String[] ALLOWED_AUDIO_TYPES = {"audio/wav", "audio/mpeg", "audio/mp3", "audio/amr", "audio/webm"};
+    /** 允许的音频类型（含 APP 语音问答的 PCM 16k 裸流，第 10 项修复） */
+    private static final String[] ALLOWED_AUDIO_TYPES = {"audio/wav", "audio/mpeg", "audio/mp3", "audio/amr", "audio/webm", "audio/x-pcm", "audio/pcm"};
 
     public FileService(@Value("${file.upload-dir:./uploads}") String uploadDir) {
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath();

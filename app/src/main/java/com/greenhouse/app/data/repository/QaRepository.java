@@ -35,7 +35,8 @@ public class QaRepository extends BaseRepository {
     public void askVoice(File audioFile, long greenhouseId, Callback<QaResponse> callback) {
         execute(() -> {
             try {
-                RequestBody requestFile = RequestBody.create(audioFile, MediaType.parse("audio/*"));
+                // PCM 16k 16bit 裸流（与讯飞 ASR 格式一致；后端 FileService 已放行 audio/x-pcm）
+                RequestBody requestFile = RequestBody.create(audioFile, MediaType.parse("audio/x-pcm"));
                 MultipartBody.Part body = MultipartBody.Part.createFormData("audio", audioFile.getName(), requestFile);
                 RequestBody ghIdPart = RequestBody.create(String.valueOf(greenhouseId),
                         MediaType.parse("text/plain"));

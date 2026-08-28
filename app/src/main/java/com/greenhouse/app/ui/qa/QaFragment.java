@@ -2,6 +2,8 @@ package com.greenhouse.app.ui.qa;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -42,7 +44,8 @@ public class QaFragment extends Fragment {
     private ChatAdapter adapter;
     private TextToSpeech tts;
 
-    private MediaRecorder mediaRecorder;
+    private AudioRecord audioRecord;
+    private Thread recordingThread;
     private File audioFile;
     private boolean isRecording = false;
 
@@ -146,32 +149,58 @@ public class QaFragment extends Fragment {
 
     private void startRecording() {
         try {
-            audioFile = File.createTempFile("qa_voice_", ".aac", requireContext().getCacheDir());
-            mediaRecorder = new MediaRecorder();
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-            mediaRecorder.setOutputFile(audioFile.getAbsolutePath());
-            mediaRecorder.prepare();
-            mediaRecorder.start();
+            audioFile = File.createTempFile("qa_voice_", ".pcm", requireContext().getCacheDir());
+            final int sampleRate = 16000;
+            final int bufSize = AudioRecord.getMinBufferSize(sampleRate,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRate,
+                    AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, bufSize * 2);
+            if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                Toast.makeText(requireContext(), "录音初始化失败", Toast.LENGTH_SHORT).show();
+                audioRecord = null;
+                return;
+            }
+            audioRecord.startRecording();
             isRecording = true;
             binding.btnVoice.setImageResource(android.R.drawable.ic_media_pause);
             Toast.makeText(requireContext(), "正在录音...再次点击停止", Toast.LENGTH_SHORT).show();
-        } catch (IOException e) {
+
+            // 后台线程持续写 PCM 数据（16kHz 16bit 单声道，与讯飞 ASR 格式一致）
+            recordingThread = new Thread(() -> {
+                byte[] buf = new byte[bufSize];
+                try (java.io.FileOutputStream fos = new java.io.FileOutputStream(audioFile)) {
+                    while (isRecording && audioRecord != null) {
+                        int read = audioRecord.read(buf, 0, buf.length);
+                        if (read > 0) fos.write(buf, 0, read);
+                    }
+                } catch (java.io.IOException e) {
+                    // 忽略写文件中断
+                }
+            });
+            recordingThread.start();
+        } catch (Exception e) {
             Toast.makeText(requireContext(), "录音启动失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void stopRecording() {
         try {
-            mediaRecorder.stop();
-            mediaRecorder.release();
-            mediaRecorder = null;
+            if (audioRecord != null) {
+                audioRecord.stop();
+                audioRecord.release();
+                audioRecord = null;
+            }
             isRecording = false;
+            if (recordingThread != null) {
+                try { recordingThread.join(2000); } catch (InterruptedException ignored) {}
+                recordingThread = null;
+            }
             binding.btnVoice.setImageResource(R.drawable.ic_mic);
 
             if (audioFile != null && audioFile.exists() && audioFile.length() > 0) {
                 viewModel.askVoice(audioFile);
+            } else {
+                Toast.makeText(requireContext(), "未录到有效音频", Toast.LENGTH_SHORT).show();
             }
         } catch (Exception e) {
             Toast.makeText(requireContext(), "录音保存失败", Toast.LENGTH_SHORT).show();
@@ -187,8 +216,13 @@ public class QaFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mediaRecorder != null) {
-            try { mediaRecorder.release(); } catch (Exception ignored) {}
+        isRecording = false;
+        if (audioRecord != null) {
+            try { audioRecord.release(); } catch (Exception ignored) {}
+            audioRecord = null;
+        }
+        if (tts != null) {
+            tts.shutdown();
         }
         binding = null;
     }
