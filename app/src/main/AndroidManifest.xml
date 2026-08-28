@@ -161,5 +161,10 @@
             android:name=".ui.alert.AlertRuleActivity"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 多棚对比（第 2 项） -->
+        <activity
+            android:name=".ui.compare.CompareActivity"
+            android:parentActivityName=".ui.common.MainActivity" />
+
     </application>
 </manifest>

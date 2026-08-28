@@ -97,6 +97,11 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
+        // 多棚对比入口（第 2 项）
+        binding.btnCompare.setOnClickListener(v -> {
+            startActivity(new Intent(requireActivity(), com.greenhouse.app.ui.compare.CompareActivity.class));
+        });
+
         // 退出登录
         binding.btnLogout.setOnClickListener(v -> {
             TokenManager.clear();
