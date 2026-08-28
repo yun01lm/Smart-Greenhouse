@@ -62,6 +62,14 @@
             android:layout_height="wrap_content"
             android:text="阈值"
             android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_rules"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="规则"
+            android:textSize="13sp" />
     </LinearLayout>
 
     <!-- 预警列表 -->

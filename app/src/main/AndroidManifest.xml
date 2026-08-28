@@ -156,5 +156,10 @@
             android:name=".ui.farming.ReminderReceiver"
             android:exported="false" />
 
+        <!-- 预警规则管理（第 1 项） -->
+        <activity
+            android:name=".ui.alert.AlertRuleActivity"
+            android:parentActivityName=".ui.common.MainActivity" />
+
     </application>
 </manifest>

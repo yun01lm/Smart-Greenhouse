@@ -66,6 +66,23 @@ public interface GreenhouseApiService {
     @GET("alerts/unread-count")
     Call<ApiResponse<Map<String, Object>>> getUnreadAlertCount(@Query("greenhouseId") long greenhouseId);
 
+    // ===== 预警规则管理（C6/F02 扩展） =====
+
+    @GET("alerts/rules")
+    Call<ApiResponse<List<AlertRuleItem>>> getAlertRules(@Query("greenhouseId") long greenhouseId);
+
+    @POST("alerts/rules")
+    Call<ApiResponse<AlertRuleItem>> createAlertRule(@Body AlertRuleRequest request);
+
+    @PUT("alerts/rules/{id}")
+    Call<ApiResponse<AlertRuleItem>> updateAlertRule(@Path("id") long id, @Body AlertRuleRequest request);
+
+    @DELETE("alerts/rules/{id}")
+    Call<ApiResponse<Void>> deleteAlertRule(@Path("id") long id);
+
+    @PUT("alerts/{id}/handle")
+    Call<ApiResponse<Void>> handleAlert(@Path("id") long id);
+
     // ===== C21 自定义阈值 =====
 
     @GET("alerts/thresholds")

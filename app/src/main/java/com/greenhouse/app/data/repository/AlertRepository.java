@@ -121,4 +121,85 @@ public class AlertRepository extends BaseRepository {
             }
         });
     }
+
+    // ===== 预警规则管理（第 1 项） =====
+
+    public void getAlertRules(long greenhouseId, Callback<List<AlertRuleItem>> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<List<AlertRuleItem>>> response =
+                        apiService.getAlertRules(greenhouseId).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void createAlertRule(AlertRuleRequest request, Callback<AlertRuleItem> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<AlertRuleItem>> response =
+                        apiService.createAlertRule(request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void updateAlertRule(long id, AlertRuleRequest request, Callback<AlertRuleItem> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<AlertRuleItem>> response =
+                        apiService.updateAlertRule(id, request).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, response.body().getData());
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    public void deleteAlertRule(long id, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response = apiService.deleteAlertRule(id).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
+
+    /** 标记告警已处理（第 4 项告警闭环） */
+    public void handleAlert(long id, Callback<Void> callback) {
+        execute(() -> {
+            try {
+                Response<ApiResponse<Void>> response = apiService.handleAlert(id).execute();
+                if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                    postSuccess(callback, null);
+                } else {
+                    postError(callback, parseError(response));
+                }
+            } catch (IOException e) {
+                postError(callback, "网络异常: " + e.getMessage());
+            }
+        });
+    }
 }

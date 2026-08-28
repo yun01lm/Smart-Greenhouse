@@ -81,6 +81,11 @@ public class AlertFragment extends Fragment {
             startActivity(new Intent(requireActivity(), ThresholdSettingsActivity.class));
         });
 
+        // 预警规则管理按钮（第 1 项）
+        binding.btnRules.setOnClickListener(v -> {
+            startActivity(new Intent(requireActivity(), AlertRuleActivity.class));
+        });
+
         // 观察预警列表
         viewModel.getAlerts().observe(getViewLifecycleOwner(), alerts -> {
             adapter.setData(alerts);
