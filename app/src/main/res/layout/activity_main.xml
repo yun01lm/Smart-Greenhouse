@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="@color/bg_page">
 
     <!-- Fragment 容器 -->
     <FrameLayout
@@ -12,16 +13,22 @@
         android:layout_height="0dp"
         android:layout_weight="1" />
 
-    <!-- 底部导航栏 -->
+    <!-- 底部导航栏（深色毛玻璃） -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"
-        android:elevation="12dp"
+        android:background="@color/bg_deep"
+        android:elevation="0dp"
         app:menu="@menu/bottom_nav_menu"
         app:labelVisibilityMode="labeled"
         app:itemIconTint="@color/nav_item_color"
         app:itemTextColor="@color/nav_item_color" />
+
+    <!-- hairline 顶部描边 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/outline" />
 
 </LinearLayout>

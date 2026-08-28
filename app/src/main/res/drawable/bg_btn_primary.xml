@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 按压态：荧光绿高亮 -->
+    <item android:state_pressed="true">
+        <shape>
+            <solid android:color="#FF2BB36A" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+    <!-- 默认态：荧光绿渐变 -->
+    <item>
+        <shape>
+            <gradient
+                android:startColor="#FF3DDC84"
+                android:endColor="#FF2BB36A"
+                android:angle="0" />
+            <corners android:radius="26dp" />
+        </shape>
+    </item>
+</selector>

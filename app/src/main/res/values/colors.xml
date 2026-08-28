@@ -1,67 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- ============================================================
-         智慧大棚 APP 设计令牌（UI 重构一期：现代农业绿体系）
+         UI 重构方向 A：深色科技感设计令牌（默认深色，与 values-night 一致）
          ============================================================ -->
 
-    <!-- 主色：现代农业绿 -->
-    <color name="primary">#FF43A047</color>
-    <color name="primary_dark">#FF2E7D32</color>
-    <color name="primary_light">#FFE8F5E9</color>
-    <color name="accent">#FF26A69A</color>
+    <!-- 背景（墨绿黑 + 科技绿光） -->
+    <color name="bg_deep">#FF0A1712</color>
+    <color name="background">#FF0E1F16</color>
+    <color name="bg_page">#FF0E1F16</color>
 
-    <!-- 文本 -->
-    <color name="text_primary">#FF22352B</color>
-    <color name="on_primary">#FFFFFFFF</color>
-    <color name="on_surface">#FF212121</color>
-    <color name="text_secondary">#FF757575</color>
-    <color name="text_hint">#FF9E9E9E</color>
+    <!-- 毛玻璃卡片 -->
+    <color name="surface">#12FFFFFF</color>
+    <color name="surface_2">#1AFFFFFF</color>
+    <color name="surface_variant">#0DFFFFFF</color>
+    <color name="outline">#1EFFFFFF</color>
+    <color name="card_white">#12FFFFFF</color>
 
-    <!-- 背景与面板 -->
-    <color name="background">#FFFAFAF7</color>
-    <color name="surface">#FFFFFFFF</color>
-    <color name="surface_variant">#FFF0F4F0</color>
-    <color name="outline">#FFE0E6E0</color>
-    <color name="divider_light">#FFEDF0ED</color>
+    <!-- 文字 -->
+    <color name="text_primary">#FFF2F7F4</color>
+    <color name="on_surface">#FFF2F7F4</color>
+    <color name="text_secondary">#FF9DB0A6</color>
+    <color name="text_hint">#FF5C6F66</color>
+    <color name="on_primary">#FF0A1712</color>
 
-    <!-- 健康评分等级色 -->
-    <color name="level_healthy">#FF43A047</color>
-    <color name="level_good">#FF1E88E5</color>
+    <!-- 强调色 -->
+    <color name="primary">#FF3DDC84</color>
+    <color name="primary_dark">#FF2BB36A</color>
+    <color name="primary_light">#FF1A3A2C</color>
+    <color name="accent">#FF4DD0E1</color>
+
+    <!-- 语义色 -->
+    <color name="level_healthy">#FF3DDC84</color>
+    <color name="level_good">#FF64B5F6</color>
     <color name="level_attention">#FFFFB300</color>
     <color name="level_warning">#FFFF8F00</color>
-    <color name="level_danger">#FFE53935</color>
-
-    <!-- 传感器值状态 -->
-    <color name="sensor_normal">#FF43A047</color>
-    <color name="sensor_abnormal">#FFE53935</color>
-
-    <!-- 预警级别 -->
-    <color name="alert_info">#FF1E88E5</color>
+    <color name="level_danger">#FFFF6B6B</color>
+    <color name="sensor_normal">#FF3DDC84</color>
+    <color name="sensor_abnormal">#FFFF6B6B</color>
+    <color name="alert_info">#FF64B5F6</color>
     <color name="alert_warning">#FFFF8F00</color>
-    <color name="alert_critical">#FFE53935</color>
-
-    <!-- 诊断置信度 -->
-    <color name="confidence_high">#FF43A047</color>
+    <color name="alert_critical">#FFFF6B6B</color>
+    <color name="confidence_high">#FF3DDC84</color>
     <color name="confidence_medium">#FFFFB300</color>
-    <color name="confidence_low">#FFE53935</color>
+    <color name="confidence_low">#FFFF6B6B</color>
 
-    <!-- 美化专用色 -->
-    <color name="gradient_start">#FF1E6E33</color>
-    <color name="gradient_end">#FF57B763</color>
-    <color name="card_white">#FFFFFFFF</color>
-    <color name="bg_page">#FFFAFAF7</color>
+    <!-- 渐变 -->
+    <color name="gradient_start">#FF123A2A</color>
+    <color name="gradient_end">#FF2BB36A</color>
 
-    <!-- 图标/标签浅底（chip） -->
-    <color name="chip_green_bg">#FFE8F5E9</color>
-    <color name="chip_green_fg">#FF2E7D32</color>
-    <color name="chip_blue_bg">#FFE3F2FD</color>
-    <color name="chip_blue_fg">#FF1565C0</color>
-    <color name="chip_orange_bg">#FFFFF3E0</color>
-    <color name="chip_orange_fg">#FFE65100</color>
-    <color name="chip_purple_bg">#FFF3E5F5</color>
-    <color name="chip_purple_fg">#FF6A1B9A</color>
+    <!-- 传感器类型语义色 -->
+    <color name="sensor_temp">#FFFF9E3D</color>
+    <color name="sensor_hum">#FF4DD0E1</color>
+    <color name="sensor_co2">#FF3DDC84</color>
+    <color name="sensor_light">#FFFFD54F</color>
+    <color name="sensor_soil_temp">#FFA1887F</color>
+    <color name="sensor_soil_hum">#FF26C6DA</color>
+    <color name="sensor_ph">#FFCE93D8</color>
+    <color name="sensor_wind">#FF90A4AE</color>
 
-    <!-- 底部导航 -->
-    <color name="nav_checked">#FF43A047</color>
-    <color name="nav_unchecked">#FF9E9E9E</color>
+    <!-- chip（深色底） -->
+    <color name="chip_green_bg">#FF1A3A2C</color>
+    <color name="chip_green_fg">#FF3DDC84</color>
+    <color name="chip_blue_bg">#FF16324B</color>
+    <color name="chip_blue_fg">#FF64B5F6</color>
+    <color name="chip_orange_bg">#FF4B3418</color>
+    <color name="chip_orange_fg">#FFFFB74D</color>
+    <color name="chip_purple_bg">#FF3A2444</color>
+    <color name="chip_purple_fg">#FFBA68C8</color>
+
+    <!-- 导航 -->
+    <color name="nav_checked">#FF3DDC84</color>
+    <color name="nav_unchecked">#FF6B7A70</color>
+
+    <color name="divider_light">#FF22312A</color>
 </resources>

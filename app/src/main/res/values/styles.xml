@@ -1,26 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- 统一卡片：16dp 圆角 + 柔和阴影 -->
+    <!-- 毛玻璃卡片：20dp 圆角 + hairline 边框 -->
     <style name="Style.Card" parent="">
-        <item name="cardCornerRadius">16dp</item>
-        <item name="cardElevation">4dp</item>
-        <item name="cardBackgroundColor">@color/surface</item>
+        <item name="android:background">@drawable/bg_card_glass</item>
     </style>
 
-    <!-- 主按钮：胶囊圆角 + 渐变底 -->
+    <!-- 主按钮：荧光绿胶囊 + 按压光晕 -->
     <style name="Style.ButtonPrimary" parent="Widget.MaterialComponents.Button">
         <item name="android:textColor">@color/on_primary</item>
-        <item name="cornerRadius">24dp</item>
-        <item name="backgroundTint">@color/primary</item>
+        <item name="android:background">@drawable/bg_btn_primary</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="backgroundTint">@null</item>
+        <item name="cornerRadius">26dp</item>
     </style>
 
-    <!-- 数值文本：等宽数字（动态刷新对齐） -->
+    <!-- 次按钮：透明 + hairline 边框 -->
+    <style name="Style.ButtonSecondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="cornerRadius">26dp</item>
+        <item name="strokeColor">@color/outline</item>
+    </style>
+
+    <!-- 大数字（看板/评分）：等宽 + 发光 -->
     <style name="TextAppearance.Metric" parent="TextAppearance.MaterialComponents.Body1">
         <item name="android:fontFeatureSettings">tnum</item>
         <item name="android:textStyle">bold</item>
     </style>
 
-    <!-- 健康评分圆形 -->
+    <!-- 超大大数字（仪表盘主数值） -->
+    <style name="TextAppearance.Metric.Hero" parent="TextAppearance.Metric">
+        <item name="android:textSize">44sp</item>
+    </style>
+
+    <!-- 健康评分环形 -->
     <style name="Style.HealthCircle" parent="">
         <item name="android:background">@drawable/bg_score_gradient</item>
         <item name="android:gravity">center</item>
