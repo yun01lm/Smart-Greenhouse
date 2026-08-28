@@ -13,7 +13,9 @@ import com.greenhouse.app.R;
 import com.greenhouse.app.data.model.SceneInfo;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 场景联动列表适配器
@@ -22,6 +24,12 @@ import java.util.List;
  * </p>
  */
 public class SceneAdapter extends RecyclerView.Adapter<SceneAdapter.SceneViewHolder> {
+
+    /** 后端场景名内部编码 → 中文展示名（与 Web 端映射一致，不改数据库） */
+    private static final Map<String, String> SCENE_NAME_MAP = new HashMap<>();
+    static {
+        SCENE_NAME_MAP.put("fnvcc", "水泵+风机联动");
+    }
 
     private final List<SceneInfo> scenes = new ArrayList<>();
     private OnSceneExecuteListener listener;
@@ -78,7 +86,9 @@ public class SceneAdapter extends RecyclerView.Adapter<SceneAdapter.SceneViewHol
         }
 
         void bind(SceneInfo scene) {
-            tvSceneName.setText(scene.getName());
+            String raw = scene.getName();
+            String label = SCENE_NAME_MAP.getOrDefault(raw, raw);
+            tvSceneName.setText(label);
             tvSceneDesc.setText(scene.getActionsSummary());
             btnExecute.setEnabled(!operating);
             btnExecute.setText(operating ? "执行中..." : "一键执行");

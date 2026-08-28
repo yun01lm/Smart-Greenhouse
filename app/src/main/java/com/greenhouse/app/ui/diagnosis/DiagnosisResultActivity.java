@@ -99,8 +99,8 @@ public class DiagnosisResultActivity extends AppCompatActivity {
                 (recognitionEngine != null ? recognitionEngine : "未知");
         binding.tvEngine.setText(engineText);
 
-        // 时间
-        binding.tvTime.setText(createdAt != null ? createdAt : "");
+        // 时间（ISO-8601 → 易读格式，如 2026-08-10T01:11:43.199186 → 2026-08-10 01:11）
+        binding.tvTime.setText(formatTime(createdAt));
 
         // 防治方案
         binding.tvTreatment.setText(treatment != null ? treatment : "暂无防治方案");
@@ -113,6 +113,18 @@ public class DiagnosisResultActivity extends AppCompatActivity {
                 Toast.makeText(this, "专家咨询功能开发中，敬请期待", Toast.LENGTH_SHORT).show();
             });
         }
+    }
+
+    /** ISO-8601 时间 → 易读格式（2026-08-10T01:11:43.199186 → 2026-08-10 01:11） */
+    private String formatTime(String raw) {
+        if (raw == null || raw.isEmpty()) return "";
+        String t = raw;
+        int dotIdx = t.indexOf('.');
+        if (dotIdx > 0) t = t.substring(0, dotIdx);
+        if (t.length() >= 16) {
+            return t.substring(0, 10) + " " + t.substring(11, 16);
+        }
+        return t;
     }
 
     @Override

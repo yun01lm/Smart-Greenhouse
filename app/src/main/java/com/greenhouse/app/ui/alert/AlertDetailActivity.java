@@ -51,9 +51,39 @@ public class AlertDetailActivity extends AppCompatActivity {
         // 填充数据
         binding.tvTitle.setText(title != null ? title : "");
         binding.tvContent.setText(content != null ? content : "");
-        binding.tvSensorType.setText(sensorType != null ? sensorType : "--");
+        binding.tvSensorType.setText(sensorTypeLabel(sensorType));
         binding.tvSensorValue.setText(String.valueOf(sensorValue));
-        binding.tvTime.setText(time != null ? time : "--");
+        binding.tvTime.setText(formatTime(time));
+    }
+
+    /** 传感器类型 → 中文（与后端枚举一致） */
+    private String sensorTypeLabel(String type) {
+        if (type == null) return "--";
+        switch (type) {
+            case "TEMPERATURE": return "空气温度";
+            case "HUMIDITY": return "空气湿度";
+            case "LIGHT": return "光照强度";
+            case "CO2": return "CO₂浓度";
+            case "SOIL_TEMP": return "土壤温度";
+            case "SOIL_MOISTURE": return "土壤湿度";
+            case "SOIL_PH": return "土壤pH";
+            case "WIND_SPEED": return "风速";
+            default: return type;
+        }
+    }
+
+    /** ISO-8601 时间 → 易读格式（2026-08-07T08:09:02 → 2026-08-07 08:09） */
+    private String formatTime(String raw) {
+        if (raw == null || raw.isEmpty()) return "--";
+        String t = raw;
+        int dotIdx = t.indexOf('.');
+        if (dotIdx > 0) t = t.substring(0, dotIdx);
+        if (t.length() >= 16) {
+            String datePart = t.substring(0, 10);
+            String timePart = t.substring(11, 16);
+            return datePart + " " + timePart;
+        }
+        return t;
     }
 
     @Override

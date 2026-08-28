@@ -62,17 +62,15 @@ public class HistoryViewModel extends ViewModel {
 
     private void initSensorTypes() {
         List<SensorTypeItem> list = new ArrayList<>();
-        list.add(new SensorTypeItem("TEMP", "空气温度", "°C"));
+        // 类型代码与后端 SensorType 枚举严格一致（TEMPERATURE/HUMIDITY/LIGHT/CO2/SOIL_TEMP/SOIL_MOISTURE/SOIL_PH/WIND_SPEED）
+        list.add(new SensorTypeItem("TEMPERATURE", "空气温度", "°C"));
         list.add(new SensorTypeItem("HUMIDITY", "空气湿度", "%"));
         list.add(new SensorTypeItem("LIGHT", "光照强度", "lux"));
         list.add(new SensorTypeItem("CO2", "CO₂浓度", "ppm"));
-        list.add(new SensorTypeItem("O2", "O₂浓度", "%"));
         list.add(new SensorTypeItem("SOIL_TEMP", "土壤温度", "°C"));
-        list.add(new SensorTypeItem("SOIL_HUMIDITY", "土壤湿度", "%"));
-        list.add(new SensorTypeItem("EC", "土壤EC值", "mS/cm"));
-        list.add(new SensorTypeItem("N", "氮(N)", "mg/kg"));
-        list.add(new SensorTypeItem("P", "磷(P)", "mg/kg"));
-        list.add(new SensorTypeItem("K", "钾(K)", "mg/kg"));
+        list.add(new SensorTypeItem("SOIL_MOISTURE", "土壤湿度", "%"));
+        list.add(new SensorTypeItem("SOIL_PH", "土壤pH", "pH"));
+        list.add(new SensorTypeItem("WIND_SPEED", "风速", "m/s"));
         sensorTypes.setValue(list);
     }
 

@@ -25,6 +25,7 @@
                 android:background="@drawable/bg_avatar" />
 
             <TextView
+                android:id="@+id/tv_avatar"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:gravity="center"

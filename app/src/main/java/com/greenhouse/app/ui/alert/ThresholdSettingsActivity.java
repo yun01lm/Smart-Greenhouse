@@ -24,10 +24,10 @@ public class ThresholdSettingsActivity extends AppCompatActivity {
     private AlertViewModel viewModel;
     private ThresholdAdapter adapter;
 
-    /** 默认传感器类型列表 */
+    /** 默认传感器类型列表（与后端 SensorType 枚举一致，避免保存时 400） */
     private static final String[] DEFAULT_SENSOR_TYPES = {
-            "TEMP", "HUMIDITY", "LIGHT", "CO2", "O2",
-            "SOIL_TEMP", "SOIL_HUMIDITY", "EC"
+            "TEMPERATURE", "HUMIDITY", "LIGHT", "CO2",
+            "SOIL_TEMP", "SOIL_MOISTURE", "SOIL_PH", "WIND_SPEED"
     };
 
     @Override

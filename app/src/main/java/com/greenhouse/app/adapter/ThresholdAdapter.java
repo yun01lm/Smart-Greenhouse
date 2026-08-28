@@ -25,17 +25,17 @@ public class ThresholdAdapter extends RecyclerView.Adapter<ThresholdAdapter.View
 
     private final List<ThresholdItem> items = new ArrayList<>();
 
-    /** 传感器类型中文名映射 */
+    /** 传感器类型中文名映射（键与后端 SensorType 枚举一致） */
     private static final Map<String, String> NAME_MAP = new HashMap<>();
     static {
-        NAME_MAP.put("TEMP", "空气温度 (°C)");
+        NAME_MAP.put("TEMPERATURE", "空气温度 (°C)");
         NAME_MAP.put("HUMIDITY", "空气湿度 (%)");
         NAME_MAP.put("LIGHT", "光照强度 (lux)");
         NAME_MAP.put("CO2", "CO₂浓度 (ppm)");
-        NAME_MAP.put("O2", "O₂浓度 (%)");
         NAME_MAP.put("SOIL_TEMP", "土壤温度 (°C)");
-        NAME_MAP.put("SOIL_HUMIDITY", "土壤湿度 (%)");
-        NAME_MAP.put("EC", "土壤EC值 (mS/cm)");
+        NAME_MAP.put("SOIL_MOISTURE", "土壤湿度 (%)");
+        NAME_MAP.put("SOIL_PH", "土壤pH");
+        NAME_MAP.put("WIND_SPEED", "风速 (m/s)");
     }
 
     public void setData(List<ThresholdItem> newItems) {

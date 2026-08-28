@@ -61,6 +61,14 @@ public class ExpertAdapter extends RecyclerView.Adapter<ExpertAdapter.ViewHolder
         holder.tvRating.setText("评分 " + expert.getRatingText());
         holder.tvConsultCount.setText(expert.getConsultCountText());
 
+        // 头像：显示姓名首字（替代固定"专"字占位）
+        String name = expert.getRealName();
+        if (name != null && !name.isEmpty()) {
+            holder.tvAvatar.setText(String.valueOf(name.charAt(0)));
+        } else {
+            holder.tvAvatar.setText("专");
+        }
+
         // 在线状态指示器
         holder.indicatorOnline.setVisibility(expert.isOnline() ? View.VISIBLE : View.GONE);
 
@@ -87,7 +95,7 @@ public class ExpertAdapter extends RecyclerView.Adapter<ExpertAdapter.ViewHolder
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         View indicatorOnline;
-        TextView tvName, tvSpecialty, tvRating, tvConsultCount;
+        TextView tvName, tvSpecialty, tvRating, tvConsultCount, tvAvatar;
         MaterialButton btnHelp;
 
         ViewHolder(View itemView) {
@@ -97,6 +105,7 @@ public class ExpertAdapter extends RecyclerView.Adapter<ExpertAdapter.ViewHolder
             tvSpecialty = itemView.findViewById(R.id.tv_specialty);
             tvRating = itemView.findViewById(R.id.tv_rating);
             tvConsultCount = itemView.findViewById(R.id.tv_consult_count);
+            tvAvatar = itemView.findViewById(R.id.tv_avatar);
             btnHelp = itemView.findViewById(R.id.btn_help);
         }
     }
