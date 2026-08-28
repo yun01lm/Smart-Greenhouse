@@ -163,8 +163,41 @@ public class DashboardFragment extends Fragment {
             startActivity(intent);
         });
 
+        // 看板截图分享（F4 附加）
+        binding.btnShareDashboard.setOnClickListener(v -> shareDashboardScreenshot());
+
         // ===== F11 角色适配：员工按权限隐藏无权限卡片 =====
         applyRoleAdapter();
+    }
+
+    /**
+     * 看板截图分享（F4 附加）：截取 fragment 根视图 → 保存 → ACTION_SEND
+     */
+    private void shareDashboardScreenshot() {
+        try {
+            View root = binding.getRoot();
+            root.setDrawingCacheEnabled(true);
+            android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(root.getDrawingCache());
+            root.setDrawingCacheEnabled(false);
+
+            java.io.File dir = new java.io.File(requireContext().getCacheDir(), "export");
+            if (!dir.exists()) dir.mkdirs();
+            java.io.File file = new java.io.File(dir, "dashboard_" + System.currentTimeMillis() + ".png");
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file)) {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, fos);
+            }
+
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                    requireContext(), requireContext().getPackageName() + ".fileprovider", file);
+            Intent share = new Intent(Intent.ACTION_SEND);
+            share.setType("image/png");
+            share.putExtra(Intent.EXTRA_STREAM, uri);
+            share.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(share, "分享看板截图"));
+        } catch (Exception e) {
+            android.widget.Toast.makeText(requireContext(),
+                    "截图失败: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

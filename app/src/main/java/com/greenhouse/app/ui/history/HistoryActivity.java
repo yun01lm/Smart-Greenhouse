@@ -232,6 +232,16 @@ public class HistoryActivity extends AppCompatActivity {
         binding.lineChart.setScaleEnabled(true);
         binding.lineChart.animateX(500);
         binding.lineChart.invalidate();
+
+        // 深色主题适配：轴/网格/图例文字
+        int axisText = Color.parseColor("#9DB0A6");
+        int gridLine = Color.parseColor("#22312A");
+        xAxis.setTextColor(axisText);
+        xAxis.setGridColor(gridLine);
+        binding.lineChart.getAxisLeft().setTextColor(axisText);
+        binding.lineChart.getAxisLeft().setGridColor(gridLine);
+        binding.lineChart.getAxisRight().setTextColor(axisText);
+        binding.lineChart.getLegend().setTextColor(axisText);
     }
 
     @Override
