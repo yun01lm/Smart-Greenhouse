@@ -13,6 +13,6 @@ Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'python.exe' -and $_.
     Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
     Write-Host "  [OK] 已停止模拟器 PID $($_.ProcessId)" -ForegroundColor Green
 }
-Get-ChildItem 'F:\Smart_project\Smart-Greenhouse\logs\*.pid' -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem (Join-Path $PSScriptRoot 'logs\*.pid') -ErrorAction SilentlyContinue | Remove-Item -Force
 Write-Host '完成：Docker 容器保留运行。' -ForegroundColor Green
 Start-Sleep -Seconds 2
