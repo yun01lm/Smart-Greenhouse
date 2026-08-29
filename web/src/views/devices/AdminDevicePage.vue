@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="admin-device-page">
     <!-- 地区 + 搜索 -->
     <el-card class="filter-card" shadow="never">
@@ -110,8 +110,9 @@
             </div>
           </div>
           <el-table :data="gh.devices" size="small" stripe border style="width: 100%">
-            <el-table-column prop="deviceSn" label="设备编号" min-width="120" />
-            <el-table-column prop="name" label="设备名称" min-width="130" />
+            <el-table-column prop="deviceSn" label="设备编号" min-width="110" />
+            <el-table-column prop="firmwareId" label="固件ID" width="100" align="center" />
+            <el-table-column prop="name" label="设备名称" min-width="120" />
             <el-table-column label="类型" width="90" align="center">
               <template #default="{ row }">
                 <el-tag :type="row.deviceType === 'SENSOR' ? 'success' : 'warning'" size="small">
@@ -159,8 +160,19 @@
         <el-form-item label="设备名称" prop="name">
           <el-input v-model="formData.name" placeholder="请输入设备名称" maxlength="50" />
         </el-form-item>
-        <el-form-item label="设备编号" prop="deviceSn">
-          <el-input v-model="formData.deviceSn" placeholder="请输入设备SN编号" :disabled="isEditing" maxlength="50" />
+        <el-form-item label="固件ID" prop="firmwareId">
+          <el-input
+            v-model="formData.firmwareId"
+            placeholder="请输入8位数字固件ID（印在设备标签上）"
+            :disabled="isEditing"
+            maxlength="8"
+          />
+        </el-form-item>
+        <el-form-item v-if="isEditing" label="设备编号" prop="deviceSn">
+          <el-input v-model="formData.deviceSn" :disabled="true" maxlength="50" />
+        </el-form-item>
+        <el-form-item v-else label="设备编号">
+          <el-input model-value="系统自动生成" disabled placeholder="GH{大棚ID}-{序号}" />
         </el-form-item>
         <el-form-item label="设备类型" prop="deviceType">
           <el-select v-model="formData.deviceType" placeholder="请选择设备类型" style="width: 100%">
@@ -232,11 +244,14 @@ const editingId = ref(null)
 const formGreenhouse = ref(null)
 const submitting = ref(false)
 const formRef = ref(null)
-const formData = reactive({ name: '', deviceSn: '', deviceType: 'SENSOR', sensorType: '', installLocation: '', description: '' })
+const formData = reactive({ name: '', firmwareId: '', deviceSn: '', deviceType: 'SENSOR', sensorType: '', installLocation: '', description: '' })
 
 const formRules = {
   name: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
-  deviceSn: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
+  firmwareId: [
+    { required: true, message: '请输入固件ID', trigger: 'blur' },
+    { pattern: /^\d{8}$/, message: '固件ID必须为8位数字', trigger: 'blur' }
+  ],
   deviceType: [{ required: true, message: '请选择设备类型', trigger: 'change' }],
   sensorType: [{ required: true, message: '请选择传感器类型', trigger: 'change' }]
 }
@@ -304,7 +319,7 @@ function openCreateForm(gh) {
   isEditing.value = false
   editingId.value = null
   formGreenhouse.value = gh
-  Object.assign(formData, { name: '', deviceSn: '', deviceType: 'SENSOR', sensorType: '', installLocation: '', description: '' })
+  Object.assign(formData, { name: '', firmwareId: '', deviceSn: '', deviceType: 'SENSOR', sensorType: '', installLocation: '', description: '' })
   formDialogVisible.value = true
 }
 
@@ -314,6 +329,7 @@ function openEditForm(gh, row) {
   formGreenhouse.value = gh
   Object.assign(formData, {
     name: row.name || '',
+    firmwareId: row.firmwareId || '',
     deviceSn: row.deviceSn || '',
     deviceType: row.deviceType || 'SENSOR',
     sensorType: row.sensorType || '',
@@ -331,6 +347,7 @@ function submitForm() {
       const ghId = formGreenhouse.value.greenhouseId
       const payload = {
         name: formData.name,
+        firmwareId: formData.firmwareId,
         deviceSn: formData.deviceSn,
         deviceType: formData.deviceType,
         sensorType: formData.deviceType === 'SENSOR' ? formData.sensorType : null,

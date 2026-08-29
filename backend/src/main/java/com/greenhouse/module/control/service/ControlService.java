@@ -259,14 +259,19 @@ public class ControlService {
     /**
      * 通过 MQTT 向设备下发控制指令
      * <p>
-     * Topic: greenhouse/{greenhouseId}/device/{deviceSn}/command
-     * Payload: {"action":"ON","timestamp":1753088400000}
+     * 新固件 Topic: device/{firmwareId}/command，Payload: {"action":"ON","timestamp":1753088400000}
+     * 旧格式回退: greenhouse/{greenhouseId}/device/{deviceSn}/command（存量设备兼容）
      * </p>
      */
     private boolean sendMqttCommand(Device device, String action) {
         try {
-            String topic = MqttTopicConstants.deviceControlTopic(
-                    device.getGreenhouseId(), device.getDeviceSn());
+            String topic;
+            if (device.getFirmwareId() != null) {
+                topic = MqttTopicConstants.firmwareControlTopic(device.getFirmwareId());
+            } else {
+                topic = MqttTopicConstants.deviceControlTopic(
+                        device.getGreenhouseId(), device.getDeviceSn());
+            }
 
             Map<String, Object> payload = Map.of(
                     "action", action,

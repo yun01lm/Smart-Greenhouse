@@ -85,6 +85,17 @@ public class HealthAssessmentService {
         // 2. 计算视觉健康分 (40%)
         double visualScore = visualCalculator.calculate(greenhouseId);
 
+        // NaN/Infinity 防御：数据异常（如控制器状态值混入、InfluxDB 脏数据）
+        // 不应击穿健康评分接口，非有限值按默认 80 分处理
+        if (!Double.isFinite(envScore)) {
+            log.warn("大棚 {} 环境健康分异常({})，使用默认值 80.0", greenhouseId, envScore);
+            envScore = 80.0;
+        }
+        if (!Double.isFinite(visualScore)) {
+            log.warn("大棚 {} 视觉健康分异常({})，使用默认值 80.0", greenhouseId, visualScore);
+            visualScore = 80.0;
+        }
+
         // 3. 计算天气修正因子
         String location = resolveWeatherLocation(greenhouse);
         WeatherRiskCalculator.WeatherRiskResult weatherResult =

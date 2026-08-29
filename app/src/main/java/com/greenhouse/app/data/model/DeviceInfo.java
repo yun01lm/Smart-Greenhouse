@@ -19,6 +19,10 @@ public class DeviceInfo {
     @SerializedName("deviceSn")
     private String deviceSn;
 
+    /** 固件ID（8位数字，出厂预注册，印在设备标签上） */
+    @SerializedName("firmwareId")
+    private String firmwareId;
+
     /** SENSOR / CONTROLLER */
     @SerializedName("deviceType")
     private String deviceType;
@@ -61,6 +65,7 @@ public class DeviceInfo {
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getDeviceSn() { return deviceSn; }
+    public String getFirmwareId() { return firmwareId; }
     public String getDeviceType() { return deviceType; }
     public String getSensorType() { return sensorType; }
     public String getStatus() { return status; }

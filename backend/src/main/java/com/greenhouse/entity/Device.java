@@ -29,9 +29,16 @@ public class Device {
     @Column(name = "\"name\"", nullable = false, length = 100)
     private String name;
 
-    /** 设备编号（用户自定义，同一大棚下唯一，如"TEMP-001"） */
+    /** 设备编号（绑定时系统自动生成，格式 GH{大棚ID}-{序号}，同一大棚下唯一） */
     @Column(nullable = false, length = 50)
     private String deviceSn;
+
+    /**
+     * 固件ID（8位数字，全局唯一，出厂预注册）
+     * <p>硬件身份证：写死进固件、印在标签上，MQTT 上报/命令均以此识别设备。</p>
+     */
+    @Column(name = "firmware_id", length = 8, unique = true)
+    private String firmwareId;
 
     /**
      * 设备类型

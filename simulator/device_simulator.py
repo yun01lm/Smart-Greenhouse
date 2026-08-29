@@ -7,8 +7,9 @@
 当真实 ESP32 硬件不可用时，使用此模拟器为系统提供测试数据。
 
 协议约定（必须严格遵守）：
-  - MQTT Topic: greenhouse/{greenhouseId}/device/{deviceSn}
-  - 数据格式 (JSON): {"greenhouseId": 1, "deviceId": 5, "sensorType": "TEMPERATURE", "value": 25.6, "timestamp": 1753088400000}
+  - MQTT Topic: device/{firmwareId}/data
+  - 数据格式 (JSON): {"firmwareId": "00000001", "sensorType": "TEMPERATURE", "value": 25.6, "timestamp": 1753088400000}
+  - 控制器心跳: {"firmwareId": "00000002", "deviceType": "CONTROLLER", "status": "ONLINE", "timestamp": 1753088400000}
   - 此协议与后端 MqttTopicConstants.java 和 MqttSubscriber.java 完全对齐
 
 支持三种运行模式：
@@ -104,7 +105,7 @@ class DeviceSimulator:
         print(f"  运行模式: {self.mode} — {mode_desc}")
         print(f"  模拟大棚: {greenhouse_count} 个")
         print(f"  模拟设备: {device_count} 个")
-        print(f"  MQTT Topic: greenhouse/{{greenhouseId}}/device/{{deviceSn}}")
+        print(f"  MQTT Topic: device/{{firmwareId}}/data")
         print("=" * 60)
         print("  按 Ctrl+C 停止模拟器")
         print()
@@ -141,17 +142,19 @@ class DeviceSimulator:
         mode_params = device[self.mode]
         value = self._generate_value(mode_params['min'], mode_params['max'], mode_params['noise'])
 
+        # 固件ID（出厂预注册，8位数字，全局唯一）
+        firmware_id = device['firmware_id']
+
         # 构建与真实 ESP32 完全一致的 JSON 数据
         payload = {
-            "greenhouseId": greenhouse['id'],
-            "deviceId": device['id'],
+            "firmwareId": firmware_id,
             "sensorType": device['sensor_type'],
             "value": round(value, 2),
             "timestamp": int(time.time() * 1000)  # epoch 毫秒
         }
 
-        # 构建 MQTT Topic（严格遵循协议）
-        topic = f"greenhouse/{greenhouse['id']}/device/{device['sn']}"
+        # 构建 MQTT Topic（新固件协议：按固件ID路由）
+        topic = f"device/{firmware_id}/data"
 
         try:
             json_payload = json.dumps(payload, ensure_ascii=False)
@@ -168,15 +171,15 @@ class DeviceSimulator:
 
     def _publish_controller_heartbeat(self, greenhouse: dict, device: dict):
         """控制器设备发送心跳包，维持在线状态"""
+        firmware_id = device['firmware_id']
         payload = {
-            "greenhouseId": greenhouse['id'],
-            "deviceId": device['id'],
+            "firmwareId": firmware_id,
             "deviceType": "CONTROLLER",
             "status": "ONLINE",
             "timestamp": int(time.time() * 1000)
         }
 
-        topic = f"greenhouse/{greenhouse['id']}/device/{device['sn']}"
+        topic = f"device/{firmware_id}/data"
 
         try:
             json_payload = json.dumps(payload, ensure_ascii=False)

@@ -117,3 +117,60 @@ INSERT INTO qa_records (question, answer, sources, user_id, input_type, created_
 ('番茄叶子发黄是什么原因，怎么处理？', '番茄叶子发黄常见原因有四类：1) 浇水不当——水大沤根或干旱缺水；2) 温度不适——夜间低于10℃或连续阴天后暴晒；3) 缺素——缺氮老叶先黄、缺铁新叶黄白；4) 病害——早疫病、叶霉病等。处理上先控水控温，再按症状补肥或用药，严重时拍照联系专家诊断。', '[{"title": "番茄种植技术指南", "category": "栽培技术"}, {"title": "常见病虫害防治手册", "category": "病虫害防治"}]', 1, 'TEXT', NOW() - INTERVAL 2 DAY),
 ('大棚黄瓜霜霉病怎么防治？', '黄瓜霜霉病防治要点：1) 控制棚内湿度，加强通风，避免夜间叶面结露；2) 发病初期摘除病叶带出棚外；3) 药剂防治可选烯酰吗啉、霜脲氰等，注意轮换用药；4) 浇水选择晴天上午，避免大水漫灌。', '[{"title": "常见病虫害防治手册", "category": "病虫害防治"}, {"title": "番茄种植技术指南", "category": "栽培技术"}]', 1, 'TEXT', NOW() - INTERVAL 1 DAY),
 ('番茄定植密度多少合适？', '番茄定植密度依品种和整枝方式而定：大果型单干整枝一般每亩2500-3000株，株距35-40厘米、行距60-70厘米；樱桃番茄可适当密植。设施大棚内还要考虑通风透光，密度过大会增加灰霉病等病害风险。', '[{"title": "番茄种植技术指南", "category": "栽培技术"}]', 1, 'TEXT', NOW() - INTERVAL 6 HOUR);
+
+-- ---------- 8. 固件建档（与 tools/migrate_firmware_id.sql 一致）----------
+-- 为所有尚未分配 firmware_id 的设备按 id 升序生成固件ID（00000001 起）并建档绑定
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'devices' AND COLUMN_NAME = 'firmware_id'
+);
+SET @ddl = IF(@col_exists = 0,
+  'ALTER TABLE devices ADD COLUMN firmware_id CHAR(8) NULL COMMENT ''固件ID(出厂预注册,全局唯一)'' AFTER device_sn',
+  'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'devices' AND INDEX_NAME = 'uk_devices_firmware_id'
+);
+SET @ddl2 = IF(@idx_exists = 0,
+  'ALTER TABLE devices ADD UNIQUE INDEX uk_devices_firmware_id (firmware_id)',
+  'SELECT 1');
+PREPARE stmt2 FROM @ddl2;
+EXECUTE stmt2;
+DEALLOCATE PREPARE stmt2;
+
+CREATE TABLE IF NOT EXISTS firmwares (
+  firmware_id varchar(8) NOT NULL COMMENT '固件ID(8位数字,全局唯一)',
+  device_type varchar(20) NOT NULL COMMENT '设备类型 SENSOR/CONTROLLER',
+  sensor_type varchar(30) DEFAULT NULL COMMENT '传感器子类型',
+  firmware_version varchar(20) DEFAULT NULL COMMENT '固件版本',
+  batch_no varchar(30) DEFAULT NULL COMMENT '出厂批次号',
+  status varchar(10) NOT NULL DEFAULT 'UNBOUND' COMMENT 'UNBOUND未绑定/BOUND已绑定',
+  bound_device_id bigint DEFAULT NULL COMMENT '绑定设备ID(devices.id)',
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (firmware_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='固件档案表(出厂预注册)';
+
+INSERT INTO firmwares (firmware_id, device_type, sensor_type, firmware_version, batch_no, status, bound_device_id, created_at)
+SELECT
+  LPAD(@rn := @rn + 1, 8, '0'),
+  d.device_type,
+  d.sensor_type,
+  '1.0.0',
+  'SEED-20260829',
+  'BOUND',
+  d.id,
+  NOW()
+FROM devices d
+CROSS JOIN (SELECT @rn := (SELECT COALESCE(MAX(CAST(firmware_id AS UNSIGNED)), 0)
+                           FROM firmwares WHERE firmware_id REGEXP '^[0-9]+$')) r
+WHERE d.firmware_id IS NULL
+ORDER BY d.id;
+
+UPDATE devices d
+JOIN firmwares f ON f.bound_device_id = d.id
+SET d.firmware_id = f.firmware_id
+WHERE d.firmware_id IS NULL;

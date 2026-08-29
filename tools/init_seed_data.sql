@@ -48,3 +48,60 @@ VALUES
     (1, '番茄种植技术指南',   '栽培技术',   'md', 2048, 0, false, NOW(), NOW()),
     (2, '常见病虫害防治手册', '病虫害防治', 'md', 4096, 0, false, NOW(), NOW())
 ON DUPLICATE KEY UPDATE title = VALUES(title);
+
+-- ---------- 8. 固件建档（与 tools/migrate_firmware_id.sql 一致）----------
+-- 为所有尚未分配 firmware_id 的设备按 id 升序生成固件ID（00000001 起）并建档绑定
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'devices' AND COLUMN_NAME = 'firmware_id'
+);
+SET @ddl = IF(@col_exists = 0,
+  'ALTER TABLE devices ADD COLUMN firmware_id CHAR(8) NULL COMMENT ''固件ID(出厂预注册,全局唯一)'' AFTER device_sn',
+  'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @idx_exists = (
+  SELECT COUNT(*) FROM information_schema.STATISTICS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'devices' AND INDEX_NAME = 'uk_devices_firmware_id'
+);
+SET @ddl2 = IF(@idx_exists = 0,
+  'ALTER TABLE devices ADD UNIQUE INDEX uk_devices_firmware_id (firmware_id)',
+  'SELECT 1');
+PREPARE stmt2 FROM @ddl2;
+EXECUTE stmt2;
+DEALLOCATE PREPARE stmt2;
+
+CREATE TABLE IF NOT EXISTS firmwares (
+  firmware_id varchar(8) NOT NULL COMMENT '固件ID(8位数字,全局唯一)',
+  device_type varchar(20) NOT NULL COMMENT '设备类型 SENSOR/CONTROLLER',
+  sensor_type varchar(30) DEFAULT NULL COMMENT '传感器子类型',
+  firmware_version varchar(20) DEFAULT NULL COMMENT '固件版本',
+  batch_no varchar(30) DEFAULT NULL COMMENT '出厂批次号',
+  status varchar(10) NOT NULL DEFAULT 'UNBOUND' COMMENT 'UNBOUND未绑定/BOUND已绑定',
+  bound_device_id bigint DEFAULT NULL COMMENT '绑定设备ID(devices.id)',
+  created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (firmware_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='固件档案表(出厂预注册)';
+
+INSERT INTO firmwares (firmware_id, device_type, sensor_type, firmware_version, batch_no, status, bound_device_id, created_at)
+SELECT
+  LPAD(@rn := @rn + 1, 8, '0'),
+  d.device_type,
+  d.sensor_type,
+  '1.0.0',
+  'SEED-20260829',
+  'BOUND',
+  d.id,
+  NOW()
+FROM devices d
+CROSS JOIN (SELECT @rn := (SELECT COALESCE(MAX(CAST(firmware_id AS UNSIGNED)), 0)
+                           FROM firmwares WHERE firmware_id REGEXP '^[0-9]+$')) r
+WHERE d.firmware_id IS NULL
+ORDER BY d.id;
+
+UPDATE devices d
+JOIN firmwares f ON f.bound_device_id = d.id
+SET d.firmware_id = f.firmware_id
+WHERE d.firmware_id IS NULL;

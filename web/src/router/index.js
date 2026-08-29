@@ -62,6 +62,12 @@ const routes = [
         meta: { title: '系统监控', roles: ['ADMIN'] }
       },
       {
+        path: 'firmware',
+        name: 'Firmware',
+        component: () => import('@/views/firmware/FirmwarePage.vue'),
+        meta: { title: '固件管理', roles: ['ADMIN'] }
+      },
+      {
         path: 'corpus',
         name: 'Corpus',
         component: () => import('@/views/corpus/CorpusPage.vue'),

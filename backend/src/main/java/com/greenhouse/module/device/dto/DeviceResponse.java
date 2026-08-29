@@ -20,6 +20,7 @@ public class DeviceResponse {
     private Long id;
     private String name;
     private String deviceSn;
+    private String firmwareId;
     private Device.DeviceType deviceType;
     private Device.SensorType sensorType;
     private Device.DeviceStatus status;
@@ -36,6 +37,7 @@ public class DeviceResponse {
                 .id(d.getId())
                 .name(d.getName())
                 .deviceSn(d.getDeviceSn())
+                .firmwareId(d.getFirmwareId())
                 .deviceType(d.getDeviceType())
                 .sensorType(d.getSensorType())
                 .status(d.getStatus())

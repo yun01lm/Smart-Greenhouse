@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>智慧大棚设备标签</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; margin: 24px; }
+  .label {
+    width: 58mm; min-height: 40mm;
+    border: 2px solid #333; border-radius: 6px;
+    padding: 4mm; margin: 0 6mm 6mm 0; display: inline-block;
+    vertical-align: top; page-break-inside: avoid;
+  }
+  .title { font-size: 11px; color: #666; margin-bottom: 2mm; }
+  .firmware-id { font-size: 22px; font-weight: 700; letter-spacing: 2px; margin: 1mm 0; }
+  .meta { font-size: 11px; line-height: 1.6; }
+  .qr { margin-top: 2mm; text-align: center; }
+  .qr img { width: 22mm; height: 22mm; }
+  .tip { font-size: 9px; color: #999; margin-top: 1mm; }
+</style>
+</head>
+<body>
+  <!-- ============================================================
+       设备标签模板（打印用，58mm 标签纸）
+       用法：批量打印前，把下面每张标签的占位值替换成实际固件信息。
+       固件ID = 系统固件管理页预注册的 8 位数字。
+       建议按 2x2 排布一次打印 4 张再裁剪。
+       ============================================================ -->
+
+  <div class="label">
+    <div class="title">智慧大棚 AIoT · 设备标签</div>
+    <div class="firmware-id">00000001</div>
+    <div class="meta">
+      类型：传感器（温度）<br>
+      版本：1.0.0 · 批次：B20260801<br>
+      大棚：见下方二维码/固件ID
+    </div>
+    <div class="qr">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=00000001"
+           alt="固件ID二维码">
+    </div>
+    <div class="tip">添加设备时输入固件ID（或扫码）即可绑定</div>
+  </div>
+
+  <div class="label">
+    <div class="title">智慧大棚 AIoT · 设备标签</div>
+    <div class="firmware-id">00000002</div>
+    <div class="meta">
+      类型：传感器（湿度）<br>
+      版本：1.0.0 · 批次：B20260801<br>
+      大棚：见下方二维码/固件ID
+    </div>
+    <div class="qr">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=00000002"
+           alt="固件ID二维码">
+    </div>
+    <div class="tip">添加设备时输入固件ID（或扫码）即可绑定</div>
+  </div>
+
+  <div class="label">
+    <div class="title">智慧大棚 AIoT · 设备标签</div>
+    <div class="firmware-id">00000003</div>
+    <div class="meta">
+      类型：传感器（光照）<br>
+      版本：1.0.0 · 批次：B20260801<br>
+      大棚：见下方二维码/固件ID
+    </div>
+    <div class="qr">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=00000003"
+           alt="固件ID二维码">
+    </div>
+    <div class="tip">添加设备时输入固件ID（或扫码）即可绑定</div>
+  </div>
+
+  <div class="label">
+    <div class="title">智慧大棚 AIoT · 设备标签</div>
+    <div class="firmware-id">00000004</div>
+    <div class="meta">
+      类型：控制器（水泵）<br>
+      版本：1.0.0 · 批次：B20260801<br>
+      大棚：见下方二维码/固件ID
+    </div>
+    <div class="qr">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=00000004"
+           alt="固件ID二维码">
+    </div>
+    <div class="tip">添加设备时输入固件ID（或扫码）即可绑定</div>
+  </div>
+</body>
+</html>

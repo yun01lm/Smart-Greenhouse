@@ -34,8 +34,8 @@ import java.util.Map;
 public class SensorDailySummaryService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
-    /** Flux 时区选项：聚合窗口按 Asia/Shanghai 自然日切分 */
-    private static final String LOCATION = "option location = {zone: \"Asia/Shanghai\"};\n";
+    /** Flux 时区选项：聚合窗口按 Asia/Shanghai 自然日切分（注意：Flux 中 option 语句不加分号，否则编译报错） */
+    private static final String LOCATION = "option location = {zone: \"Asia/Shanghai\"}\n";
 
     private final SensorDailySummaryRepository repository;
     private final QueryApi queryApi;

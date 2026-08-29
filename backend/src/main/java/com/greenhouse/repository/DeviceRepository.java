@@ -27,6 +27,12 @@ public interface DeviceRepository extends JpaRepository<Device, Long> {
     /** 按大棚和设备编号查询（设备编号在同一大棚下唯一） */
     Optional<Device> findByGreenhouseIdAndDeviceSn(Long greenhouseId, String deviceSn);
 
+    /** 按固件ID查询设备（固件ID全局唯一） */
+    Optional<Device> findByFirmwareId(String firmwareId);
+
+    /** 检查固件ID是否已被使用 */
+    boolean existsByFirmwareId(String firmwareId);
+
     /** 检查设备编号是否已存在（创建时去重） */
     boolean existsByGreenhouseIdAndDeviceSn(Long greenhouseId, String deviceSn);
 

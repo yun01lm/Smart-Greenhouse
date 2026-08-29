@@ -20,7 +20,16 @@ public class DeviceRequest {
     @NotBlank(message = "设备名称不能为空")
     private String name;
 
-    @NotBlank(message = "设备编号不能为空")
+    /**
+     * 固件ID（8位数字，出厂预注册）
+     * <p>绑定流程必填；创建时系统据此绑定固件并自动生成设备编号(SN)。</p>
+     */
+    private String firmwareId;
+
+    /**
+     * 设备编号
+     * <p>绑定流程中由系统自动生成（GH{大棚ID}-{序号}），此处不再由用户填写。</p>
+     */
     private String deviceSn;
 
     @NotNull(message = "设备类型不能为空")
