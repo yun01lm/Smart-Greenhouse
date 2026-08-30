@@ -32,3 +32,7 @@ python3 sensor_simulator.py --greenhouse 2
 ### 硬件到货后
 
 停止脚本即可：`Ctrl+C`。ESP32 上电后会自动替代模拟数据。
+
+---
+
+> **⚠️ 废弃说明（追加）**：`sensor_simulator.py`（旧版模拟器，写死 GREENHOUSE_ID=1、设备ID 101~103，发旧格式 `greenhouse/{ghId}/device/{id}`）已于 R44 固件ID方案落地后**删除**。原因：旧格式 payload 携带的数字 greenhouseId/deviceId 会被后端旧格式兼容分支直接采信，数据会串到大棚1的旧设备上；且存量设备已全部迁移到新格式。现行模拟器为 `simulator/device_simulator.py`（新格式 `device/{firmwareId}/data`，由 `start_all.ps1` 自动启动），上面的用法说明仅作历史存档。

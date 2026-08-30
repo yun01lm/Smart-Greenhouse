@@ -219,3 +219,7 @@
 - simulator/device_simulator.py: 设备模拟器
 - tools/sensor_simulator.py: 传感器数据生成
 - tools/init_seed_data.sql: 数据库初始化种子数据
+
+---
+
+> **追加说明（R44 固件ID方案）**：`tools/sensor_simulator.py` 旧版模拟器已删除（写死大棚1/旧格式，会污染数据），现行设备模拟器为 `simulator/device_simulator.py`（新格式 `device/{firmwareId}/data`）。
