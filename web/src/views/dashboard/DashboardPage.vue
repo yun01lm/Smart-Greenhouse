@@ -120,7 +120,7 @@
   </div>
 
     <!-- R28：专家申请大棚权限弹窗 -->
-    <el-dialog v-model="applyDialogVisible" title="申请大棚权限" width="520px">
+    <el-dialog append-to-body v-model="applyDialogVisible" title="申请大棚权限" width="520px">
       <el-form label-width="80px">
         <el-form-item label="选择大棚">
           <el-select v-model="applyForm.greenhouseId" filterable placeholder="按名称或地区搜索大棚" style="width: 100%">
@@ -148,7 +148,7 @@
     </el-dialog>
 
     <!-- R28：我的申请记录弹窗 -->
-    <el-dialog v-model="authListDialogVisible" title="我的申请记录" width="720px">
+    <el-dialog append-to-body v-model="authListDialogVisible" title="我的申请记录" width="720px">
       <el-table :data="myAuths" v-loading="myAuthsLoading" size="small">
         <el-table-column prop="greenhouseName" label="大棚" min-width="140" />
         <el-table-column prop="reason" label="申请理由" min-width="160" show-overflow-tooltip />

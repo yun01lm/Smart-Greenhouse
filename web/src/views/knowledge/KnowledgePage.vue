@@ -215,7 +215,7 @@
       </el-tab-pane>
     </el-tabs>
     <!-- 文档内容预览（R27 只读） -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="previewVisible"
       :title="previewDoc ? previewDoc.title : '文档预览'"
       width="720px"
@@ -232,7 +232,7 @@
     </el-dialog>
 
     <!-- 上传对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="showUploadDialog"
       title="上传知识库文档"
       width="500px"
@@ -296,7 +296,7 @@
     </el-dialog>
 
     <!-- 分类管理对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="showCategoryDialog"
       title="分类管理"
       width="680px"
@@ -361,7 +361,7 @@
     </el-dialog>
 
     <!-- 编辑对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="showEditDialog"
       title="编辑文档信息"
       width="540px"

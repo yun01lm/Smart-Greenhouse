@@ -82,7 +82,7 @@
     </div>
 
     <!-- 批量预注册对话框 -->
-    <el-dialog v-model="batchVisible" title="批量预注册固件" width="480px" :close-on-click-modal="false">
+    <el-dialog append-to-body v-model="batchVisible" title="批量预注册固件" width="480px" :close-on-click-modal="false">
       <el-form ref="batchFormRef" :model="batchForm" :rules="batchRules" label-width="110px" label-position="right">
         <el-form-item label="预注册数量" prop="count">
           <el-input-number v-model="batchForm.count" :min="1" :max="1000" style="width: 100%" />

@@ -86,7 +86,7 @@
     </div>
 
     <!-- 创建/编辑分组对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="groupDialogVisible"
       :title="isEditingGroup ? '编辑分组' : '新建分组'"
       width="450px"
@@ -118,7 +118,7 @@
     </el-dialog>
 
     <!-- 分配设备对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="assignDialogVisible"
       title="分配设备到分组"
       width="550px"

@@ -100,7 +100,7 @@
     </div>
 
     <!-- 编辑用户对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="dialogVisible"
       title="编辑用户"
       width="480px"
@@ -168,7 +168,7 @@
     </el-dialog>
 
     <!-- 新增用户对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="createVisible"
       title="新增用户"
       width="480px"

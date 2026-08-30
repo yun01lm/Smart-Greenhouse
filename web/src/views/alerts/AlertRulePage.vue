@@ -201,7 +201,7 @@
     </el-tabs>
 
     <!-- 规则编辑对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="ruleDialogVisible"
       :title="editingRule ? '编辑预警规则' : '新建预警规则'"
       width="560px"

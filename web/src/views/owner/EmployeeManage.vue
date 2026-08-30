@@ -61,7 +61,7 @@
     </el-table>
 
     <!-- 新增员工对话框 -->
-    <el-dialog v-model="addVisible" title="新增员工" width="560px" :close-on-click-modal="false">
+    <el-dialog append-to-body v-model="addVisible" title="新增员工" width="560px" :close-on-click-modal="false">
       <el-tabs v-model="addMode">
         <el-tab-pane label="创建账号" name="create">
           <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="90px" label-position="right">
@@ -110,7 +110,7 @@
     </el-dialog>
 
     <!-- 权限编辑对话框 -->
-    <el-dialog v-model="permVisible" title="权限设置" width="620px" :close-on-click-modal="false">
+    <el-dialog append-to-body v-model="permVisible" title="权限设置" width="620px" :close-on-click-modal="false">
       <el-alert
         v-if="permEmployee"
         :title="`${permEmployee.realName || permEmployee.username}（${permEmployee.role === 'TECHNICIAN' ? '技术员' : '普通员工'}）`"
@@ -141,7 +141,7 @@
     </el-dialog>
 
     <!-- 重置密码对话框 -->
-    <el-dialog v-model="resetVisible" title="重置密码" width="420px" :close-on-click-modal="false">
+    <el-dialog append-to-body v-model="resetVisible" title="重置密码" width="420px" :close-on-click-modal="false">
       <el-form ref="resetFormRef" :model="resetForm" :rules="resetRules" label-width="80px" label-position="right">
         <el-form-item v-if="resetEmployee" label="员工">
           <el-input :model-value="`${resetEmployee.realName || resetEmployee.username}`" disabled />

@@ -93,7 +93,7 @@
     </div>
 
     <!-- 大棚详情弹窗 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="dialogVisible"
       :title="`${selectedOwner?.username} 名下的大棚`"
       width="680px"

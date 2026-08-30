@@ -114,7 +114,7 @@
     </div>
 
     <!-- 上传对话框 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="uploadVisible"
       title="上传方言语料"
       width="min(560px, 92vw)"
@@ -475,9 +475,12 @@ onUnmounted(() => {
 
 /* ============================================================
    弹窗完整显示（全局生效于所有 el-dialog）：
-   弹窗垂直居中（往下放）、内容超高时 body 滚动、底部按钮固定可见。
-   说明：el-dialog 默认 teleport 到 body，scoped/:deep 样式无法命中
-   .el-overlay-dialog，故用 :global 统一修复。
+   1) 关键：el-dialog 默认【不】挂载到 body，而是渲染在页面卡片
+      内部。页面根容器 backdrop-filter 会为 fixed 遮罩层建立包含块，
+      导致弹窗被卡片裁切、只显示在上半部分、并随中间区域滚动。
+      因此本页 el-dialog 必须加 append-to-body，挂到 body 顶层、
+      脱离卡片容器约束（全站其余 el-dialog 同样处理）。
+   2) 弹窗垂直居中（往下放）、内容超高时 body 滚动、底部按钮固定可见。
    ============================================================ */
 :global(.el-overlay-dialog) {
   display: flex;

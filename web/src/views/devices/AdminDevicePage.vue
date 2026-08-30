@@ -87,7 +87,7 @@
     </el-card>
 
     <!-- 农户设备管理弹窗 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="deviceDialogVisible"
       :title="`设备管理 — ${currentOwner?.realName || currentOwner?.username || ''}`"
       width="1100px"
@@ -150,7 +150,7 @@
     </el-dialog>
 
     <!-- 添加/编辑设备 -->
-    <el-dialog
+    <el-dialog append-to-body
       v-model="formDialogVisible"
       :title="isEditing ? '编辑设备' : `添加设备 — ${formGreenhouse?.greenhouseName || ''}`"
       width="520px"

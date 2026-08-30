@@ -67,7 +67,7 @@
     </el-container>
 
     <!-- 修改密码对话框 -->
-    <el-dialog v-model="pwdVisible" title="修改密码" width="420px" :close-on-click-modal="false">
+    <el-dialog append-to-body v-model="pwdVisible" title="修改密码" width="420px" :close-on-click-modal="false">
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="80px" label-position="right">
         <el-form-item label="原密码" prop="oldPassword">
           <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入原密码" maxlength="100" />
