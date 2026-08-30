@@ -460,8 +460,15 @@ function onMetricsChange(types) {
 }
 
 let refreshTimer = null
+/**
+ * 加载竞态序号：30s 轮询 / 切时间范围 / 切指标都会触发 loadAll，
+ * 若旧请求晚于新请求返回会覆盖新数据（表现为曲线"卡住/不显示/错乱"）。
+ * 只接受最新一次请求的结果，其余丢弃。
+ */
+let loadSeq = 0
 
 async function loadAll() {
+  const seq = ++loadSeq
   try {
     const ghId = effectiveGreenhouseId.value
     if (!ghId) return
@@ -484,6 +491,9 @@ async function loadAll() {
       ...historyPromises,
       ...forecastPromises
     ])
+
+    // 期间已有更新的加载请求，本次结果全部丢弃（防竞态覆盖）
+    if (seq !== loadSeq) return
 
     if (sensorRes.status === 'fulfilled' && sensorRes.value?.data) {
       realtimeData.value = flattenRealtime(sensorRes.value.data)
@@ -561,6 +571,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  loadSeq++ // 组件卸载后丢弃一切挂起响应
   realtimeClient.disconnect()
 })
 </script>

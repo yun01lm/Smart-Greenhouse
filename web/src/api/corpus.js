@@ -12,10 +12,11 @@ export function getDialects() {
   return request.get(`${BASE}/dialects`)
 }
 
-/** 上传语料 */
+/** 上传语料（最大30MB，覆盖全局15s超时，避免大文件上传被中断卡住） */
 export function uploadCorpus(formData) {
   return request.post(BASE, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
   })
 }
 
