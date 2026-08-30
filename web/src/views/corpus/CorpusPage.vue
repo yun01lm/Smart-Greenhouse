@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="corpus-page">
     <!-- 用途说明 -->
     <div class="page-desc">
@@ -118,6 +118,7 @@
       v-model="uploadVisible"
       title="上传方言语料"
       width="560px"
+      top="6vh"
       :close-on-click-modal="false"
       @closed="resetUploadForm"
     >
@@ -471,5 +472,33 @@ onUnmounted(() => {
   font-size: 12px;
   color: #94a3b8;
   margin-top: 4px;
+}
+
+/* 弹窗高度约束：表单超高时 body 滚动，底部按钮固定可见（修复弹窗被屏幕截断） */
+:deep(.el-overlay-dialog) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3vh 16px;
+}
+
+:deep(.el-dialog) {
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0 !important;
+}
+
+:deep(.el-dialog__header) {
+  flex-shrink: 0;
+}
+
+:deep(.el-dialog__body) {
+  flex: 1;
+  overflow-y: auto;
+}
+
+:deep(.el-dialog__footer) {
+  flex-shrink: 0;
 }
 </style>
