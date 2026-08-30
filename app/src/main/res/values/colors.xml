@@ -13,6 +13,7 @@
     <color name="surface">#12FFFFFF</color>
     <color name="surface_2">#1AFFFFFF</color>
     <color name="surface_variant">#0DFFFFFF</color>
+    <color name="dialog_surface">#FF1B2721</color>
     <color name="outline">#1EFFFFFF</color>
     <color name="card_white">#12FFFFFF</color>
 

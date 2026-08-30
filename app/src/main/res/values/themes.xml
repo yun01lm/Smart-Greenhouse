@@ -12,5 +12,14 @@
         <item name="android:forceDarkAllowed">false</item>
         <item name="cardViewStyle">@style/CardView.SmartGreenhouse</item>
         <item name="materialButtonStyle">@style/Button.SmartGreenhouse</item>
+        <!-- 对话框面板使用不透明深色表面，避免 colorSurface 半透明导致内容透出看不清 -->
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.SmartGreenhouse.MaterialAlertDialog</item>
+    </style>
+
+    <!-- MaterialAlertDialog 覆盖：面板不透明 + 浅色文字（修复弹窗半透明看不清） -->
+    <style name="ThemeOverlay.SmartGreenhouse.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">@color/dialog_surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorPrimary">@color/accent</item>
     </style>
 </resources>
