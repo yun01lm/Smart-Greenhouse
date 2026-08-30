@@ -117,8 +117,7 @@
     <el-dialog
       v-model="uploadVisible"
       title="上传方言语料"
-      width="560px"
-      top="6vh"
+      width="min(560px, 92vw)"
       :close-on-click-modal="false"
       @closed="resetUploadForm"
     >
@@ -474,31 +473,36 @@ onUnmounted(() => {
   margin-top: 4px;
 }
 
-/* 弹窗高度约束：表单超高时 body 滚动，底部按钮固定可见（修复弹窗被屏幕截断） */
-:deep(.el-overlay-dialog) {
+/* ============================================================
+   弹窗完整显示（全局生效于所有 el-dialog）：
+   弹窗垂直居中（往下放）、内容超高时 body 滚动、底部按钮固定可见。
+   说明：el-dialog 默认 teleport 到 body，scoped/:deep 样式无法命中
+   .el-overlay-dialog，故用 :global 统一修复。
+   ============================================================ */
+:global(.el-overlay-dialog) {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3vh 16px;
+  padding: 4vh 16px;
 }
 
-:deep(.el-dialog) {
-  max-height: 94vh;
+:global(.el-dialog) {
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   margin: 0 !important;
 }
 
-:deep(.el-dialog__header) {
+:global(.el-dialog__header) {
   flex-shrink: 0;
 }
 
-:deep(.el-dialog__body) {
+:global(.el-dialog__body) {
   flex: 1;
   overflow-y: auto;
 }
 
-:deep(.el-dialog__footer) {
+:global(.el-dialog__footer) {
   flex-shrink: 0;
 }
 </style>
