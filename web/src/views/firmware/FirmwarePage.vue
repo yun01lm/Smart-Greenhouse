@@ -13,7 +13,7 @@
 
     <!-- 状态筛选 -->
     <div class="toolbar">
-      <el-select v-model="filterStatus" placeholder="固件状态" clearable style="width: 180px" @change="loadFirmwares">
+      <el-select v-model="filterStatus" placeholder="固件状态" clearable style="width: 180px" @change="onStatusChange">
         <el-option label="未绑定" value="UNBOUND" />
         <el-option label="已绑定" value="BOUND" />
       </el-select>
@@ -68,6 +68,19 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页：每页 15 条 -->
+    <div class="pagination-wrapper">
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="total"
+        :page-sizes="[15, 30, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @current-change="loadFirmwares"
+        @size-change="onSizeChange"
+      />
+    </div>
+
     <!-- 批量预注册对话框 -->
     <el-dialog v-model="batchVisible" title="批量预注册固件" width="480px" :close-on-click-modal="false">
       <el-form ref="batchFormRef" :model="batchForm" :rules="batchRules" label-width="110px" label-position="right">
@@ -118,6 +131,9 @@ const loading = ref(false)
 const firmwares = ref([])
 const filterStatus = ref('')
 const unboundCount = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(15)
+const total = ref(0)
 
 // ===== 批量预注册对话框 =====
 const batchVisible = ref(false)
@@ -144,15 +160,28 @@ const batchRules = {
 async function loadFirmwares() {
   loading.value = true
   try {
-    const params = {}
+    const params = { page: currentPage.value, size: pageSize.value }
     if (filterStatus.value) params.status = filterStatus.value
     const res = await getFirmwares(params)
-    firmwares.value = res.data || []
+    const data = res.data || {}
+    firmwares.value = data.records || []
+    total.value = data.total || 0
   } catch {
     // 错误已由 request 拦截器处理
   } finally {
     loading.value = false
   }
+}
+
+function onStatusChange() {
+  currentPage.value = 1
+  loadFirmwares()
+}
+
+function onSizeChange(size) {
+  pageSize.value = size
+  currentPage.value = 1
+  loadFirmwares()
 }
 
 async function loadUnboundCount() {
@@ -181,6 +210,7 @@ async function submitBatch() {
     const list = res.data || []
     ElMessage.success(`预注册成功，生成固件ID ${list.length} 个（${list[0]?.firmwareId} ~ ${list[list.length - 1]?.firmwareId}）`)
     batchVisible.value = false
+    currentPage.value = 1
     await Promise.all([loadFirmwares(), loadUnboundCount()])
   } catch {
     // 错误已由 request 拦截器处理
@@ -244,6 +274,12 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 
 .text-muted {

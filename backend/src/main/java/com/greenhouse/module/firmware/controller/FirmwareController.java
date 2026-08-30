@@ -36,13 +36,15 @@ public class FirmwareController {
     }
 
     /**
-     * 固件列表（可按状态筛选）
-     * GET /api/v1/admin/firmwares?status=UNBOUND
+     * 固件列表（可按状态筛选，分页，默认每页15条）
+     * GET /api/v1/admin/firmwares?status=UNBOUND&page=1&size=15
      */
     @GetMapping
-    public ApiResponse<List<FirmwareResponse>> list(
-            @RequestParam(required = false) Firmware.Status status) {
-        return ApiResponse.success(firmwareService.list(status));
+    public ApiResponse<Map<String, Object>> list(
+            @RequestParam(required = false) Firmware.Status status,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        return ApiResponse.success(firmwareService.list(status, page, size));
     }
 
     /**

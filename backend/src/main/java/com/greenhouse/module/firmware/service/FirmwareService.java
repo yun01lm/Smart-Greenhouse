@@ -9,11 +9,16 @@ import com.greenhouse.module.firmware.dto.FirmwareResponse;
 import com.greenhouse.repository.FirmwareRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -79,15 +84,27 @@ public class FirmwareService {
     }
 
     /**
-     * 查询固件列表（可按状态筛选）
+     * 分页查询固件列表（可按状态筛选）
+     *
+     * @return {records: List<FirmwareResponse>, total: 总数, page: 页码, size: 每页条数}
      */
-    public List<FirmwareResponse> list(Firmware.Status status) {
-        List<Firmware> firmwares = status != null
-                ? firmwareRepository.findByStatus(status)
-                : firmwareRepository.findAll();
-        return firmwares.stream()
+    public Map<String, Object> list(Firmware.Status status, int page, int size) {
+        int safePage = Math.max(page - 1, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        Page<Firmware> result = status != null
+                ? firmwareRepository.findByStatus(status, pageable)
+                : firmwareRepository.findAll(pageable);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("records", result.getContent().stream()
                 .map(FirmwareResponse::fromEntity)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
+        body.put("total", result.getTotalElements());
+        body.put("page", page);
+        body.put("size", safeSize);
+        return body;
     }
 
     /**
