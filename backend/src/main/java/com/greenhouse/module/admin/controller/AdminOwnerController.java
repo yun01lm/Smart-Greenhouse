@@ -59,8 +59,8 @@ public class AdminOwnerController {
                 if (!hit) continue;
             }
 
-            // 地区过滤：棚主名下存在一个大棚命中指定层级（省→市→县→乡镇→村逐级匹配）
-            if (!matchRegion(ghs, province, city, district, town, village)) continue;
+            // 地区过滤：R46 棚主自身五级地区命中 或 名下大棚命中指定层级
+            if (!matchOwnerRegion(owner, ghs, province, city, district, town, village)) continue;
 
             long greenhouseCount = ghs.size();
             long employeeCount = userRepository.countByRoleAndOwnerId(User.Role.WORKER, owner.getId())
@@ -74,7 +74,7 @@ public class AdminOwnerController {
             map.put("status", owner.getStatus());
             map.put("greenhouseCount", greenhouseCount);
             map.put("employeeCount", employeeCount);
-            map.put("regionText", buildRegionText(ghs));
+            map.put("regionText", buildOwnerRegionText(owner, ghs));
             map.put("createdAt", owner.getCreatedAt());
             result.add(map);
         }
@@ -142,6 +142,44 @@ public class AdminOwnerController {
             return true;
         }
         return false;
+    }
+
+    /**
+     * R46 棚主地区匹配：自身五级地区命中 或 名下大棚命中（兼容存量）
+     */
+    private boolean matchOwnerRegion(User owner, List<Greenhouse> ghs, String province, String city,
+                                     String district, String town, String village) {
+        if (matchLevel(owner.getProvince(), province)
+                && matchLevel(owner.getCity(), city)
+                && matchLevel(owner.getDistrict(), district)
+                && matchLevel(owner.getTown(), town)
+                && matchLevel(owner.getVillage(), village)) {
+            return true;
+        }
+        return matchRegion(ghs, province, city, district, town, village);
+    }
+
+    private boolean matchLevel(String userValue, String filterValue) {
+        if (filterValue == null || filterValue.isBlank()) {
+            return true;
+        }
+        return userValue != null && userValue.equals(filterValue);
+    }
+
+    /**
+     * R46 棚主地区文本：自身地区优先，为空时回退第一个大棚地区（兼容存量）
+     */
+    private String buildOwnerRegionText(User owner, List<Greenhouse> ghs) {
+        List<String> parts = new ArrayList<>();
+        if (owner.getProvince() != null && !owner.getProvince().isBlank()) parts.add(owner.getProvince());
+        if (owner.getCity() != null && !owner.getCity().isBlank()) parts.add(owner.getCity());
+        if (owner.getDistrict() != null && !owner.getDistrict().isBlank()) parts.add(owner.getDistrict());
+        if (owner.getTown() != null && !owner.getTown().isBlank()) parts.add(owner.getTown());
+        if (owner.getVillage() != null && !owner.getVillage().isBlank()) parts.add(owner.getVillage());
+        if (!parts.isEmpty()) {
+            return String.join(" / ", parts);
+        }
+        return buildRegionText(ghs);
     }
 
     /** 聚合棚主地区文本（取第一个大棚的省/市/县/乡镇/村，用 / 连接） */

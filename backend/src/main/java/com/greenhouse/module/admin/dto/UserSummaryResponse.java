@@ -26,6 +26,12 @@ public class UserSummaryResponse {
     private Long ownerId;
     private String expertSpecialty;
     private User.ExpertStatus expertStatus;
+    /** R46 用户常驻五级地区 */
+    private String province;
+    private String city;
+    private String district;
+    private String town;
+    private String village;
     /** 地区归属文本（省/市/县/乡镇/村），由管理端列表接口填充 */
     private String regionText;
     private LocalDateTime createdAt;
@@ -42,6 +48,11 @@ public class UserSummaryResponse {
                 .ownerId(u.getOwnerId())
                 .expertSpecialty(u.getExpertSpecialty())
                 .expertStatus(u.getExpertStatus())
+                .province(u.getProvince())
+                .city(u.getCity())
+                .district(u.getDistrict())
+                .town(u.getTown())
+                .village(u.getVillage())
                 .createdAt(u.getCreatedAt())
                 .updatedAt(u.getUpdatedAt())
                 .build();

@@ -28,4 +28,17 @@ public class UpdateUserRequest {
 
     /** 账号状态：true=启用，false=禁用 */
     private Boolean status;
+
+    /** R46 用户常驻五级地区 */
+    private String province;
+    private String city;
+    private String district;
+    private String town;
+    private String village;
+
+    /** R46 专家专业领域（EXPERT 角色） */
+    private String expertSpecialty;
+
+    /** R46 归属棚主（WORKER/TECHNICIAN 角色可改） */
+    private Long ownerId;
 }

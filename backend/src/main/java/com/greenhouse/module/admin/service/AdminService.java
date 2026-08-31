@@ -88,7 +88,8 @@ public class AdminService {
 
         // 先过滤，再批量取地区归属文本（避免逐用户查询大棚）
         List<User> filtered = users.stream()
-                .filter(u -> regionOwnerIds == null || inRegion(u, regionOwnerIds))
+                .filter(u -> regionOwnerIds == null
+                        || inRegion(u, regionOwnerIds, province, city, district, town, village))
                 .filter(u -> kw == null || kw.isEmpty() || matchesKeyword(u, kw))
                 .collect(Collectors.toList());
 
@@ -98,9 +99,11 @@ public class AdminService {
                 .map(u -> {
                     UserSummaryResponse resp = UserSummaryResponse.fromEntity(u);
                     Long regionOwnerId = regionOwnerKey(u);
-                    resp.setRegionText(regionOwnerId != null
-                            ? regionTextByOwner.getOrDefault(regionOwnerId, "")
-                            : "");
+                    // R46：用户自身地区优先，为空时回退大棚聚合地区（兼容存量）
+                    String ownRegion = userRegion(u);
+                    resp.setRegionText(isNotBlank(ownRegion)
+                            ? ownRegion
+                            : (regionOwnerId != null ? regionTextByOwner.getOrDefault(regionOwnerId, "") : ""));
                     return resp;
                 })
                 .collect(Collectors.toList());
@@ -120,6 +123,43 @@ public class AdminService {
     private boolean inRegion(User u, Set<Long> regionOwnerIds) {
         Long key = regionOwnerKey(u);
         return key != null && regionOwnerIds.contains(key);
+    }
+
+    /**
+     * R46 地区匹配：用户自身五级地区命中 或 大棚归属命中（兼容存量）
+     */
+    private boolean inRegion(User u, Set<Long> regionOwnerIds,
+                             String province, String city, String district,
+                             String town, String village) {
+        if (matchesLevel(u.getProvince(), province)
+                && matchesLevel(u.getCity(), city)
+                && matchesLevel(u.getDistrict(), district)
+                && matchesLevel(u.getTown(), town)
+                && matchesLevel(u.getVillage(), village)) {
+            return true;
+        }
+        return inRegion(u, regionOwnerIds);
+    }
+
+    private boolean matchesLevel(String userValue, String filterValue) {
+        // 该层级未筛选 → 恒命中
+        if (filterValue == null || filterValue.isBlank()) {
+            return true;
+        }
+        return userValue != null && userValue.equals(filterValue);
+    }
+
+    /**
+     * R46 用户自身地区文本（省/市/县/乡镇/村）
+     */
+    private String userRegion(User u) {
+        List<String> parts = new ArrayList<>();
+        if (isNotBlank(u.getProvince())) parts.add(u.getProvince());
+        if (isNotBlank(u.getCity())) parts.add(u.getCity());
+        if (isNotBlank(u.getDistrict())) parts.add(u.getDistrict());
+        if (isNotBlank(u.getTown())) parts.add(u.getTown());
+        if (isNotBlank(u.getVillage())) parts.add(u.getVillage());
+        return String.join(" / ", parts);
     }
 
     private Long regionOwnerKey(User u) {
@@ -222,6 +262,25 @@ public class AdminService {
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
         }
+        // R46：五级地区
+        if (request.getProvince() != null) user.setProvince(request.getProvince());
+        if (request.getCity() != null) user.setCity(request.getCity());
+        if (request.getDistrict() != null) user.setDistrict(request.getDistrict());
+        if (request.getTown() != null) user.setTown(request.getTown());
+        if (request.getVillage() != null) user.setVillage(request.getVillage());
+        // R46：专家领域
+        if (request.getExpertSpecialty() != null) {
+            user.setExpertSpecialty(request.getExpertSpecialty());
+        }
+        // R46：员工归属棚主（可改）
+        if (request.getOwnerId() != null) {
+            User owner = userRepository.findById(request.getOwnerId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "归属棚主不存在"));
+            if (owner.getRole() != User.Role.OWNER) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "归属棚主必须是棚主角色");
+            }
+            user.setOwnerId(request.getOwnerId());
+        }
 
         userRepository.save(user);
         log.info("管理员更新用户: userId={}, role={}, status={}", userId, request.getRole(), request.getStatus());
@@ -282,6 +341,12 @@ public class AdminService {
                 .realName(request.getRealName())
                 .role(role)
                 .ownerId(request.getOwnerId())
+                .province(request.getProvince())
+                .city(request.getCity())
+                .district(request.getDistrict())
+                .town(request.getTown())
+                .village(request.getVillage())
+                .expertSpecialty(request.getExpertSpecialty())
                 .expertStatus(role == User.Role.EXPERT ? User.ExpertStatus.OFFLINE : null)
                 .status(true)
                 .build();

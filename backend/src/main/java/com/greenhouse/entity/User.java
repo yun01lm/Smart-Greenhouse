@@ -65,6 +65,23 @@ public class User {
     @Enumerated(EnumType.STRING)
     private ExpertStatus expertStatus;
 
+    // ===== R46 用户常驻五级地区（创建/编辑时填写；列表地区列优先展示）=====
+
+    @Column(length = 50)
+    private String province;
+
+    @Column(length = 50)
+    private String city;
+
+    @Column(length = 50)
+    private String district;
+
+    @Column(length = 50)
+    private String town;
+
+    @Column(length = 50)
+    private String village;
+
     // ===== 通用字段 =====
 
     /** 账号状态：true=启用，false=禁用 */

@@ -32,6 +32,17 @@ public class CreateUserRequest {
     /** 员工归属棚主ID（WORKER/TECHNICIAN 角色必填，R23） */
     private Long ownerId;
 
+    /** R46 用户常驻五级地区（管理员建号时填写） */
+    private String province;
+    private String city;
+    private String district;
+    private String town;
+    private String village;
+
+    /** R46 专家专业领域（EXPERT 角色） */
+    @Size(max = 200, message = "专家领域最长200字")
+    private String expertSpecialty;
+
     public User.Role getRoleEnum() {
         return User.Role.valueOf(role.toUpperCase());
     }

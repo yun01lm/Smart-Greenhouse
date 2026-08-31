@@ -130,6 +130,37 @@
             <el-option label="专家" value="EXPERT" />
           </el-select>
         </el-form-item>
+        <!-- R46：所在地区（五个分级输入框，自由填写） -->
+        <el-form-item label="所在地区">
+          <div class="region-inputs">
+            <el-input v-model="formData.province" placeholder="省" maxlength="50" />
+            <el-input v-model="formData.city" placeholder="市" maxlength="50" />
+            <el-input v-model="formData.district" placeholder="区/县" maxlength="50" />
+          </div>
+          <div class="region-inputs" style="margin-top: 8px">
+            <el-input v-model="formData.town" placeholder="乡镇" maxlength="50" />
+            <el-input v-model="formData.village" placeholder="村" maxlength="50" />
+            <div class="region-spacer"></div>
+          </div>
+        </el-form-item>
+        <el-form-item v-if="formData.role === 'EXPERT'" label="专家领域">
+          <el-input v-model="formData.expertSpecialty" placeholder="如：蔬菜病虫害防治" maxlength="200" />
+        </el-form-item>
+        <el-form-item v-if="formData.role === 'WORKER' || formData.role === 'TECHNICIAN'" label="归属棚主" prop="ownerId">
+          <el-select
+            v-model="formData.ownerId"
+            placeholder="请选择归属棚主"
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="o in ownerOptions"
+              :key="o.id"
+              :label="o.realName ? `${o.realName}（${o.username}）` : o.username"
+              :value="o.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-switch
             v-model="formData.status"
@@ -216,6 +247,22 @@
             />
           </el-select>
         </el-form-item>
+        <!-- R46：所在地区（五个分级输入框，自由填写）+ 专家领域 -->
+        <el-form-item label="所在地区">
+          <div class="region-inputs">
+            <el-input v-model="createForm.province" placeholder="省" maxlength="50" />
+            <el-input v-model="createForm.city" placeholder="市" maxlength="50" />
+            <el-input v-model="createForm.district" placeholder="区/县" maxlength="50" />
+          </div>
+          <div class="region-inputs" style="margin-top: 8px">
+            <el-input v-model="createForm.town" placeholder="乡镇" maxlength="50" />
+            <el-input v-model="createForm.village" placeholder="村" maxlength="50" />
+            <div class="region-spacer"></div>
+          </div>
+        </el-form-item>
+        <el-form-item v-if="createForm.role === 'EXPERT'" label="专家领域">
+          <el-input v-model="createForm.expertSpecialty" placeholder="如：蔬菜病虫害防治" maxlength="200" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="createVisible = false">取消</el-button>
@@ -252,7 +299,14 @@ const formData = ref({
   realName: '',
   phone: '',
   role: 'OWNER',
-  status: true
+  status: true,
+  province: '',
+  city: '',
+  district: '',
+  town: '',
+  village: '',
+  expertSpecialty: '',
+  ownerId: null
 })
 
 const formRules = {
@@ -269,7 +323,13 @@ const createForm = ref({
   realName: '',
   phone: '',
   role: 'OWNER',
-  ownerId: null
+  ownerId: null,
+  province: '',
+  city: '',
+  district: '',
+  town: '',
+  village: '',
+  expertSpecialty: ''
 })
 
 const createRules = {
@@ -377,15 +437,28 @@ function openEditDialog(row) {
     realName: row.realName || '',
     phone: row.phone || '',
     role: row.role,
-    status: row.status
+    status: row.status,
+    province: row.province || '',
+    city: row.city || '',
+    district: row.district || '',
+    town: row.town || '',
+    village: row.village || '',
+    expertSpecialty: row.expertSpecialty || '',
+    ownerId: row.ownerId || null
   }
   resetPwdForm()
   dialogVisible.value = true
+  if (row.role === 'WORKER' || row.role === 'TECHNICIAN') {
+    loadOwnerOptions()
+  }
 }
 
 // ===== 新增用户方法 =====
 async function openCreateDialog() {
-  createForm.value = { username: '', realName: '', phone: '', role: 'OWNER', ownerId: null }
+  createForm.value = {
+    username: '', realName: '', phone: '', role: 'OWNER', ownerId: null,
+    province: '', city: '', district: '', town: '', village: '', expertSpecialty: ''
+  }
   createVisible.value = true
   await loadOwnerOptions()
 }
@@ -413,7 +486,13 @@ async function submitCreate() {
       realName: createForm.value.realName || null,
       phone: createForm.value.phone || null,
       role: createForm.value.role,
-      ownerId: createForm.value.role === 'WORKER' ? createForm.value.ownerId : null
+      ownerId: createForm.value.role === 'WORKER' ? createForm.value.ownerId : null,
+      province: createForm.value.province || null,
+      city: createForm.value.city || null,
+      district: createForm.value.district || null,
+      town: createForm.value.town || null,
+      village: createForm.value.village || null,
+      expertSpecialty: createForm.value.role === 'EXPERT' ? (createForm.value.expertSpecialty || null) : null
     }
     await createUser(payload)
     ElMessage.success('用户创建成功，初始密码为 123456')
@@ -468,7 +547,16 @@ async function submitForm() {
       realName: formData.value.realName || null,
       phone: formData.value.phone || null,
       role: formData.value.role,
-      status: formData.value.status
+      status: formData.value.status,
+      province: formData.value.province || null,
+      city: formData.value.city || null,
+      district: formData.value.district || null,
+      town: formData.value.town || null,
+      village: formData.value.village || null,
+      expertSpecialty: formData.value.role === 'EXPERT' ? (formData.value.expertSpecialty || null) : null,
+      ownerId: (formData.value.role === 'WORKER' || formData.value.role === 'TECHNICIAN')
+        ? formData.value.ownerId
+        : undefined
     })
     ElMessage.success('用户更新成功')
     dialogVisible.value = false
@@ -547,6 +635,21 @@ onMounted(() => {
 .pwd-actions {
   margin-top: 8px;
   text-align: right;
+}
+
+/* R46 地区五框分级填写 */
+.region-inputs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.region-inputs .el-input {
+  flex: 1;
+}
+
+.region-spacer {
+  flex: 1;
 }
 
 .pagination-wrapper {
