@@ -2,6 +2,7 @@ package com.greenhouse.module.greenhouse.service;
 
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.common.RegionNormalizer;
 import com.greenhouse.entity.*;
 import com.greenhouse.module.greenhouse.dto.GreenhouseRequest;
 import com.greenhouse.module.greenhouse.dto.GreenhouseResponse;
@@ -34,6 +35,7 @@ public class GreenhouseService {
     private final UserRepository userRepository;
     private final EmployeePermissionRepository permissionRepository;
     private final DataAuthorizationRepository dataAuthorizationRepository;
+    private final RegionNormalizer regionNormalizer;
 
     // R45 级联清理依赖
     private final DeviceRepository deviceRepository;
@@ -87,14 +89,15 @@ public class GreenhouseService {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "大棚名称已存在");
         }
 
+        String normProvince = regionNormalizer.normalizeProvince(request.getProvince());
         Greenhouse greenhouse = Greenhouse.builder()
                 .name(request.getName())
                 .location(request.getLocation())
                 .cropType(request.getCropType())
                 .ownerId(ownerId)
-                .province(request.getProvince())
-                .city(request.getCity())
-                .district(request.getDistrict())
+                .province(normProvince)
+                .city(regionNormalizer.normalizeCity(normProvince, request.getCity()))
+                .district(regionNormalizer.normalizeDistrict(request.getDistrict()))
                 .town(request.getTown())
                 .village(request.getVillage())
                 .status(true)
@@ -205,9 +208,10 @@ public class GreenhouseService {
         greenhouse.setName(request.getName());
         greenhouse.setLocation(request.getLocation());
         greenhouse.setCropType(request.getCropType());
-        greenhouse.setProvince(request.getProvince());
-        greenhouse.setCity(request.getCity());
-        greenhouse.setDistrict(request.getDistrict());
+        String normProvince = regionNormalizer.normalizeProvince(request.getProvince());
+        greenhouse.setProvince(normProvince);
+        greenhouse.setCity(regionNormalizer.normalizeCity(normProvince, request.getCity()));
+        greenhouse.setDistrict(regionNormalizer.normalizeDistrict(request.getDistrict()));
         greenhouse.setTown(request.getTown());
         greenhouse.setVillage(request.getVillage());
 

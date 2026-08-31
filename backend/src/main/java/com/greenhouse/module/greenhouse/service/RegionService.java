@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
  * 地区服务（管理员功能）
  * <p>
  * 地区层级从大棚登记的省/市/县(区)/乡镇/村五级字段聚合而来（方案A）。
+ * R46.2：用户可自行填写地区（users 表），因此地区选项 = 大棚表 ∪ 用户表，
+ * 保证新填写的用户地址也能出现在地区级联/筛选中。
  * 设计上封装为独立服务，后续如需升级为标准行政区划表（方案B），仅替换本服务实现即可。
  * </p>
  */
@@ -32,29 +34,47 @@ public class RegionService {
     private final GreenhouseRepository greenhouseRepository;
     private final UserRepository userRepository;
 
-    /** 省份列表 */
+    /** 省份列表（大棚 ∪ 用户） */
     public List<String> getProvinces() {
-        return greenhouseRepository.findDistinctProvinces();
+        return union(
+                greenhouseRepository.findDistinctProvinces(),
+                userRepository.findDistinctUserProvinces());
     }
 
-    /** 城市列表 */
+    /** 城市列表（大棚 ∪ 用户） */
     public List<String> getCities(String province) {
-        return greenhouseRepository.findDistinctCities(normalize(province));
+        return union(
+                greenhouseRepository.findDistinctCities(normalize(province)),
+                userRepository.findDistinctUserCities(normalize(province)));
     }
 
-    /** 区县列表 */
+    /** 区县列表（大棚 ∪ 用户） */
     public List<String> getDistricts(String province, String city) {
-        return greenhouseRepository.findDistinctDistricts(normalize(province), normalize(city));
+        return union(
+                greenhouseRepository.findDistinctDistricts(normalize(province), normalize(city)),
+                userRepository.findDistinctUserDistricts(normalize(province), normalize(city)));
     }
 
-    /** 乡镇列表 */
+    /** 乡镇列表（大棚 ∪ 用户） */
     public List<String> getTowns(String province, String city, String district) {
-        return greenhouseRepository.findDistinctTowns(normalize(province), normalize(city), normalize(district));
+        return union(
+                greenhouseRepository.findDistinctTowns(normalize(province), normalize(city), normalize(district)),
+                userRepository.findDistinctUserTowns(normalize(province), normalize(city), normalize(district)));
     }
 
-    /** 村列表 */
+    /** 村列表（大棚 ∪ 用户） */
     public List<String> getVillages(String province, String city, String district, String town) {
-        return greenhouseRepository.findDistinctVillages(normalize(province), normalize(city), normalize(district), normalize(town));
+        return union(
+                greenhouseRepository.findDistinctVillages(normalize(province), normalize(city), normalize(district), normalize(town)),
+                userRepository.findDistinctUserVillages(normalize(province), normalize(city), normalize(district), normalize(town)));
+    }
+
+    /** 去重合并大棚/用户两个来源，保持有序 */
+    private List<String> union(List<String> a, List<String> b) {
+        Set<String> set = new java.util.TreeSet<>();
+        if (a != null) set.addAll(a);
+        if (b != null) set.addAll(b);
+        return new ArrayList<>(set);
     }
 
     /** 地区范围内的大棚 */

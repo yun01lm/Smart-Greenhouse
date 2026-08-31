@@ -3,6 +3,7 @@ package com.greenhouse.module.admin.service;
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.PasswordPolicy;
 import com.greenhouse.common.ErrorCode;
+import com.greenhouse.common.RegionNormalizer;
 import com.greenhouse.entity.Greenhouse;
 import com.greenhouse.entity.User;
 import com.greenhouse.module.admin.dto.AdminResetPasswordRequest;
@@ -45,6 +46,7 @@ public class AdminService {
     private final RegionService regionService;
     private final GreenhouseRepository greenhouseRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RegionNormalizer regionNormalizer;
 
     /** 管理员账号数量上限（R16） */
     private static final int ADMIN_MAX_COUNT = 3;
@@ -66,13 +68,11 @@ public class AdminService {
         boolean hasRegion = hasAny(province, city, district, town, village);
 
         // 地区范围 → 棚主ID集合（OWNER/WORKER 按此归属判断）；一次性赋值保证 lambda 可用
+        // R46.2：大棚表无匹配地区时不再提前返回空——用户自身填写地区（users 表）也能命中筛选
         final Set<Long> regionOwnerIds;
         if (hasRegion) {
             List<Greenhouse> ghs = regionService.getGreenhousesByRegion(province, city, district, town, village);
             regionOwnerIds = ghs.stream().map(Greenhouse::getOwnerId).collect(Collectors.toSet());
-            if (regionOwnerIds.isEmpty()) {
-                return Collections.emptyList();
-            }
         } else {
             regionOwnerIds = null;
         }
@@ -262,10 +262,11 @@ public class AdminService {
         if (request.getStatus() != null) {
             user.setStatus(request.getStatus());
         }
-        // R46：五级地区
-        if (request.getProvince() != null) user.setProvince(request.getProvince());
-        if (request.getCity() != null) user.setCity(request.getCity());
-        if (request.getDistrict() != null) user.setDistrict(request.getDistrict());
+        // R46：五级地区（R46.2 省市县自动对齐标准名，镇村保留自由填写）
+        if (request.getProvince() != null) user.setProvince(regionNormalizer.normalizeProvince(request.getProvince()));
+        String normProvince = user.getProvince();
+        if (request.getCity() != null) user.setCity(regionNormalizer.normalizeCity(normProvince, request.getCity()));
+        if (request.getDistrict() != null) user.setDistrict(regionNormalizer.normalizeDistrict(request.getDistrict()));
         if (request.getTown() != null) user.setTown(request.getTown());
         if (request.getVillage() != null) user.setVillage(request.getVillage());
         // R46：专家领域
@@ -334,6 +335,7 @@ public class AdminService {
                     .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND, "归属棚主不存在"));
         }
 
+        String normProvince = regionNormalizer.normalizeProvince(request.getProvince());
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(PasswordPolicy.INITIAL_PASSWORD))
@@ -341,9 +343,9 @@ public class AdminService {
                 .realName(request.getRealName())
                 .role(role)
                 .ownerId(request.getOwnerId())
-                .province(request.getProvince())
-                .city(request.getCity())
-                .district(request.getDistrict())
+                .province(normProvince)
+                .city(regionNormalizer.normalizeCity(normProvince, request.getCity()))
+                .district(regionNormalizer.normalizeDistrict(request.getDistrict()))
                 .town(request.getTown())
                 .village(request.getVillage())
                 .expertSpecialty(request.getExpertSpecialty())
