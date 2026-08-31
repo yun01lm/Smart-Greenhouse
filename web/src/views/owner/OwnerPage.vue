@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="owner-page">
     <div class="page-header">
       <h3>棚主管理</h3>
@@ -123,23 +123,60 @@
             </el-tag>
           </template>
         </el-table-column>
+        <!-- R45：管理员代管大棚（编辑/删除） -->
+        <el-table-column label="操作" width="130" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link size="small" @click="openGhEdit(row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleGhDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <el-empty v-if="!ghLoading && greenhouses.length === 0" description="该棚主暂无大棚" />
 
       <template #footer>
+        <el-button type="primary" plain :icon="Plus" @click="openGhCreate">新增大棚</el-button>
         <el-button @click="dialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- R45：管理员代建/编辑大棚 -->
+    <el-dialog append-to-body
+      v-model="ghFormVisible"
+      :title="ghEditingId ? '编辑大棚' : `新增大棚 — ${selectedOwner?.realName || selectedOwner?.username || ''}`"
+      width="min(560px, 92vw)"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="ghFormRef" :model="ghForm" :rules="ghRules" label-width="100px">
+        <el-form-item label="大棚名称" prop="name">
+          <el-input v-model="ghForm.name" placeholder="如：一号番茄大棚" maxlength="100" />
+        </el-form-item>
+        <el-form-item label="所在地区">
+          <RegionCascader v-model="ghForm.region" />
+        </el-form-item>
+        <el-form-item label="作物类型">
+          <el-input v-model="ghForm.cropType" placeholder="如：番茄 / 黄瓜（可选）" maxlength="50" />
+        </el-form-item>
+        <el-form-item label="位置描述">
+          <el-input v-model="ghForm.location" placeholder="如：村东头（可选）" maxlength="200" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="ghFormVisible = false">取消</el-button>
+        <el-button type="primary" :loading="ghSubmitting" @click="submitGhForm">保存</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getOwners, getOwnerGreenhouses } from '@/api/owner'
+import { createGreenhouse, updateGreenhouse, deleteGreenhouse } from '@/api/greenhouse'
 import { useViewModeStore } from '@/stores/viewMode'
 import RegionCascader from '@/components/RegionCascader.vue'
+import { Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const viewStore = useViewModeStore()
@@ -160,6 +197,82 @@ const dialogVisible = ref(false)
 const ghLoading = ref(false)
 const selectedOwner = ref(null)
 const greenhouses = ref([])
+
+// ===== R45：管理员代管大棚 =====
+const ghFormVisible = ref(false)
+const ghSubmitting = ref(false)
+const ghEditingId = ref(null)
+const ghFormRef = ref(null)
+const ghForm = reactive({
+  name: '',
+  region: [],
+  cropType: '',
+  location: ''
+})
+const ghRules = {
+  name: [{ required: true, message: '请输入大棚名称', trigger: 'blur' }]
+}
+
+function openGhCreate() {
+  ghEditingId.value = null
+  ghForm.name = ''
+  ghForm.region = []
+  ghForm.cropType = ''
+  ghForm.location = ''
+  ghFormVisible.value = true
+}
+
+function openGhEdit(row) {
+  ghEditingId.value = row.id
+  ghForm.name = row.name
+  ghForm.region = [row.province, row.city, row.district, row.town, row.village].filter(Boolean)
+  ghForm.cropType = row.cropType || ''
+  ghForm.location = row.location || ''
+  ghFormVisible.value = true
+}
+
+async function submitGhForm() {
+  try {
+    await ghFormRef.value.validate()
+  } catch { return }
+  ghSubmitting.value = true
+  const payload = {
+    name: ghForm.name,
+    cropType: ghForm.cropType || null,
+    location: ghForm.location || null,
+    province: ghForm.region[0] || null,
+    city: ghForm.region[1] || null,
+    district: ghForm.region[2] || null,
+    town: ghForm.region[3] || null,
+    village: ghForm.region[4] || null,
+    ownerId: selectedOwner.value?.id
+  }
+  try {
+    if (ghEditingId.value) {
+      await updateGreenhouse(ghEditingId.value, payload)
+      ElMessage.success('大棚已更新')
+    } else {
+      await createGreenhouse(payload)
+      ElMessage.success('大棚创建成功')
+    }
+    ghFormVisible.value = false
+    await showGreenhouses(selectedOwner.value)
+  } catch { /* handled */ }
+  finally { ghSubmitting.value = false }
+}
+
+async function handleGhDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确认删除大棚「${row.name}」吗？其下所有设备（固件将解绑）、预警规则、场景、授权与历史数据将被一并清理，不可恢复。`,
+      '删除大棚',
+      { type: 'warning', confirmButtonText: '确认删除', cancelButtonText: '取消' }
+    )
+    await deleteGreenhouse(row.id)
+    ElMessage.success('大棚已删除')
+    await showGreenhouses(selectedOwner.value)
+  } catch { /* cancelled or error */ }
+}
 
 // ===== 数据加载 =====
 async function loadOwners(targetPage) {

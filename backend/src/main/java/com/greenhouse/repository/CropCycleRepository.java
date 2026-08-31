@@ -34,4 +34,7 @@ public interface CropCycleRepository extends JpaRepository<CropCycle, Long> {
      * 检查大棚是否已有进行中的周期
      */
     Optional<CropCycle> findTopByGreenhouseIdAndStatus(Long greenhouseId, CropCycle.CycleStatus status);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

@@ -75,6 +75,12 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
         });
 
+        // 大棚管理入口 (R45 棚主专属)
+        binding.btnGreenhouseManage.setOnClickListener(v -> {
+            Intent intent = new Intent(requireActivity(), com.greenhouse.app.ui.greenhouse.GreenhouseManageActivity.class);
+            startActivity(intent);
+        });
+
         // 专家咨询入口 (F10)
         binding.btnExpertConsult.setOnClickListener(v -> {
             Intent intent = new Intent(requireActivity(), ExpertListActivity.class);
@@ -186,14 +192,16 @@ public class ProfileFragment extends Fragment {
      */
     private void applyRoleAdapter() {
         if (RoleAdapter.isOwner()) {
-            // 棚主：显示员工管理入口（R26），隐藏授权管理（棚主是授权的审批方，在 Web 端管理）
+            // 棚主：显示员工管理/大棚管理入口（R26/R45），隐藏授权管理（棚主是授权的审批方，在 Web 端管理）
             binding.btnEmployeeManagement.setVisibility(View.VISIBLE);
+            binding.btnGreenhouseManage.setVisibility(View.VISIBLE);
             binding.btnAuthorization.setVisibility(View.GONE);
             // 专家咨询：棚主默认可用
             binding.btnExpertConsult.setVisibility(View.VISIBLE);
         } else {
-            // 非棚主（普通员工/技术员/专家/管理员）：隐藏员工管理入口
+            // 非棚主（普通员工/技术员/专家/管理员）：隐藏员工管理与大棚管理入口
             binding.btnEmployeeManagement.setVisibility(View.GONE);
+            binding.btnGreenhouseManage.setVisibility(View.GONE);
         }
         if (RoleAdapter.isWorker()) {
             // 员工：专家咨询入口由权限控制

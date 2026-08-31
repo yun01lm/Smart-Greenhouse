@@ -33,4 +33,7 @@ public interface EmployeePermissionRepository extends JpaRepository<EmployeePerm
 
     /** 删除棚主给某员工分配的所有权限 */
     void deleteByEmployeeIdAndOwnerId(Long employeeId, Long ownerId);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

@@ -166,5 +166,10 @@
             android:name=".ui.compare.CompareActivity"
             android:parentActivityName=".ui.common.MainActivity" />
 
+        <!-- 大棚管理（R45） -->
+        <activity
+            android:name=".ui.greenhouse.GreenhouseManageActivity"
+            android:parentActivityName=".ui.common.MainActivity" />
+
     </application>
 </manifest>

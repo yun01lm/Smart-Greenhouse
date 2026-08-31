@@ -23,4 +23,7 @@ public interface SceneRepository extends JpaRepository<Scene, Long> {
 
     /** 统计大棚下场景数量 */
     long countByGreenhouseId(Long greenhouseId);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

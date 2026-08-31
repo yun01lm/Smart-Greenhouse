@@ -19,4 +19,7 @@ public interface DiagnosticRecordRepository extends JpaRepository<DiagnosticReco
 
     /** 按大棚查询诊断记录 */
     List<DiagnosticRecord> findByGreenhouseIdOrderByCreatedAtDesc(Long greenhouseId);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

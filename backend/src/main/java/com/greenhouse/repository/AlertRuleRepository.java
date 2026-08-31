@@ -29,4 +29,7 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, Long> {
     /** 按规则类型查询所有启用的规则 */
     List<AlertRule> findByRuleTypeAndEnabledTrue(AlertRule.RuleType ruleType);
 
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

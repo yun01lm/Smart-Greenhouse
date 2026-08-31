@@ -51,4 +51,8 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
 
     /** ADMIN 统计某专家的咨询会话数 */
     long countByExpertId(Long expertId);
+
+
+    List<ChatConversation> findByGreenhouseId(Long greenhouseId);
+    void deleteByGreenhouseId(Long greenhouseId);
 }

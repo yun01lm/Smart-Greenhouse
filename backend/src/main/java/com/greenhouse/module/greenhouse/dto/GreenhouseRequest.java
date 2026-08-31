@@ -26,4 +26,7 @@ public class GreenhouseRequest {
     private String district;
     private String town;
     private String village;
+
+    /** 管理员代建时指定归属棚主（OWNER 创建时忽略） */
+    private Long ownerId;
 }

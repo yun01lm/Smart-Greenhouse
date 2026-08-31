@@ -36,4 +36,7 @@ public interface SensorDailySummaryRepository extends JpaRepository<SensorDailyS
     /** 查询某设备某日汇总（单设备回填） */
     Optional<SensorDailySummary> findByGreenhouseIdAndDeviceIdAndSensorTypeAndStatDate(
             Long greenhouseId, Long deviceId, String sensorType, LocalDate statDate);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

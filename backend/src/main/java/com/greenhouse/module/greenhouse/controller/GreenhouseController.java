@@ -48,36 +48,39 @@ public class GreenhouseController {
     }
 
     /**
-     * 创建大棚（仅棚主）
+     * 创建大棚（棚主创建自己的；管理员可代建，R45）
      * POST /api/v1/greenhouses
      */
     @PostMapping
     public ApiResponse<GreenhouseResponse> create(@Valid @RequestBody GreenhouseRequest request) {
         Long userId = getCurrentUserId();
-        GreenhouseResponse response = greenhouseService.createGreenhouse(userId, request);
+        User.Role role = getCurrentUserRole();
+        GreenhouseResponse response = greenhouseService.createGreenhouse(userId, role, request);
         return ApiResponse.success("大棚创建成功", response);
     }
 
     /**
-     * 更新大棚（仅棚主操作自己的大棚）
+     * 更新大棚（棚主操作自己的；管理员可代管，R45）
      * PUT /api/v1/greenhouses/{id}
      */
     @PutMapping("/{id}")
     public ApiResponse<GreenhouseResponse> update(@PathVariable Long id,
                                                    @Valid @RequestBody GreenhouseRequest request) {
         Long userId = getCurrentUserId();
-        GreenhouseResponse response = greenhouseService.updateGreenhouse(userId, id, request);
+        User.Role role = getCurrentUserRole();
+        GreenhouseResponse response = greenhouseService.updateGreenhouse(userId, role, id, request);
         return ApiResponse.success("大棚更新成功", response);
     }
 
     /**
-     * 删除大棚（仅棚主操作自己的大棚）
+     * 删除大棚（棚主操作自己的；管理员可代管，删除级联清理，R45）
      * DELETE /api/v1/greenhouses/{id}
      */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         Long userId = getCurrentUserId();
-        greenhouseService.deleteGreenhouse(userId, id);
+        User.Role role = getCurrentUserRole();
+        greenhouseService.deleteGreenhouse(userId, role, id);
         return ApiResponse.success("大棚删除成功", null);
     }
 

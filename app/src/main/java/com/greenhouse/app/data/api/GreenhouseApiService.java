@@ -38,6 +38,17 @@ public interface GreenhouseApiService {
     @GET("greenhouses/{id}")
     Call<ApiResponse<Greenhouse>> getGreenhouse(@Path("id") long id);
 
+    // ===== R45 大棚管理（增删改）=====
+
+    @POST("greenhouses")
+    Call<ApiResponse<Greenhouse>> createGreenhouse(@Body GreenhouseRequest request);
+
+    @PUT("greenhouses/{id}")
+    Call<ApiResponse<Greenhouse>> updateGreenhouse(@Path("id") long id, @Body GreenhouseRequest request);
+
+    @DELETE("greenhouses/{id}")
+    Call<ApiResponse<Void>> deleteGreenhouse(@Path("id") long id);
+
     // ===== C5 时序数据 =====
 
     @GET("sensors/realtime")

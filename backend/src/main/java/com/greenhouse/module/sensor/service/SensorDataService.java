@@ -3,6 +3,7 @@ package com.greenhouse.module.sensor.service;
 import com.greenhouse.entity.Device;
 import com.greenhouse.repository.DeviceRepository;
 import com.greenhouse.module.sensor.dto.*;
+import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApiBlocking;
 import com.influxdb.query.FluxRecord;
@@ -40,10 +41,30 @@ public class SensorDataService {
 
     private final WriteApiBlocking writeApi;
     private final QueryApi queryApi;
+    private final InfluxDBClient influxDBClient;
     private final DeviceRepository deviceRepository;
     private final InfluxDbConfigHelper configHelper;
     private final TrendPredictor trendPredictor;
     private final SensorDailySummaryRepository dailySummaryRepository;
+
+    /**
+     * 删除某大棚的全部 InfluxDB 时序数据（级联删除大棚时调用）
+     */
+    public void deleteGreenhouseData(Long greenhouseId) {
+        try {
+            var deleteApi = influxDBClient.getDeleteApi();
+            // 删除从 1970 年到现在的全部该大棚数据
+            deleteApi.delete(
+                    Instant.ofEpochMilli(0).atOffset(java.time.ZoneOffset.UTC),
+                    Instant.now().atOffset(java.time.ZoneOffset.UTC),
+                    String.format("_measurement=\"sensor_data\" AND greenhouse_id=\"%d\"", greenhouseId),
+                    configHelper.getBucket(),
+                    configHelper.getOrg());
+            log.info("InfluxDB 时序数据已清理: greenhouseId={}", greenhouseId);
+        } catch (Exception e) {
+            log.warn("InfluxDB 时序数据清理失败(忽略继续): greenhouseId={}, error={}", greenhouseId, e.getMessage());
+        }
+    }
 
     /**
      * 写入传感器数据到 InfluxDB

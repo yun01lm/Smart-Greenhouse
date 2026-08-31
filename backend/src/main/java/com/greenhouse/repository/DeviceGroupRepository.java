@@ -20,4 +20,7 @@ public interface DeviceGroupRepository extends JpaRepository<DeviceGroup, Long> 
 
     /** 统计大棚下分组数量 */
     long countByGreenhouseId(Long greenhouseId);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

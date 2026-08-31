@@ -98,6 +98,12 @@ const routes = [
         meta: { title: '授权审批', roles: ['OWNER'] }
       },
       {
+        path: 'greenhouses',
+        name: 'Greenhouses',
+        component: () => import('@/views/owner/GreenhouseManage.vue'),
+        meta: { title: '大棚管理', roles: ['OWNER'] }
+      },
+      {
         path: 'expert/chat',
         name: 'ExpertChat',
         component: () => import('@/views/expert/ExpertChat.vue'),

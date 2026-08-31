@@ -37,4 +37,7 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     /** 按大棚ID集合 + 级别统计预警数 */
     long countByGreenhouseIdInAndLevel(List<Long> greenhouseIds, Alert.AlertLevel level);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

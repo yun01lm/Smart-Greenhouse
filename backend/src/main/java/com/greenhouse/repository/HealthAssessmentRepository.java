@@ -35,4 +35,7 @@ public interface HealthAssessmentRepository extends JpaRepository<HealthAssessme
             "AND h.createdAt >= :since")
     long countRecentByGreenhouseId(@Param("greenhouseId") Long greenhouseId,
                                     @Param("since") LocalDateTime since);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

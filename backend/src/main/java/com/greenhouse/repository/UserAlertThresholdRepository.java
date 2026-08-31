@@ -25,4 +25,7 @@ public interface UserAlertThresholdRepository extends JpaRepository<UserAlertThr
 
     /** 查询用户对某大棚的所有自定义阈值 */
     List<UserAlertThreshold> findByUserIdAndGreenhouseId(Long userId, Long greenhouseId);
+
+
+    void deleteByGreenhouseId(Long greenhouseId);
 }

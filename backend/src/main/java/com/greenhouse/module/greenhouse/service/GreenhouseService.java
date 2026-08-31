@@ -2,16 +2,12 @@ package com.greenhouse.module.greenhouse.service;
 
 import com.greenhouse.common.BusinessException;
 import com.greenhouse.common.ErrorCode;
-import com.greenhouse.entity.DataAuthorization;
-import com.greenhouse.entity.Greenhouse;
-import com.greenhouse.repository.DataAuthorizationRepository;
-import com.greenhouse.entity.User;
+import com.greenhouse.entity.*;
 import com.greenhouse.module.greenhouse.dto.GreenhouseRequest;
 import com.greenhouse.module.greenhouse.dto.GreenhouseResponse;
 import com.greenhouse.module.greenhouse.dto.RegionStatsResponse;
-import com.greenhouse.repository.EmployeePermissionRepository;
-import com.greenhouse.repository.GreenhouseRepository;
-import com.greenhouse.repository.UserRepository;
+import com.greenhouse.module.sensor.service.SensorDataService;
+import com.greenhouse.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,6 +20,10 @@ import java.time.LocalDateTime;
 
 /**
  * 大棚管理服务
+ * <p>
+ * R45：支持棚主自主管理 + 管理员代管（代建/代改/代删）；
+ * 删除大棚时级联清理全部关联数据（设备/固件解绑/分组/预警/场景/作物/诊断/评估/授权/权限/时序数据）。
+ * </p>
  */
 @Slf4j
 @Service
@@ -35,30 +35,55 @@ public class GreenhouseService {
     private final EmployeePermissionRepository permissionRepository;
     private final DataAuthorizationRepository dataAuthorizationRepository;
 
+    // R45 级联清理依赖
+    private final DeviceRepository deviceRepository;
+    private final FirmwareRepository firmwareRepository;
+    private final DeviceGroupRepository deviceGroupRepository;
+    private final AlertRepository alertRepository;
+    private final AlertRuleRepository alertRuleRepository;
+    private final UserAlertThresholdRepository userAlertThresholdRepository;
+    private final SceneRepository sceneRepository;
+    private final CropCycleRepository cropCycleRepository;
+    private final DiagnosticRecordRepository diagnosticRecordRepository;
+    private final HealthAssessmentRepository healthAssessmentRepository;
+    private final GrowthAssessmentRepository growthAssessmentRepository;
+    private final SensorDailySummaryRepository sensorDailySummaryRepository;
+    private final ChatConversationRepository chatConversationRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final SensorDataService sensorDataService;
+
     /** 每个棚主最多创建的大棚数量 */
     private static final long MAX_GREENHOUSES_PER_OWNER = 10;
 
     /**
-     * 创建大棚（仅棚主可操作）
+     * 创建大棚
+     * <p>OWNER：创建自己的大棚；ADMIN：代棚主创建（request.ownerId 必填，目标必须是棚主）。</p>
      */
     @Transactional
-    public GreenhouseResponse createGreenhouse(Long userId, GreenhouseRequest request) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-
-        // 校验角色：只有棚主可以创建大棚
-        if (user.getRole() != User.Role.OWNER) {
+    public GreenhouseResponse createGreenhouse(Long userId, User.Role role, GreenhouseRequest request) {
+        Long ownerId = userId;
+        if (role == User.Role.ADMIN) {
+            if (request.getOwnerId() == null) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "管理员代建大棚必须指定棚主(ownerId)");
+            }
+            User owner = userRepository.findById(request.getOwnerId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
+            if (owner.getRole() != User.Role.OWNER) {
+                throw new BusinessException(ErrorCode.PARAM_ERROR, "目标用户不是棚主，无法代建大棚");
+            }
+            ownerId = owner.getId();
+        } else if (role != User.Role.OWNER) {
             throw new BusinessException(ErrorCode.NOT_OWNER);
         }
 
         // 校验大棚数量上限
-        long count = greenhouseRepository.countByOwnerId(userId);
+        long count = greenhouseRepository.countByOwnerId(ownerId);
         if (count >= MAX_GREENHOUSES_PER_OWNER) {
             throw new BusinessException(ErrorCode.GREENHOUSE_LIMIT_EXCEEDED);
         }
 
         // 校验重名
-        if (greenhouseRepository.existsByOwnerIdAndName(userId, request.getName())) {
+        if (greenhouseRepository.existsByOwnerIdAndName(ownerId, request.getName())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "大棚名称已存在");
         }
 
@@ -66,7 +91,7 @@ public class GreenhouseService {
                 .name(request.getName())
                 .location(request.getLocation())
                 .cropType(request.getCropType())
-                .ownerId(userId)
+                .ownerId(ownerId)
                 .province(request.getProvince())
                 .city(request.getCity())
                 .district(request.getDistrict())
@@ -76,7 +101,7 @@ public class GreenhouseService {
                 .build();
 
         greenhouse = greenhouseRepository.save(greenhouse);
-        log.info("大棚创建成功: id={}, name={}, ownerId={}", greenhouse.getId(), greenhouse.getName(), userId);
+        log.info("大棚创建成功: id={}, name={}, ownerId={}, by={}({})", greenhouse.getId(), greenhouse.getName(), ownerId, role, userId);
 
         return GreenhouseResponse.fromEntity(greenhouse);
     }
@@ -159,21 +184,21 @@ public class GreenhouseService {
     }
 
     /**
-     * 更新大棚（仅棚主可操作自己的大棚）
+     * 更新大棚（OWNER 操作自己的大棚；ADMIN 可代管任意大棚）
      */
     @Transactional
-    public GreenhouseResponse updateGreenhouse(Long userId, Long greenhouseId, GreenhouseRequest request) {
+    public GreenhouseResponse updateGreenhouse(Long userId, User.Role role, Long greenhouseId, GreenhouseRequest request) {
         Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
 
-        // 校验归属
-        if (!greenhouse.getOwnerId().equals(userId)) {
+        // 校验归属（ADMIN 代管跳过）
+        if (role != User.Role.ADMIN && !greenhouse.getOwnerId().equals(userId)) {
             throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
         }
 
         // 校验重名（排除自己）
         if (!greenhouse.getName().equals(request.getName())
-                && greenhouseRepository.existsByOwnerIdAndName(userId, request.getName())) {
+                && greenhouseRepository.existsByOwnerIdAndName(greenhouse.getOwnerId(), request.getName())) {
             throw new BusinessException(ErrorCode.PARAM_ERROR, "大棚名称已存在");
         }
 
@@ -193,19 +218,79 @@ public class GreenhouseService {
     }
 
     /**
-     * 删除大棚（仅棚主可操作自己的大棚）
+     * 删除大棚（OWNER 操作自己的大棚；ADMIN 可代管任意大棚）
+     * <p>R45：级联清理全部关联数据。</p>
      */
     @Transactional
-    public void deleteGreenhouse(Long userId, Long greenhouseId) {
+    public void deleteGreenhouse(Long userId, User.Role role, Long greenhouseId) {
         Greenhouse greenhouse = greenhouseRepository.findById(greenhouseId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.GREENHOUSE_NOT_FOUND));
 
-        if (!greenhouse.getOwnerId().equals(userId)) {
+        if (role != User.Role.ADMIN && !greenhouse.getOwnerId().equals(userId)) {
             throw new BusinessException(ErrorCode.GREENHOUSE_ACCESS_DENIED);
         }
 
+        // ===== 级联清理（R45）=====
+
+        // 1. 咨询会话及其消息
+        List<ChatConversation> conversations = chatConversationRepository.findByGreenhouseId(greenhouseId);
+        if (!conversations.isEmpty()) {
+            List<Long> convIds = conversations.stream().map(ChatConversation::getId).collect(Collectors.toList());
+            chatMessageRepository.deleteByConversationIdIn(convIds);
+            chatConversationRepository.deleteAll(conversations);
+        }
+
+        // 2. 设备（逐个固件解绑）
+        List<Device> devices = deviceRepository.findByGreenhouseId(greenhouseId);
+        for (Device device : devices) {
+            if (device.getFirmwareId() != null) {
+                firmwareRepository.findById(device.getFirmwareId()).ifPresent(fw -> {
+                    fw.setStatus(Firmware.Status.UNBOUND);
+                    fw.setBoundDeviceId(null);
+                    firmwareRepository.save(fw);
+                });
+            }
+        }
+        deviceRepository.deleteAll(devices);
+
+        // 3. 设备分组（实体删除，连带 device_group_members）
+        List<DeviceGroup> groups = deviceGroupRepository.findByGreenhouseId(greenhouseId);
+        if (!groups.isEmpty()) {
+            deviceGroupRepository.deleteAll(groups);
+        }
+
+        // 4. 预警规则 / 自定义阈值 / 预警记录
+        alertRuleRepository.deleteByGreenhouseId(greenhouseId);
+        userAlertThresholdRepository.deleteByGreenhouseId(greenhouseId);
+        alertRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 5. 场景联动
+        sceneRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 6. 作物生长周期
+        cropCycleRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 7. 病虫害诊断记录
+        diagnosticRecordRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 8. 健康评估 / 长势评估
+        healthAssessmentRepository.deleteByGreenhouseId(greenhouseId);
+        growthAssessmentRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 9. 传感器日汇总
+        sensorDailySummaryRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 10. 数据授权 / 员工权限
+        dataAuthorizationRepository.deleteByGreenhouseId(greenhouseId);
+        permissionRepository.deleteByGreenhouseId(greenhouseId);
+
+        // 11. InfluxDB 时序数据
+        sensorDataService.deleteGreenhouseData(greenhouseId);
+
+        // 12. 删除大棚
         greenhouseRepository.delete(greenhouse);
-        log.info("大棚删除成功: id={}, name={}", greenhouse.getId(), greenhouse.getName());
+        log.info("大棚删除成功(含级联清理): id={}, name={}, ownerId={}, by={}({})",
+                greenhouse.getId(), greenhouse.getName(), greenhouse.getOwnerId(), role, userId);
     }
 
     /**

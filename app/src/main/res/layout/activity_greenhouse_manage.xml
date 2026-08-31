@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_page">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@drawable/bg_header_gradient"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar"
+        app:navigationIcon="?attr/homeAsUpIndicator"
+        app:title="大棚管理"
+        app:titleTextColor="@android:color/white" />
+
+    <!-- 顶部说明 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="管理您名下的大棚（上限 10 个）。删除大棚将级联清理其下设备、预警规则、场景与历史数据。"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_greenhouses"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="暂无大棚，点击下方「新增大棚」创建"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+
+    <!-- 新增大棚按钮 -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_add_greenhouse"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_margin="16dp"
+        android:text="新增大棚"
+        app:cornerRadius="8dp" />
+</LinearLayout>

@@ -53,4 +53,7 @@ public interface DataAuthorizationRepository extends JpaRepository<DataAuthoriza
      * 查询专家对某大棚的有效且未过期的授权（权限校验用）
      */
     Optional<DataAuthorization> findTopByExpertIdAndGreenhouseIdAndStatusAndExpiresAtAfterOrderByApprovedAtDesc(
-            Long expertId, Long greenhouseId, DataAuthorization.AuthorizationStatus status, java.time.LocalDateTime now);}
+            Long expertId, Long greenhouseId, DataAuthorization.AuthorizationStatus status, java.time.LocalDateTime now);
+
+    void deleteByGreenhouseId(Long greenhouseId);
+}
